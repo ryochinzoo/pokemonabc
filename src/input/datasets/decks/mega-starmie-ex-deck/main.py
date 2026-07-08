@@ -11,7 +11,7 @@ Mega Starmie EX Deck
 1つ目はカードそのもののスコア
 2つ目は行動のスコア
 カードそのもののスコアは、自分のカードのスコア、ターゲットの優先度など扱うカードや
-仮想的となるカードの優先順位
+仮想敵となるカードの優先順位
 行動スコアは、攻撃する、特性を使う、技１，２を選ぶ、一旦撤退するなどのターンごとのサイクル
 相手の現在の状況からの判断をスコアにしたものである
 そのため、各カードそのものの定義と
@@ -88,14 +88,58 @@ DECK, CARD_TABLE, ALL_ATTACKS = _initialize_data()
 
 # 盤面解析クラス
 class BoardState:
-    def __init__(self, obs, card_table):
+    def __init__(self, obs: Observation, card_table):
         self.obs = obs
         self.card_table = card_table
         self.me = obs.current.players[obs.current.yourIndex]
         self.opp = obs.current.players[1 - obs.current.yourIndex]
+
+        self._my_area_maps = {
+            AreaType.HAND: self.me.hand,
+            AreaType.DISCARD: self.me.discard,
+            AreaType.ACTIVE: self.me.active,
+            AreaType.BENCH: self.me.bench,
+            AreaType.PRIZE: self.me.prize,
+        }
+        self._opp_area_maps = {
+            AreaType.HAND: self.opp.hand,
+            AreaType.DISCARD: self.opp.discard,
+            AreaType.ACTIVE: self.opp.active,
+            AreaType.BENCH: self.opp.bench,
+            AreaType.PRIZE: self.opp.prize,
+        }
+        
+
+    def fetch_card_safely(self, area: AreaType, index: int, is_me: bool = True) -> Pokemon | Card | None:
+        """
+        指定されたエリア、インデックスから安全にカード/ポケモンオブジェクトを抽出する
+        """
+        # 1. プレイヤーに依存しない特殊なグローバルエリアの処理
+        if area == AreaType.DECK:
+            # obs.select.deck が存在し、かつインデックスが有効かチェック
+            deck_list = getattr(self.obs.select, "deck", []) or []
+            return deck_list[index] if 0 <= index < len(deck_list) else None
+            
+        if area == AreaType.STADIUM:
+            stadium_list = getattr(self.obs.current, "stadium", []) or []
+            return stadium_list[index] if 0 <= index < len(stadium_list) else None
+            
+        if area == AreaType.LOOKING:
+            looking_list = getattr(self.obs.current, "looking", []) or []
+            return looking_list[index] if 0 <= index < len(looking_list) else None
+
+        # 2. プレイヤーに依存するエリアの処理（自分か相手かで辞書を切り替える）
+        area_map = self._my_area_maps if is_me else self._opp_area_maps
+        target_list = area_map.get(area)
+
+        if target_list and 0 <= index < len(target_list):
+            return target_list[index]
+            
+        return None
+    
     
     @property
-    def active(self):
+    def active(self) -> Pokemon:
         """自分のバトル場のポケモン"""
         return self.me.active[0] if self.me.acrive else None
     
