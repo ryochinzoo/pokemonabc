@@ -1,5 +1,6 @@
 import os
 import sys
+import copy
 from collections import defaultdict
 
 from cg.api import AreaType, CardType, EnergyType, Observation, SelectContext, OptionType, Card, Pokemon, all_card_data, to_observation_class
@@ -56,6 +57,13 @@ DREEPY = {119, 120, 121} # ドラメシヤ系統
 
 ALL_HYPO_ENEMIES = ALAKAZAM_LINE | CRUSTLE_LINE | STARMIE_LINE | LUCARIO_LINE | HOP_LINE | DURALUDON | DREEPY
 
+
+# 死守すべき重要カードのリスト（トラッシュ・山札戻しは絶対禁止）
+IMPORTANT_CARDS = [
+    HITODEMAN, MEGA_STARMIE_EX, 
+    YUKIWARASHI, MEGA_YUKIMENOKO_EX, YUKIMENOKO,
+    MUNKIDORI, BEFEHL_VON_BOSS
+]
 
 def _initialize_data() -> Tuple[List[int], Dict[int, Any], Dict[int, Any]]:
     # deck.csv
@@ -176,7 +184,8 @@ class BoardState:
     @property
     def opp_hand_count(self) -> int:
         """相手の手札の枚数"""
-        if self.opp.hand is None: return 0
+        if self.opp.hand is None: 
+            return 0
         return sum(1 for c in self.opp.hand if c)
 
     @property
@@ -200,7 +209,8 @@ class BoardState:
     @property
     def opp_active_hp(self) -> int:
         """相手のバトルポケモンの残りHP"""
-        if not self.opp_active: return 0
+        if not self.opp_active: 
+            return 0
         return self.opp_active.hp
 
     @property
@@ -211,7 +221,7 @@ class BoardState:
             
         opp_id_str = str(self.opp_active.id).lower()
         
-        # 1. 最優先：IDに「mega」や「m_」が含まれる、または特定のメガ進化IDなら3枚
+        # 1. 最優先：IDに「mega」や「m_」が含まれる、または特定のメガ進化IDなら3枚 uso
         if "mega" in opp_id_str or "m_" in opp_id_str or self.opp_active.id in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX}:
             return 3
         # 2. 次点：ex ポケモンなら2枚
@@ -223,7 +233,7 @@ class BoardState:
     @property
     def my_remaining_prizes(self) -> int:
         """自分の残りサイド枚数"""
-        return self.me.remaining_prizes
+        return len(self.me.prize)
 
     # ==========================================
     # 2. 守りのセンサー
@@ -243,7 +253,7 @@ class BoardState:
             
         my_id_str = str(self.active.id).lower()
         
-        # 1. ベースとなるサイド枚数を判定
+        # 1. ベースとなるサイド枚数を判定 uso
         if "mega" in my_id_str or "m_" in my_id_str or self.active.id in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX}:
             base_prize = 3
         elif "ex" in my_id_str:
@@ -265,11 +275,11 @@ class BoardState:
         return self._calculate_max_available_damage(self.opp_active)
 
     @property
-    def is_legacy_energy_attached_to_active(self) -> bool:
+    def is_legacy_energy_attached_to_active(self) -> bool: #USO
         """自分のバトルポケモンにレガシーエネルギーが付いているか"""
-        if not self.active or not getattr(self.active, "attached_cards", None): 
+        if not self.active or not getattr(self.active, "attached_cards", None):
             return False
-        return any(getattr(card, "id", None) == "LEGACY_ENERGY_ID" for card in self.active.attached_cards)
+        return any(getattr(card, "id", None) == LEGACY_ENERGIE for card in self.active.attached_cards)
 
     # ==========================================
     # 3. コンボのセンサー
@@ -278,8 +288,9 @@ class BoardState:
     def is_stadium_perilous_ruins(self) -> bool:
         """現在のスタジアムが『危険な廃墟』かどうか"""
         stadium = getattr(self.obs.current, "stadium", None)
-        if not stadium or not stadium[0]: return False
-        return stadium[0].id == "PERILOUS_RUINS_ID"
+        if not stadium or not stadium[0]: 
+            return False
+        return stadium[0].id == DENGEROUS_RUINE
 
     @property
     def has_ready_mashimashira(self) -> bool:
@@ -289,24 +300,27 @@ class BoardState:
     @property
     def has_damage_counters_to_move(self) -> bool:
         """自分の場に、マシマシラで移動させられるダメカンが存在するか"""
-        return any(getattr(p, "damage", 0) > 0 for p in self.all_my_pokemon)
+        return any(getattr(p, "remainDamageCounter", 0) > 0 for p in self.all_my_pokemon)
 
     # ==========================================
     # 内部の軽量計算ヘルパー
     # ==========================================
     def my_active_can_attack(self) -> bool:
         """自分のバトルポケモンが現在攻撃可能（技を1つ以上持っている）か"""
-        if not self.active: return False
+        if not self.active: 
+            return False
         card_data = self.get_card_data(self.active.id)
-        if not card_data or not getattr(card_data, "attacks", None): return False
+        if not card_data or not getattr(card_data, "attacks", None): 
+            return False
         return len(card_data.attacks) > 0
 
     def get_my_active_attack_damage(self) -> int:
         """自分のバトルポケモンの現在出せる最大技ダメージを取得"""
         if not self.active: return 0
         card_data = self.get_card_data(self.active.id)
-        if not card_data or not getattr(card_data, "attacks", None): return 0
-        return max((getattr(atk, "damage", 0) for atk in card_data.attacks), default=0)
+        if not card_data or not getattr(card_data, "attacks", None): 
+            return 0
+        return max((getattr(atk, "damage", 0) for atk in card_data.attacks), default=0) #uso
 
     def _calculate_max_available_damage(self, pokemon) -> int:
         """対象のポケモンが『現在付いているエネルギーで』出せる最大技ダメージ（簡易版）"""
@@ -315,18 +329,18 @@ class BoardState:
             return 0
             
         # 相手に付いているエネルギーの合計枚数をカウント
-        attached_count = len(getattr(pokemon, "attached_cards", []) or [])
+        attached_count = len(getattr(pokemon, "energyCards", []) or [])
         
         max_dmg = 0
         for atk in card_data.attacks:
             # 技の必要エネルギー数（costなどのプロパティ名である場合が多いです）
             # もし相手のエネルギー枚数が、技の必要枚数以上、または次のターン手貼りして届く範囲なら計算対象にする
             # （※API仕様のcostの型に合わせて調整してください）
-            required_energy = len(getattr(atk, "cost", []))
+            required_energy = len(getattr(atk, "cost", [])) #uso
             
             # 次のターンの手貼り(+1枚)を含めて足りるか
             if attached_count + 1 >= required_energy:
-                dmg = getattr(atk, "damage", 0)
+                dmg = getattr(atk, "damage", 0) #uso
                 if dmg > max_dmg:
                     max_dmg = dmg
                     
@@ -337,7 +351,7 @@ class BoardState:
         for p in self.all_my_pokemon:
             if p.id == MUNKIDORI:
                 # 添付カードに悪エネルギー（またはEnergyType.DARKNESS）があるかチェック
-                attached = getattr(p, "attached_cards", []) or []
+                attached = getattr(p, "energyCards", []) or []
                 if any(getattr(card, "id", None) == EnergyType.DARKNESS for card in attached):
                     return True
         return False
@@ -357,7 +371,7 @@ class BoardState:
             
         pokemon_id_str = str(pokemon.id).lower()
         
-        # 1. 【最優先】メガシンカならサイドは3枚
+        # 1. 【最優先】メガシンカならサイドは3枚 #これ系全部USO
         if "mega" in pokemon_id_str or "m_" in pokemon_id_str:
             return 3
         # 2. EX / ex ポケモンならサイドは2枚
@@ -386,13 +400,6 @@ class BoardState:
 # 2. 戦略インターフェース と 各カード戦略オブジェクト
 # ==========================================
 
-# 死守すべき重要カードのリスト（トラッシュ・山札戻しは絶対禁止）
-IMPORTANT_CARDS = [
-    HITODEMAN, MEGA_STARMIE_EX, 
-    YUKIWARASHI, MEGA_YUKIMENOKO_EX, YUKIMENOKO,
-    MUNKIDORI, BEFEHL_VON_BOSS
-]
-
 # 盤面が十分に回っている（完成している）と判断する関数
 def is_board_fully_set_up(board: BoardState) -> bool:
     # 進化の土台やシステムが十分に盤面に並んでいるかチェック
@@ -413,11 +420,13 @@ def evaluate_trash_cost_priority(card_id: int, board: BoardState) -> float:
         
     # 3. 盤面が十分に回っている（完成している）場合、余った展開グッズ・サポはエサ
     if is_board_fully_set_up(board):
-        if card_id == TOUKO:       return 4500.0
-        if card_id == POKE_PAD:    return 4000.0
+        if card_id == TOUKO:
+            return 4500.0
+        if card_id == POKE_PAD:
+            return 4000.0
         
     # 4. 手札にハイパーボールがあり、ゼイユをコストに回す優先度が高い場合
-    if card_id == CARMINE and HYPERBALL in board.hand_ids:
+    if card_id == CARMINE and HYPERBALL in board.hand_ids: #uso?
         return 4200.0
         
     # 通常のカード（デフォルト）
@@ -562,7 +571,7 @@ class PofinStrategy(DefaultStrategy):
             
         # 2. 山札に対象となるポケモン（HP70以下のたね）が残っているかチェック
         has_target = False
-        for card_id in board.deck_ids:
+        for card_id in board.deck_ids: #USO
             # 💡 ここで各カードのデータ（HPや進化段階）を参照する
             card_info = board.get_card_info(card_id)
             if card_info.stage == "Basic" and card_info.hp <= 70 and not card_info.is_ex:
@@ -613,7 +622,7 @@ class HyperballStrategy(DefaultStrategy):
         if board.count_in_deck(YUKIMENOKO) > 0:
             return YUKIMENOKO
             
-        return getattr(board.deck_ids, "first", 0)
+        return getattr(board.deck_ids, "first", 0) #USO
     
     def choose_trash_cards(self, board: BoardState) -> list[int]:
         """【実行処理】エサ優先度が高い順に2枚選んで返す"""
@@ -653,7 +662,7 @@ class ZeiyuStrategy(DefaultStrategy):
         # ─── 先攻1ターン目の判定 ───
         # ※環境の仕様に合わせて、先攻最初の番の時に True になる条件をここに指定します
         # 例：board.turn == 1 や board.is_first_turn などの実際の仕様を当てはめる
-        is_first_turn_of_game = getattr(board, "is_first_turn", False) 
+        is_first_turn_of_game = getattr(board, "is_first_turn", False) #uso
 
         if is_first_turn_of_game:
             return 3500.0
@@ -870,6 +879,165 @@ class GameAction:
         return f"<Action: {self.action_type} (Target:{self.target_idx}, Card:{self.card_id}) Score: {self.total_score}>"
 
 
+class OpponentPredictor:
+    @staticmethod
+    def predict_next_turn(virtual_board: BoardState) -> dict:
+        """自分の行動が終わったと仮定した仮想盤面から、相手の次の最善手を予測する"""
+        prediction = {
+            "expected_damage_to_active": 0,
+            "will_ko_my_active": False,
+        }
+        opp_active = virtual_board.opp_active
+        my_active = virtual_board.active
+        
+        if not opp_active or not my_active:
+            return prediction
+
+        opp_card_data = virtual_board.get_card_data(opp_active.id)
+        if opp_card_data and getattr(opp_card_data, "attacks", None):
+            attached_count = len(getattr(opp_active, "attached_cards", []) or []) #energyCardsとtoolsの２つ
+            virtual_energy_count = attached_count + 1 # 次の手貼りを想定
+            
+            max_dmg = 0
+            for atk in opp_card_data.attacks:
+                required_energy = len(getattr(atk, "cost", []))
+                if virtual_energy_count >= required_energy:
+                    dmg = getattr(atk, "damage", 0)
+                    if dmg > max_dmg: 
+                        max_dmg = dmg
+            
+            prediction["expected_damage_to_active"] = max_dmg
+            if my_active.hp <= max_dmg:
+                prediction["will_ko_my_active"] = True
+
+        return prediction
+
+
+class AttackAction(GameAction):
+    def evaluate(self):
+        if not self.board.active or not self.board.opp_active: 
+            return
+        
+        # 軸1: ターゲット評価
+        self.card_score = self.evaluator.evaluate_target_priority(self.board.opp_active)
+        self.action_score = 5000.0  # 攻撃の基本価値
+
+        # 1〜2手先予測のためのシミュレーション
+        my_damage = self.evaluator.get_my_active_attack_damage()
+        v_board = copy.deepcopy(self.board)
+        if v_board.opp_active:
+            v_board.opp_active.hp = max(0, v_board.opp_active.hp - my_damage)
+
+        # 2手先：このターンで倒せるなら即決級
+        if v_board.opp_active and v_board.opp_active.hp == 0:
+            prize = self.evaluator.calculate_prize_value(self.board.opp_active)
+            if prize >= self.board.me.remaining_prizes:
+                self.action_score += 99999.0
+            else:
+                self.action_score += 4000.0
+            return
+
+        # 1手先：相手のターンの返しを予測
+        prediction = OpponentPredictor.predict_next_turn(v_board)
+        if prediction["will_ko_my_active"]:
+            lost_prize = self.evaluator.calculate_prize_value(self.board.active)
+            if lost_prize >= self.board.opp.remaining_prizes:
+                self.action_score -= 99999.0  # 負け確行動の完全回避
+            else:
+                self.action_score -= (lost_prize * 2000.0) # テンポロス減点
+        else:
+            # 2手先：次の自分のターンで倒しきれる（確2ライン）なら加点
+            if v_board.opp_active and v_board.opp_active.hp <= my_damage:
+                self.action_score += 2000.0
+
+class EvolveAction(GameAction):
+    def evaluate(self):
+        card_id = getattr(self.option_data, "card_id", None)
+        if not card_id:
+            return
+        
+        self.card_score = 3000.0 if card_id in [MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX, YUKIMENOKO] else 1000.0
+        
+        # 行動サイクル：1匹目のメインアタッカー擁立を最優先
+        if card_id == MEGA_STARMIE_EX and self.board.count_in_play(MEGA_STARMIE_EX) == 0:
+            self.action_score = 6000.0
+        else:
+            self.action_score = 2500.0
+
+class RetreatAction(GameAction):
+    def evaluate(self):
+        if not self.board.active: 
+            return
+        
+        # 軸1: ベンチに即動ける後続がいるか
+        has_backup = any(p.id == MEGA_STARMIE_EX and len(getattr(p, "attached_cards", [])) >= 2 for p in self.board.bench)
+        if has_backup:
+            self.card_score = 1500.0
+        
+        # 軸2: 1手先予測による「きぜつ回避サイクル」
+        v_board = copy.deepcopy(self.board)
+        prediction = OpponentPredictor.predict_next_turn(v_board)
+        if prediction["will_ko_my_active"]:
+            self.action_score = 7000.0  # 緊急避難
+        else:
+            self.action_score = -1000.0 # 無意味な交代はテンポロス
+
+class PlayCardAction(GameAction):
+    def evaluate(self):
+        card_id = getattr(self.option_data, "card_id", None)
+        if not card_id: 
+            return
+        self.card_score = self.evaluator.evaluate_card_play(card_id)
+        self.action_score = 500.0
+
+class AttachEnergyAction(GameAction):
+    def evaluate(self):
+        card_id = getattr(self.option_data, "card_id", None)
+        # 貼り先ポケモンの安全な特定 (環境の仕様に合わせて調整)
+        target_idx = getattr(self.option_data, "target_index", 0)
+        target_pokemon = self.board.bench[target_idx] if target_idx < len(self.board.bench) else self.board.active
+        
+        if not card_id or not target_pokemon: 
+            return
+        self.card_score = self.evaluator.evaluate_energy_attach(card_id, target_pokemon)
+        self.action_score = 1000.0
+
+
+# ==========================================
+# 5. ファクトリーとメイン実行ループ (Agent Entrypoint)
+# ==========================================
+class ActionFactory:
+    @staticmethod
+    def create_action(idx: int, option: Any, board: BoardState, evaluator: MasterEvaluator) -> GameAction:
+        opt_type = getattr(option, "type", None)
+        if opt_type == OptionType.ATTACK:
+            return AttackAction(idx, option, board, evaluator)
+        elif opt_type == OptionType.EVOLVE:
+            return EvolveAction(idx, option, board, evaluator)
+        elif opt_type == OptionType.RETREAT:
+            return RetreatAction(idx, option, board, evaluator)
+        elif opt_type == OptionType.PLAY:
+            return PlayCardAction(idx, option, board, evaluator)
+        elif opt_type == OptionType.ATTACH:
+            return AttachEnergyAction(idx, option, board, evaluator)
+        return GameAction(idx, option, board, evaluator)
+
+
 def agent(obs, config):
     board = BoardState(obs, CARD_TABLE)
-    pass
+    evaluator = MasterEvaluator(board)
+    
+    legal_options = getattr(obs, "legal_options", []) or getattr(obs.current, "legal_options", [])
+    if not legal_options:
+        return 0
+        
+    action_objects: List[GameAction] = []
+    
+    for idx, option in enumerate(legal_options):
+        action = ActionFactory.create_action(idx, option, board, evaluator)
+        action.evaluate() # ここで各クラス固有の2つの軸＋先読みスコアが自律計算される
+        action_objects.append(action)
+        
+    # 最もスコア（カードスコア ＋ 行動スコア）が高い行動のインデックスを返す
+    best_action = max(action_objects, key=lambda a: a.total_score)
+    return best_action.option_idx
