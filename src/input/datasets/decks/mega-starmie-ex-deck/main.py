@@ -12,14 +12,25 @@ Mega Starmie EX Deck
 """
 import copy
 import os
+import sys
 from collections import Counter
 from typing import Any, Dict, Iterable, List, Optional, Protocol, Sequence, Tuple
+
+_MODULE_FILE = globals().get("__file__")
+DEBUG_SELECTION = False
+_CG_PATH_CANDIDATES = [os.getcwd(), "/kaggle_simulations/agent"]
+if _MODULE_FILE:
+    _CG_PATH_CANDIDATES.insert(0, os.path.dirname(os.path.abspath(_MODULE_FILE)))
+for _path in _CG_PATH_CANDIDATES:
+    if _path and _path not in sys.path and os.path.isdir(os.path.join(_path, "cg")):
+        sys.path.insert(0, _path)
 
 from cg.api import (
     AreaType,
     CardType,
     LogType,
     Observation,
+    OptionType,
     Pokemon,
     SelectContext,
     all_card_data,
@@ -39,11 +50,10 @@ HITODEMAN = 1030
 MEGA_STARMIE_EX = 1031
 YUKIWARASHI = 860
 MEGA_YUKIMENOKO_EX = 861
-YUKIMENOKO = 103
+YUKIMENOKO = 104
 MUNKIDORI = 112
 YVELTAL = 689
 SUBOMIE = 235
-MAUZI = 1071
 POFIN = 1086
 POKE_PAD = 1152
 HYPERBALL = 1121
@@ -62,7 +72,7 @@ JETTING_BLOW = 1487
 
 DEFAULT_DECK = [
     1030, 1030, 1030, 1031, 1031, 860, 860, 860, 861, 861,
-    103, 103, 112, 112, 112, 689, 235, 1071, 1086, 1086,
+    104, 104, 112, 112, 112, 689, 235, 860, 1086, 1086,
     1086, 1086, 1152, 1152, 1152, 1152, 1121, 1121, 1121, 1097,
     1097, 1174, 1227, 1227, 1227, 1227, 1192, 1192, 1192, 1192,
     1225, 1225, 1225, 1198, 1198, 1182, 1182, 1182, 1260, 1260,
@@ -126,11 +136,10 @@ MUNKIDORI_TARGET_SERIAL: Optional[int] = None
 
 
 def _initialize_data() -> Tuple[List[int], Dict[int, Any], Dict[int, Any]]:
-    deck_candidates = (
-        "deck.csv",
-        os.path.join(os.path.dirname(__file__), "deck.csv"),
-        "/kaggle_simulations/agent/deck.csv",
-    )
+    module_file = globals().get("__file__")
+    deck_candidates = ["deck.csv", "/kaggle_simulations/agent/deck.csv"]
+    if module_file:
+        deck_candidates.insert(1, os.path.join(os.path.dirname(module_file), "deck.csv"))
     deck_path = next((path for path in deck_candidates if os.path.exists(path)), "")
 
     deck: List[int] = []
@@ -144,7 +153,10 @@ def _initialize_data() -> Tuple[List[int], Dict[int, Any], Dict[int, Any]]:
     if len(deck) != 60:
         deck = list(DEFAULT_DECK)
 
-    card_table = {card.cardId: card for card in all_card_data()}
+    try:
+        card_table = {card.cardId: card for card in all_card_data()}
+    except Exception:
+        card_table = {}
 
     attack_table: Dict[int, Any] = {}
     if all_attack is not None:
@@ -203,6 +215,14 @@ class BoardState:
     @property
     def your_index(self) -> int:
         return self.obs.current.yourIndex
+
+    @property
+    def turn(self) -> int:
+        return int(self.obs.current.turn or 0)
+
+    @property
+    def turn_action_count(self) -> int:
+        return int(self.obs.current.turnActionCount or 0)
 
     @property
     def select_data(self):
@@ -272,6 +292,35 @@ class BoardState:
 
     def iter_options(self) -> Iterable[Tuple[int, Any]]:
         return enumerate(self.select_options)
+
+    def option_card(self, option: Any) -> Optional[Any]:
+        if option.cardId is not None:
+            return option
+        if option.area is None and option.index is not None and option.type == OptionType.PLAY:
+            cards = self.me.hand or []
+            index = int(option.index)
+            return cards[index] if 0 <= index < len(cards) else None
+        if option.area is None or option.index is None:
+            return None
+
+        index = int(option.index)
+        cards: Optional[Sequence[Any]] = None
+        if option.area == AreaType.DECK:
+            cards = self.select_deck
+        elif option.area == AreaType.HAND and option.playerIndex in (None, self.your_index):
+            cards = self.me.hand or []
+        elif option.area == AreaType.DISCARD and option.playerIndex in (None, self.your_index):
+            cards = self.me.discard or []
+        elif option.area == AreaType.PRIZE and option.playerIndex in (None, self.your_index):
+            cards = self.me.prize or []
+
+        if cards is None or index < 0 or index >= len(cards):
+            return None
+        return cards[index]
+
+    def option_card_id(self, option: Any) -> Optional[int]:
+        card = self.option_card(option)
+        return None if card is None else card.id
 
     @property
     def active(self) -> Optional[Pokemon]:
@@ -637,6 +686,23 @@ class BoardState:
         return pokemon is not None and self.count_energy(pokemon, BASIC_UNLICHT_ENERGIE) > 0
 
     @property
+    def wants_mashimashira_dark_energy(self) -> bool:
+        pokemon = self.find_pokemon(MUNKIDORI)
+        if pokemon is not None:
+            return self.count_energy(pokemon, BASIC_UNLICHT_ENERGIE) == 0
+        return MUNKIDORI in self.hand_ids and BASIC_UNLICHT_ENERGIE in self.hand_ids
+
+    @property
+    def is_development_starved(self) -> bool:
+        if len(self.all_my_pokemon) <= 1:
+            return True
+        has_attacker = any(
+            self.card_id(pokemon) in {HITODEMAN, MEGA_STARMIE_EX, YVELTAL}
+            for pokemon in self.all_my_pokemon
+        )
+        return not has_attacker or not self.my_active_can_attack()
+
+    @property
     def has_damage_counters_to_move(self) -> bool:
         # Pokemon側ダメカン数は未公開。合法なDAMAGE_COUNTER選択の存在を根拠にする。
         return self.remain_damage_counter > 0
@@ -678,9 +744,13 @@ class BoardState:
         )
 
     def option_area(self, option: Any):
+        if option.inPlayArea is not None:
+            return option.inPlayArea
         return option.area if option.area is not None else option.inPlayArea
 
     def option_index(self, option: Any) -> int:
+        if option.inPlayArea is not None:
+            return int(option.inPlayIndex or 0)
         if option.area is not None:
             return int(option.index or 0)
         return int(option.inPlayIndex or 0)
@@ -809,6 +879,8 @@ def is_early_game(board: BoardState) -> bool:
 def evaluate_trash_cost_priority(card_id: int, board: BoardState) -> float:
     if card_id in IMPORTANT_CARDS:
         return -99999.0
+    if card_id == BASIC_UNLICHT_ENERGIE and board.wants_mashimashira_dark_energy:
+        return -9000.0
     if card_id == SUBOMIE:
         if board.hand_ids.count(SUBOMIE) > 1:
             return 3600.0
@@ -851,6 +923,10 @@ class BossOrdersStrategy(DefaultStrategy):
     def evaluate_play(self, board: BoardState) -> float:
         if board.can_win_by_killing_bench_pokemon():
             return 99999.0
+        if board.is_development_starved:
+            return -99999.0
+        if not board.my_active_can_attack():
+            return -3000.0
         score = 500.0 if board.opp_bench else 0.0
         if board.active is not None and board.my_active_remaining_hp <= board.opp_active_max_damage:
             score += board.my_active_prize_value * 1200.0
@@ -866,6 +942,8 @@ class PerilousRuinsStrategy(DefaultStrategy):
             score += 900.0
         if board.has_ready_mashimashira:
             score += 800.0
+        elif board.wants_mashimashira_dark_energy:
+            score -= 1200.0
         if board.has_damage_counters_to_move:
             score += 300.0
         return score
@@ -879,7 +957,9 @@ class LegacyEnergyStrategy(DefaultStrategy):
 class DarknessEnergyStrategy(DefaultStrategy):
     def evaluate_attach(self, board: BoardState, target: Pokemon) -> float:
         if board.card_id(target) == MUNKIDORI:
-            return 4000.0
+            return 8000.0 if board.wants_mashimashira_dark_energy else 3500.0
+        if board.wants_mashimashira_dark_energy:
+            return -2500.0
         if board.card_id(target) == YVELTAL:
             return 10.0
         return 100.0
@@ -1434,14 +1514,15 @@ class RetreatAction(GameAction):
 
 class PlayCardAction(GameAction):
     def evaluate(self) -> None:
-        if self.option.cardId is None:
+        card_id = self.board.option_card_id(self.option)
+        if card_id is None:
             self.action_score = -99999.0
             return
-        self.card_score = self.evaluator.evaluate_card_play(self.option.cardId)
+        self.card_score = self.evaluator.evaluate_card_play(card_id)
         self.action_score = 500.0 + GameSimulator(self.board).evaluate_after_action(self) * 0.03
 
     def apply(self, board: BoardState) -> BoardState:
-        card_id = self.option.cardId
+        card_id = board.option_card_id(self.option)
         if card_id == DENGEROUS_RUINE:
             board.set_stadium(DENGEROUS_RUINE)
         elif card_id == BEFEHL_VON_BOSS:
@@ -1455,18 +1536,31 @@ class PlayCardAction(GameAction):
         return board
 
 
+class CountAction(GameAction):
+    def evaluate(self) -> None:
+        number = int(getattr(self.option, "number", 0) or 0)
+        if self.board.select_context == SelectContext.DRAW_COUNT:
+            self.action_score = number * 1000.0
+            if self.board.is_development_starved:
+                self.action_score += number * 1000.0
+            return
+        self.action_score = float(number)
+
+
 class AttachEnergyAction(GameAction):
     def energy_token(self) -> str:
-        if self.option.cardId is None:
+        card_id = self.board.option_card_id(self.option)
+        if card_id is None:
             return "UNKNOWN"
-        return ENERGY_CARD_TO_TYPE.get(self.option.cardId, f"CARD_{self.option.cardId}")
+        return ENERGY_CARD_TO_TYPE.get(card_id, f"CARD_{card_id}")
 
     def evaluate(self) -> None:
         target = self.board.get_option_target(self.option)
-        if self.option.cardId is None or target is None:
+        card_id = self.board.option_card_id(self.option)
+        if card_id is None or target is None:
             self.action_score = -99999.0
             return
-        self.card_score = self.evaluator.evaluate_energy_attach(self.option.cardId, target)
+        self.card_score = self.evaluator.evaluate_energy_attach(card_id, target)
         before = self.board.best_attack_damage(target)
         after = self.board.best_attack_damage(target, [self.energy_token()])
         self.action_score = 1000.0 + max(0, after - before) * 10.0
@@ -1613,21 +1707,27 @@ class SelectionResolver:
 
     def score(self, option: Any) -> float:
         descriptor = self.board.select_descriptor()
+        card_id = self.board.option_card_id(option)
 
-        if option.cardId is not None:
+        if card_id is not None:
             if self.board.select_context in (
+                SelectContext.SETUP_ACTIVE_POKEMON,
+                SelectContext.SETUP_BENCH_POKEMON,
                 SelectContext.TO_HAND,
                 SelectContext.TO_HAND_ENERGY,
                 SelectContext.TO_FIELD,
                 SelectContext.TO_BENCH,
+                SelectContext.DISCARD,
             ):
-                return self.search.score_effect_card(option.cardId)
+                if self.board.select_context == SelectContext.DISCARD:
+                    return self.evaluator.evaluate_trash_target(card_id)
+                return self.search.score_effect_card(card_id)
             if self.board.deck_is_visible or "DECK" in descriptor or "SEARCH" in descriptor:
-                return self.search.score_effect_card(option.cardId)
+                return self.search.score_effect_card(card_id)
             if "TRASH" in descriptor or "DISCARD" in descriptor:
-                return self.evaluator.evaluate_trash_target(option.cardId)
+                return self.evaluator.evaluate_trash_target(card_id)
             if "RECOVER" in descriptor or "RETRIEVE" in descriptor or "HAND" in descriptor:
-                return self.search.score_effect_card(option.cardId)
+                return self.search.score_effect_card(card_id)
             # 用途不明時はカードの役割を断定しない。
             return 0.0
 
@@ -1724,8 +1824,15 @@ class ActionFactory:
         evaluator: MasterEvaluator,
     ) -> GameAction:
         token = board.option_type_token(option)
+        option_type = option.type
 
-        if "YES" in token or "NO" in token:
+        if getattr(option, "number", None) is not None or board.select_context in (
+            SelectContext.DRAW_COUNT,
+            SelectContext.DAMAGE_COUNTER_COUNT,
+            SelectContext.REMOVE_DAMAGE_COUNTER_COUNT,
+        ):
+            return CountAction(option_index, option, board, evaluator)
+        if option_type in (OptionType.YES, OptionType.NO) or "YES" in token or "NO" in token:
             return YesNoAction(option_index, option, board, evaluator)
         if board.select_context == SelectContext.DAMAGE:
             return DamageAction(option_index, option, board, evaluator)
@@ -1737,15 +1844,15 @@ class ActionFactory:
             SelectContext.SWITCH_ENERGY,
         ):
             return EnergySelectionAction(option_index, option, board, evaluator)
-        if option.attackId is not None or "ATTACK" in token:
+        if option.attackId is not None or option_type == OptionType.ATTACK or "ATTACK" in token:
             return AttackAction(option_index, option, board, evaluator)
-        if "EVOLVE" in token:
+        if option_type == OptionType.EVOLVE or "EVOLVE" in token:
             return EvolveAction(option_index, option, board, evaluator)
-        if "RETREAT" in token or "SWITCH" in token:
+        if option_type == OptionType.RETREAT or "RETREAT" in token or "SWITCH" in token:
             return RetreatAction(option_index, option, board, evaluator)
-        if "ATTACH" in token or option.energyIndex is not None:
+        if option_type == OptionType.ATTACH or "ATTACH" in token or option.energyIndex is not None:
             return AttachEnergyAction(option_index, option, board, evaluator)
-        if "PLAY" in token or "USE" in token:
+        if option_type == OptionType.PLAY or "PLAY" in token or "USE" in token:
             return PlayCardAction(option_index, option, board, evaluator)
 
         return GameAction(option_index, option, board, evaluator)
@@ -1798,6 +1905,53 @@ def _format_selection(board: BoardState, actions: List[GameAction]) -> List[int]
     return selected
 
 
+def _debug_option_line(board: BoardState, index: int, option: Any, score: float) -> str:
+    card_id = board.option_card_id(option)
+    fields = [
+        f"i={index}",
+        f"score={score:.1f}",
+        f"type={board._enum_token(option.type)}",
+    ]
+    if card_id is not None:
+        fields.append(f"card={card_id}")
+    if option.area is not None:
+        fields.append(f"area={board._enum_token(option.area)}")
+    if option.index is not None:
+        fields.append(f"idx={option.index}")
+    if option.playerIndex is not None:
+        fields.append(f"p={option.playerIndex}")
+    if option.serial is not None:
+        fields.append(f"serial={option.serial}")
+    if option.attackId is not None:
+        fields.append(f"atk={option.attackId}")
+    return " ".join(fields)
+
+
+def _debug_selection(board: BoardState, actions: List[GameAction], selected: List[int], reason: str) -> None:
+    if not DEBUG_SELECTION:
+        return
+    try:
+        ranked = sorted(actions, key=lambda action: action.total_score, reverse=True)[:8]
+        print(
+            "[DBG]",
+            f"turn={board.turn}",
+            f"action={board.turn_action_count}",
+            f"ctx={board._enum_token(board.select_context)}",
+            f"type={board._enum_token(board.select_type)}",
+            f"effect={board.effect_card_id}",
+            f"contextCard={board.context_card_id}",
+            f"min={board.select_data.minCount}",
+            f"max={board.select_data.maxCount}",
+            f"selected={selected}",
+            f"reason={reason}",
+            file=sys.stderr,
+        )
+        for action in ranked:
+            print("[DBG_OPT]", _debug_option_line(board, action.option_index, action.option, action.total_score), file=sys.stderr)
+    except Exception as exc:
+        print("[DBG_ERROR]", repr(exc), file=sys.stderr)
+
+
 def agent(obs, config=None):
     global MUNKIDORI_SOURCE_SERIAL, MUNKIDORI_TARGET_SERIAL
     if isinstance(obs, dict):
@@ -1823,6 +1977,7 @@ def agent(obs, config=None):
     ):
         selected = DamageCounterEngine(board).choose_option()
         if selected is not None and 0 <= selected < len(board.select_options):
+            _debug_selection(board, ActionFactory.build_actions(board, MasterEvaluator(board)), [selected], "damage-counter")
             return [selected]
 
     evaluator = MasterEvaluator(board)
@@ -1832,7 +1987,9 @@ def agent(obs, config=None):
 
     selected = _format_selection(board, actions)
     if selected or int(board.select_data.minCount or 0) == 0:
+        _debug_selection(board, actions, selected, "scored")
         return selected
 
     fallback = SelectionResolver(board, evaluator).choose()
+    _debug_selection(board, actions, [fallback] if fallback is not None else [], "fallback")
     return [fallback] if fallback is not None else []
