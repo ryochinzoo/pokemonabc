@@ -59,12 +59,15 @@ POKE_PAD = 1152
 HYPERBALL = 1121
 TANKER = 1097
 BALLON = 1174
+HERO_CAPE = 1159
+MEGA_SIGNAL = 1145
 LILLIE_DETERMINATION = 1227
 CARMINE = 1192
 TOUKO = 1225
 AKAMATSU = 1198
 BEFEHL_VON_BOSS = 1182
 DENGEROUS_RUINE = 1260
+WALLY_COMPASSION = 1229
 BASIC_WATER_ENERGIE = 3
 BASIC_UNLICHT_ENERGIE = 7
 LEGACY_ENERGIE = 12
@@ -79,9 +82,9 @@ ABSOLUTE_SNOW = 1241
 DEFAULT_DECK = [
     1030, 1030, 1030, 1031, 1031, 860, 860, 860, 861, 861,
     104, 104, 112, 112, 689, 235, 860, 1086, 1086, 1086,
-    1086, 1086, 1152, 1152, 1152, 1152, 1121, 1121, 1121, 1097,
-    1097, 1174, 1227, 1227, 1227, 1227, 1192, 1192, 1192, 1192,
-    1225, 1225, 1225, 1198, 1198, 1182, 1182, 1182, 1260, 1260,
+    1086, 1152, 1152, 1152, 1152, 1121, 1121, 1121, 1097,
+    1097, 1174, 1159, 1145, 1227, 1227, 1227, 1227, 1192, 1192,
+    1229, 1225, 1225, 1198, 1198, 1182, 1182, 1182, 1260, 1260,
     1260, 1260, 3, 3, 3, 3, 3, 7, 7, 7, 12,
 ]
 
@@ -125,10 +128,13 @@ DEVELOPMENT_PLAY_CARDS = {
     POKE_PAD,
     HYPERBALL,
     TANKER,
+    HERO_CAPE,
+    MEGA_SIGNAL,
     LILLIE_DETERMINATION,
     CARMINE,
     TOUKO,
     AKAMATSU,
+    WALLY_COMPASSION,
 }
 
 DESIRED_COUNTS = {
@@ -743,6 +749,19 @@ class BoardState:
         data = self.get_card_data(card_id)
         return self.is_pokemon_card(card_id) and not self.is_rule_box_pokemon(card_id)
 
+    def is_mega_signal_target(self, card_id: int) -> bool:
+        data = self.get_card_data(card_id)
+        return data is not None and data.cardType == CardType.POKEMON and data.megaEx
+
+    def needs_mega_signal_target(self) -> bool:
+        if self.wants_mega_starmie_for_hitodeman:
+            return True
+        if self.count_in_play(YUKIWARASHI) and self.count_in_play(MEGA_YUKIMENOKO_EX) == 0:
+            return True
+        if self.opponent_has_alakazam_line and self.count_in_play(YUKIWARASHI):
+            return True
+        return False
+
     def is_evolution_pokemon(self, card_id: int) -> bool:
         data = self.get_card_data(card_id)
         return data is not None and data.cardType == CardType.POKEMON and not data.basic
@@ -1108,6 +1127,11 @@ def is_early_game(board: BoardState) -> bool:
 def evaluate_trash_cost_priority(card_id: int, board: BoardState) -> float:
     if card_id in IMPORTANT_CARDS:
         return -99999.0
+    if card_id in {HERO_CAPE, WALLY_COMPASSION}:
+        if any(board.card_id(pokemon) in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX} for pokemon in board.all_my_pokemon):
+            return -2400.0
+    if card_id == MEGA_SIGNAL and board.needs_mega_signal_target():
+        return -2200.0
     if card_id == DENGEROUS_RUINE:
         if board.stadium_id == DENGEROUS_RUINE:
             return 2400.0
@@ -1356,6 +1380,62 @@ class BallonStrategy(DefaultStrategy):
         return 100.0
 
 
+class HeroCapeStrategy(DefaultStrategy):
+    def evaluate_play(self, board: BoardState) -> float:
+        candidates = [
+            pokemon for pokemon in board.all_my_pokemon
+            if board.card_id(pokemon) in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX}
+            and not pokemon.tools
+        ]
+        if not candidates:
+            return 0.0
+        active_bonus = 1600.0 if board.active in candidates else 0.0
+        danger_bonus = 1200.0 if board.my_active_remaining_hp <= board.opp_active_max_damage else 0.0
+        return 2400.0 + active_bonus + danger_bonus
+
+    def evaluate_attach(self, board: BoardState, target: Pokemon) -> float:
+        if board.card_id(target) not in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX}:
+            return -4000.0
+        if target.tools:
+            return -99999.0
+        score = 5200.0
+        if target is board.active:
+            score += 1800.0
+        if board.current_hp(target) <= board.opp_active_max_damage + 100:
+            score += 1400.0
+        return score
+
+
+class MegaSignalStrategy(DefaultStrategy):
+    def evaluate_play(self, board: BoardState) -> float:
+        if not board.needs_mega_signal_target():
+            return 0.0
+        if not board.deck_is_visible:
+            return 2600.0
+        return 3600.0 if board.deck_has_card_matching(board.is_mega_signal_target) else -99999.0
+
+
+class WallyCompassionStrategy(DefaultStrategy):
+    def evaluate_play(self, board: BoardState) -> float:
+        best_damage = 0
+        active_mega_damaged = False
+        for pokemon in board.all_my_pokemon:
+            if board.card_id(pokemon) not in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX}:
+                continue
+            damage = max(0, int(pokemon.maxHp) - board.current_hp(pokemon))
+            best_damage = max(best_damage, damage)
+            if pokemon is board.active and damage > 0:
+                active_mega_damaged = True
+        if best_damage <= 0:
+            return -99999.0
+        score = 1800.0 + best_damage * 18.0
+        if active_mega_damaged:
+            score += 1800.0
+        if board.my_active_remaining_hp <= board.opp_active_max_damage:
+            score += 2400.0
+        return score
+
+
 class ZeiyuStrategy(DefaultStrategy):
     def evaluate_play(self, board: BoardState) -> float:
         duplicate_zeiyu = board.hand_ids.count(CARMINE) >= 2
@@ -1570,10 +1650,13 @@ class MasterEvaluator:
             TANKER: TankerStrategy(),
             HYPERBALL: HyperballStrategy(),
             BALLON: BallonStrategy(),
+            HERO_CAPE: HeroCapeStrategy(),
+            MEGA_SIGNAL: MegaSignalStrategy(),
             CARMINE: ZeiyuStrategy(),
             LILLIE_DETERMINATION: LillieDeterminationStrategy(),
             TOUKO: ToukoStrategy(),
             AKAMATSU: AkamatsuStrategy(),
+            WALLY_COMPASSION: WallyCompassionStrategy(),
         }
 
     def strategy(self, card_id: int) -> CardStrategy:
@@ -1662,6 +1745,17 @@ class SearchResolver:
                 return 500.0
             alakazam_bonus = 4600.0 if self.board.opponent_has_alakazam_line and card_id == MEGA_YUKIMENOKO_EX else 0.0
             return need + pair_bonus + alakazam_bonus + self.evaluator.evaluate_pokemon_placement(card_id)
+        if effect_id == MEGA_SIGNAL:
+            if not self.board.is_mega_signal_target(card_id):
+                return -99999.0
+            if card_id == MEGA_STARMIE_EX and self.board.wants_mega_starmie_for_hitodeman:
+                return need + pair_bonus + 8200.0
+            if card_id == MEGA_YUKIMENOKO_EX:
+                if self.board.opponent_has_alakazam_line:
+                    return need + 8800.0
+                if self.board.count_in_play(YUKIWARASHI):
+                    return need + 5600.0
+            return need + pair_bonus + 1200.0
         if effect_id == TANKER:
             if card_id == BASIC_WATER_ENERGIE and self.board.needs_water_energy():
                 return 5600.0
@@ -2092,6 +2186,10 @@ class AttachEnergyAction(GameAction):
             self.action_score = -99999.0
             return
         self.card_score = self.evaluator.evaluate_energy_attach(card_id, target)
+        if card_id not in ENERGY_CARD_TO_TYPE:
+            self.action_score = 900.0
+            self.action_score += GameSimulator(self.board).evaluate_after_action(self) * 0.03
+            return
         before = self.board.best_attack_damage(target)
         after = self.board.best_attack_damage(target, [self.energy_token()])
         self.action_score = 1000.0 + max(0, after - before) * 10.0
@@ -2117,6 +2215,8 @@ class AttachEnergyAction(GameAction):
         self.action_score += GameSimulator(self.board).evaluate_after_action(self) * 0.05
 
     def apply(self, board: BoardState) -> BoardState:
+        if self.board.option_card_id(self.option) not in ENERGY_CARD_TO_TYPE:
+            return board
         board.add_virtual_energy(board.get_option_target(self.option), self.energy_token())
         return board
 
