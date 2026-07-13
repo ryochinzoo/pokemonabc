@@ -1,0 +1,56 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+Team workspace for the Pokémon TCG AI Battle Challenge (Kaggle). An agent =
+**deck (60 cards) × pilot (`main.py`)**. The game engine is a **precompiled C
+library** (`cg/libcg.*`, `cg/cg.dll`) accessed through `ctypes`.
+
+## Layout
+
+- `src/input/datasets/decks/<deck-name>/` — one directory per deck experiment,
+  each containing `main.py` + `deck.csv` + `cg/`. This is the **deck directory**;
+  run and test from inside it. Engine binaries (`*.dylib`/`*.so`/`*.dll`) are
+  gitignored — copy them in from the Kaggle sample_submission if missing.
+- `verification/` — local benchmarking toolbox (bench.py, donk_meter.py,
+  selfplay.py, gauges, experiment decks, card DB). **Read
+  `verification/README.md` before submitting anything.**
+- `replay_analysis/` — fetch & analyze real Kaggle episode replays
+  (`https://www.kaggle.com/competitions/episodes/{id}/replay.json`, public).
+- `docs/memo/` — decision log / measured data / handover. Source material for
+  the Strategy-track report. Record decisions in `decisions.md` format.
+
+## The agent contract (`main.py`)
+
+`agent(obs_dict: dict) -> list[int]` returns option indices and MUST satisfy:
+- `obs.select.minCount <= len(result) <= obs.select.maxCount`
+- every index in `[0, len(obs.select.option))`, no duplicates
+- When `obs.select is None`, return the 60-card deck (list of card IDs).
+
+**The agent must never crash and never return an illegal selection** — that
+voids matches. Run `@robustness-guard` after changing agent logic.
+
+## Team rules (agreed process)
+
+- **Measure before submitting**: pass the gate in `verification/README.md`
+  (vs random + 3 gauges + donk_meter, CRASH=0) before any Kaggle submission.
+- **Submissions are budgeted** (5/day, final ranking = latest 2): keep the two
+  most recent submissions = our two best versions.
+- **Deck legality is on us**: the engine does NOT enforce the 4-copies-per-name
+  rule (verified: it accepts 6 same-name cards). Check manually.
+- Pure standard library only in submitted code; no third-party packages.
+- Enums/dataclasses in `cg/api.py` may gain new members during the competition —
+  never assume exhaustiveness.
+- `verification/reference/steel_agent.py` is a public third-party notebook
+  (Apache 2.0) kept **for study only — never submit it or derivatives-by-copy**;
+  the Strategy track judges originality.
+
+## Tooling
+
+- `/bench N` — win-rate vs random or gauges (see skill).
+- `/try-heuristic` — explore→implement→verify→record loop for pilot changes.
+- `/submission-check` — pre-flight checks before a real submission.
+- `/lookup-card`, `/agent-api`, `/kaggle-coach` — reference skills.
+- Formatting: `ruff format`, `ruff check` (not installed by default).
