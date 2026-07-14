@@ -71,6 +71,7 @@ DENGEROUS_RUINE = 1260
 WALLY_COMPASSION = 1229
 BASIC_WATER_ENERGIE = 3
 BASIC_UNLICHT_ENERGIE = 7
+IGNITION_ENERGIE = 17
 LEGACY_ENERGIE = 12
 BELLOWING_THUNDER = 72
 RAPID_FIRE_COMBO = 1092
@@ -86,13 +87,17 @@ DEFAULT_DECK = [
     1030, 1030, 1030, 1031, 1031, 860, 860, 860, 861, 861,
     104, 104, 112, 112, 689, 1122, 860, 1086, 1086, 1086,
     1086, 1152, 1152, 1152, 1152, 1121, 1121, 1121, 1097,
-    1097, 1174, 1159, 1087, 1227, 1227, 1227, 1227, 1192, 1192,
+    1097, 1174, 1159, 1145, 1227, 1227, 1227, 1227, 1192, 1192,
     1229, 1225, 1225, 1198, 1198, 1182, 1182, 1182, 1260, 1260,
-    1260, 1260, 3, 3, 3, 3, 3, 3, 7, 7, 7,
+    1260, 17, 3, 3, 3, 3, 3, 3, 7, 7, 7,
 ]
 
-ALAKAZAM_LINE = {741, 742, 743}
-ALAKAZAM_PRE_EVOS = {741, 742}
+HAND_ALAKAZAM_LINE = {741, 742, 743}
+HAND_ALAKAZAM_PRE_EVOS = {741, 742}
+COUNTER_ALAKAZAM_LINE = {109, 245}
+COUNTER_ALAKAZAM_PRE_EVOS = {109}
+ALAKAZAM_LINE = HAND_ALAKAZAM_LINE | COUNTER_ALAKAZAM_LINE
+ALAKAZAM_PRE_EVOS = HAND_ALAKAZAM_PRE_EVOS | COUNTER_ALAKAZAM_PRE_EVOS
 CRUSTLE_LINE = {344, 345, 532}
 CRUSTLE_PRE_EVOS = {344, 532}
 STARMIE_LINE = {1030, 1031}
@@ -109,7 +114,7 @@ DREEPY_PRE_EVOS = {119, 120}
 DRAGAPULT_EX = 121
 SHAYMIN = 343
 SETUP_THREAT_PRE_EVOS = ALAKAZAM_PRE_EVOS | LUCARIO_PRE_EVOS | DREEPY_PRE_EVOS | DURALUDON_PRE_EVOS | CRUSTLE_PRE_EVOS
-SETUP_THREAT_FINALS = {MEGA_LUCARIO_EX, DRAGAPULT_EX, 190, 743}
+SETUP_THREAT_FINALS = {MEGA_LUCARIO_EX, DRAGAPULT_EX, 190, 743, 245}
 
 ALL_HYPO_ENEMIES = (
     ALAKAZAM_LINE
@@ -173,6 +178,7 @@ ENERGY_CARD_TO_TYPE = {
     BASIC_UNLICHT_ENERGIE: "DARKNESS",
     8: "METAL",
     LEGACY_ENERGIE: "RAINBOW",
+    IGNITION_ENERGIE: "COLORLESS",
 }
 
 ENERGY_TYPE_TO_TOKEN = {
@@ -198,9 +204,10 @@ MUNKIDORI_TARGET_SERIAL: Optional[int] = None
 
 def _initialize_data() -> Tuple[List[int], Dict[int, Any], Dict[int, Any]]:
     module_file = globals().get("__file__")
-    deck_candidates = ["deck.csv", "/kaggle_simulations/agent/deck.csv"]
+    deck_candidates = []
     if module_file:
-        deck_candidates.insert(1, os.path.join(os.path.dirname(module_file), "deck.csv"))
+        deck_candidates.append(os.path.join(os.path.dirname(module_file), "deck.csv"))
+    deck_candidates.extend(["/kaggle_simulations/agent/deck.csv", "deck.csv"])
     deck_path = next((path for path in deck_candidates if os.path.exists(path)), "")
 
     deck: List[int] = []
@@ -323,10 +330,7 @@ class BoardState:
 
     @property
     def context_card_id(self) -> Optional[int]:
-        if self.context_card is None:
-            return None
-        # Card/Pokemon双方で既存コード上確認済みのidを使用。
-        return self.context_card.id
+        return self._raw_card_id(self.context_card)
 
     @property
     def effect(self):
@@ -334,9 +338,20 @@ class BoardState:
 
     @property
     def effect_card_id(self) -> Optional[int]:
-        if self.effect is None:
+        return self._raw_card_id(self.effect)
+
+    @staticmethod
+    def _raw_card_id(value: Any) -> Optional[int]:
+        if value is None:
             return None
-        return self.effect.id
+        try:
+            return value.id
+        except AttributeError:
+            pass
+        try:
+            return value.cardId
+        except AttributeError:
+            return None
 
     def recent_my_attack_id(self) -> Optional[int]:
         for log in reversed(self.obs.logs or []):
@@ -436,6 +451,14 @@ class BoardState:
         return [card.id for card in (self.me.discard or []) if card is not None]
 
     @property
+    def opp_discard_ids(self) -> List[int]:
+        return [card.id for card in (self.opp.discard or []) if card is not None]
+
+    @property
+    def my_deck_count(self) -> int:
+        return int(self.me.deckCount or 0)
+
+    @property
     def my_remaining_prizes(self) -> int:
         return self._my_prizes
 
@@ -497,6 +520,13 @@ class BoardState:
     def _energy_token_from_card_id(self, card_id: int) -> str:
         return ENERGY_CARD_TO_TYPE.get(card_id, f"CARD_{card_id}")
 
+    def _energy_tokens_from_card_id(self, card_id: int, pokemon: Optional[Pokemon]) -> List[str]:
+        if card_id == IGNITION_ENERGIE:
+            data = self.get_card_data(self.card_id(pokemon)) if pokemon is not None else None
+            count = 3 if data is not None and not data.basic else 1
+            return ["COLORLESS"] * count
+        return [self._energy_token_from_card_id(card_id)]
+
     def attached_energy_tokens(self, pokemon: Optional[Pokemon]) -> List[str]:
         if pokemon is None:
             return []
@@ -504,11 +534,13 @@ class BoardState:
         tokens: List[str] = []
         cards = self.attached_energy_cards(pokemon)
         if pokemon.energyCards:
-            tokens.extend(self._energy_token_from_card_id(card.id) for card in cards)
+            for card in cards:
+                tokens.extend(self._energy_tokens_from_card_id(card.id, pokemon))
         elif pokemon.energies:
             tokens.extend(self._energy_type_token(value) for value in pokemon.energies)
         else:
-            tokens.extend(self._energy_token_from_card_id(card.id) for card in pokemon.energyCards)
+            for card in pokemon.energyCards:
+                tokens.extend(self._energy_tokens_from_card_id(card.id, pokemon))
 
         tokens.extend(self._extra_energy.get(self._key(pokemon), []))
         return tokens
@@ -533,6 +565,8 @@ class BoardState:
         if energy is None:
             return len(self.attached_energy_tokens(pokemon))
 
+        if energy == IGNITION_ENERGIE:
+            return self.attached_energy_card_ids(pokemon).count(IGNITION_ENERGIE)
         if isinstance(energy, int) and energy in ENERGY_CARD_TO_TYPE:
             token = ENERGY_CARD_TO_TYPE[energy]
             return self.attached_energy_tokens(pokemon).count(token)
@@ -583,22 +617,42 @@ class BoardState:
     def primary_water_line(self) -> Optional[str]:
         if not self.water_energy_is_scarce():
             return None
-        if any(
-            self.card_id(pokemon) == MEGA_STARMIE_EX and self.count_energy(pokemon, BASIC_WATER_ENERGIE) > 0
-            for pokemon in self.all_my_pokemon
+        if self.opponent_has_crustle_line and (
+            self.count_in_play(MEGA_STARMIE_EX) > 0
+            or MEGA_STARMIE_EX in self.hand_ids
+            or self.count_in_play(HITODEMAN) > 0
         ):
             return "STARMIE"
-        if any(
+        starmie_ready_or_reachable = (
+            any(
+                self.card_id(pokemon) == MEGA_STARMIE_EX and self.count_energy(pokemon, BASIC_WATER_ENERGIE) > 0
+                for pokemon in self.all_my_pokemon
+            )
+            or self.count_in_play(MEGA_STARMIE_EX) > 0
+            or (
+                self.count_in_play(HITODEMAN) > 0
+                and (
+                    MEGA_STARMIE_EX in self.hand_ids
+                    or MEGA_SIGNAL in self.hand_ids
+                    or HYPERBALL in self.hand_ids
+                )
+            )
+            or MEGA_STARMIE_EX in self.hand_ids
+        )
+        yuki_ready = any(
             self.card_id(pokemon) == MEGA_YUKIMENOKO_EX and self.count_energy(pokemon, BASIC_WATER_ENERGIE) > 0
             for pokemon in self.all_my_pokemon
-        ):
-            return "YUKI"
+        )
         yuki_line_visible = (
             self.count_in_play(YUKIWARASHI) > 0
             or self.count_in_play(MEGA_YUKIMENOKO_EX) > 0
             or MEGA_YUKIMENOKO_EX in self.hand_ids
         )
-        if yuki_line_visible and (self.opponent_has_alakazam_line or int(self.opp.handCount or 0) >= 6):
+        if yuki_line_visible and self.opponent_has_hand_alakazam_line:
+            return "YUKI"
+        if starmie_ready_or_reachable:
+            return "STARMIE"
+        if yuki_ready:
             return "YUKI"
         return "STARMIE"
 
@@ -620,6 +674,11 @@ class BoardState:
         if pokemon is None:
             return
         self._extra_energy.setdefault(self._key(pokemon), []).append(token)
+
+    def add_virtual_energy_card(self, pokemon: Optional[Pokemon], card_id: int) -> None:
+        if pokemon is None:
+            return
+        self._extra_energy.setdefault(self._key(pokemon), []).extend(self._energy_tokens_from_card_id(card_id, pokemon))
 
     def attack_requirements(self, attack: Any) -> List[str]:
         return [self._energy_type_token(value) for value in attack.energies]
@@ -704,7 +763,8 @@ class BoardState:
         if missing <= 0:
             return damage * 8.0 + 2400.0
         if missing <= 3:
-            return damage * (4 - missing) * 1.6
+            multiplier = 2.4 if self.opponent_has_crustle_line and self.card_id(pokemon) == MEGA_STARMIE_EX else 1.6
+            return damage * (4 - missing) * multiplier
         return 0.0
 
     def legal_attacks(
@@ -732,7 +792,7 @@ class BoardState:
         if pokemon is None or attack is None:
             return 0
         defender = self.opp_active if self.pokemon_is_mine(pokemon) else self.active
-        if self.crustle_blocks_ex_attack(pokemon, defender):
+        if self.crustle_blocks_ex_attack(pokemon, defender, attack):
             return 0
         mine = self.pokemon_is_mine(pokemon)
         if attack.attackId == BELLOWING_THUNDER:
@@ -869,7 +929,7 @@ class BoardState:
             return True
         if self.count_in_play(YUKIWARASHI) and self.count_in_play(MEGA_YUKIMENOKO_EX) == 0:
             return True
-        if self.opponent_has_alakazam_line and self.count_in_play(YUKIWARASHI):
+        if self.opponent_has_hand_alakazam_line and self.count_in_play(YUKIWARASHI):
             return True
         return False
 
@@ -898,6 +958,10 @@ class BoardState:
                 score += 900.0
             if at_risk:
                 score += 3600.0 + self.calculate_prize_value(pokemon) * 900.0
+                if self.active_knockout_loses_game:
+                    score += 7200.0
+                elif self.opponent_is_near_win:
+                    score += 3200.0
             if self.best_attack_damage(pokemon) > 0 and not at_risk:
                 score -= 1800.0
             score -= self.count_energy(pokemon) * 650.0
@@ -935,7 +999,7 @@ class BoardState:
         if starmie is not None and self.count_energy(starmie, BASIC_WATER_ENERGIE) == 0:
             return True
         mega_yuki = self.find_pokemon(MEGA_YUKIMENOKO_EX)
-        if self.opponent_has_alakazam_line and mega_yuki is not None and self.count_energy(mega_yuki, BASIC_WATER_ENERGIE) == 0:
+        if self.opponent_has_hand_alakazam_line and mega_yuki is not None and self.count_energy(mega_yuki, BASIC_WATER_ENERGIE) == 0:
             return True
         hitodeman = self.find_pokemon(HITODEMAN)
         if hitodeman is not None and self.count_energy(hitodeman, BASIC_WATER_ENERGIE) == 0:
@@ -964,6 +1028,10 @@ class BoardState:
     @property
     def wants_mega_starmie_for_hitodeman(self) -> bool:
         return self.count_in_play(HITODEMAN) > 0 and self.count_in_play(MEGA_STARMIE_EX) == 0
+
+    @property
+    def opponent_has_starmie_line(self) -> bool:
+        return any(self.card_id(pokemon) in STARMIE_LINE for pokemon in self.all_opp_pokemon)
 
     def bench_has_same_basic(self, card_id: int) -> bool:
         return card_id in {HITODEMAN, YUKIWARASHI} and any(self.card_id(pokemon) == card_id for pokemon in self.bench)
@@ -1047,12 +1115,38 @@ class BoardState:
         return self.active_will_be_knocked_out and self.my_active_prize_value >= self.opp_remaining_prizes
 
     @property
+    def deck_is_thin(self) -> bool:
+        return self.my_deck_count <= 8
+
+    @property
+    def should_avoid_deck_dig(self) -> bool:
+        if self.my_deck_count <= 5:
+            return True
+        if self.my_deck_count <= 8 and not self.is_development_starved:
+            return True
+        if self.my_deck_count <= 10 and not self.is_development_starved:
+            return self.opponent_is_near_win or self.should_prioritize_active_attack_now
+        return False
+
+    @property
+    def opponent_is_near_win(self) -> bool:
+        return self.opp_remaining_prizes <= 2
+
+    @property
     def should_prioritize_active_attack_now(self) -> bool:
         if self.active is None or not self.my_active_can_attack():
             return False
         if self.card_id(self.active) not in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX}:
             return False
-        return self.active_will_be_knocked_out
+        damage = self.best_attack_damage(self.active)
+        if self.can_take_prize(self.active, self.opp_active):
+            return True
+        if self.active_will_be_knocked_out and self.opp_active is not None:
+            return damage >= max(120, self.current_hp(self.opp_active) - 80)
+        if self.opponent_is_near_win:
+            if self.opp_active is not None and damage >= max(80, self.current_hp(self.opp_active) - 80):
+                return True
+        return False
 
     @property
     def has_ready_mashimashira(self) -> bool:
@@ -1080,6 +1174,10 @@ class BoardState:
         return any(self.card_id(pokemon) in ALAKAZAM_LINE for pokemon in self.all_opp_pokemon)
 
     @property
+    def opponent_has_hand_alakazam_line(self) -> bool:
+        return any(self.card_id(pokemon) in HAND_ALAKAZAM_LINE for pokemon in self.all_opp_pokemon)
+
+    @property
     def opponent_has_crustle_wall(self) -> bool:
         return any(self.card_id(pokemon) == 345 for pokemon in self.all_opp_pokemon)
 
@@ -1090,6 +1188,10 @@ class BoardState:
     @property
     def opponent_has_crustle_preevo(self) -> bool:
         return any(self.card_id(pokemon) in CRUSTLE_PRE_EVOS for pokemon in self.all_opp_pokemon)
+
+    @property
+    def opponent_has_crustle_line(self) -> bool:
+        return any(self.card_id(pokemon) in CRUSTLE_LINE for pokemon in self.all_opp_pokemon)
 
     @property
     def opponent_has_shaymin_bench_shield(self) -> bool:
@@ -1107,8 +1209,15 @@ class BoardState:
         data = self.get_card_data(self.card_id(pokemon))
         return data is not None and (data.ex or data.megaEx or data.tera)
 
-    def crustle_blocks_ex_attack(self, attacker: Optional[Pokemon], defender: Optional[Pokemon]) -> bool:
-        return defender is not None and self.card_id(defender) == 345 and self.is_ex_pokemon(attacker)
+    def crustle_blocks_ex_attack(
+        self,
+        attacker: Optional[Pokemon],
+        defender: Optional[Pokemon],
+        attack: Optional[Any] = None,
+    ) -> bool:
+        if defender is None or self.card_id(defender) != 345 or not self.is_ex_pokemon(attacker):
+            return False
+        return attack is None or attack.attackId != NEBULA_BEAM
 
     def shaymin_blocks_bench_attack_damage(self, target: Optional[Pokemon]) -> bool:
         return (
@@ -1177,6 +1286,8 @@ class BoardState:
             score += 2600.0
         elif self.card_id(target) in SETUP_THREAT_FINALS:
             score += 1800.0
+        if self.card_id(target) in CRUSTLE_PRE_EVOS:
+            score += 3200.0
         if damage >= hp:
             score += prize * 5000.0
         elif hp - damage <= self.best_attack_damage(self.active):
@@ -1197,7 +1308,18 @@ class BoardState:
             return False
         if not self.my_active_can_attack():
             return False
-        return any(self.can_take_prize(self.active, pokemon) for pokemon in self.opp_bench)
+        return any(
+            self.card_id(pokemon) != 345 and self.can_take_prize(self.active, pokemon)
+            for pokemon in self.opp_bench
+        )
+
+    def can_boss_crustle_preevo_for_prize(self) -> bool:
+        if self.active is None or not self.opp_bench or not self.my_active_can_attack():
+            return False
+        return any(
+            self.card_id(pokemon) in CRUSTLE_PRE_EVOS and self.can_take_prize(self.active, pokemon)
+            for pokemon in self.opp_bench
+        )
 
     def can_boss_delay_active_sweeper(self) -> bool:
         if self.opp_active is None or not self.opp_bench:
@@ -1219,7 +1341,7 @@ class BoardState:
             if card_id == 120:
                 score += 1800.0
         elif card_id in LUCARIO_PRE_EVOS:
-            score += 7200.0
+            score += 8600.0
         elif card_id in ALAKAZAM_PRE_EVOS:
             score += 6200.0
             if card_id == 742:
@@ -1227,11 +1349,13 @@ class BoardState:
         elif card_id in DURALUDON_PRE_EVOS:
             score += 5800.0
         elif card_id in CRUSTLE_PRE_EVOS:
-            score += 5600.0
+            score += 7600.0
         elif card_id in SETUP_THREAT_FINALS:
             score += 4200.0
 
         if card_id == SHAYMIN:
+            score += 2600.0
+        if card_id == MEGA_LUCARIO_EX:
             score += 2600.0
         if self.can_take_prize(self.active, target):
             score += self.calculate_prize_value(target) * 3600.0
@@ -1278,11 +1402,15 @@ class BoardState:
             return SCORE_NEG_INF
         if not self.opponent_active_is_crustle_wall:
             return SCORE_NEG_INF
-        score = 4200.0
+        if self.card_id(target) == 345:
+            return SCORE_NEG_INF
+        score = 6200.0
         if self.can_take_prize(self.active, target):
-            score += self.calculate_prize_value(target) * 4200.0
+            score += self.calculate_prize_value(target) * 5600.0
         score += max(0, 180 - self.current_hp(target)) * 10.0
-        score -= self.calculate_max_damage(target, next_turn=True) * 8.0
+        if self.card_id(target) in SETUP_THREAT_PRE_EVOS:
+            score += 2200.0
+        score -= self.calculate_max_damage(target, next_turn=True) * 5.0
         score += self.effective_retreat_cost(target) * 300.0
         return score
 
@@ -1443,7 +1571,19 @@ def is_early_game(board: BoardState) -> bool:
 def evaluate_trash_cost_priority(card_id: int, board: BoardState) -> float:
     if card_id in IMPORTANT_CARDS:
         return -99999.0
-    if card_id in {HERO_CAPE, WALLY_COMPASSION}:
+    if card_id == BASIC_WATER_ENERGIE:
+        if board.water_energy_is_scarce() or board.needs_water_energy():
+            return -9500.0
+        if board.count_in_discard(BASIC_WATER_ENERGIE) >= 2:
+            return -4200.0
+    if card_id == HERO_CAPE:
+        if (
+            MEGA_STARMIE_EX in board.hand_ids
+            or MEGA_YUKIMENOKO_EX in board.hand_ids
+            or any(board.card_id(pokemon) in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX} for pokemon in board.all_my_pokemon)
+        ):
+            return -3200.0
+    if card_id == WALLY_COMPASSION:
         if any(board.card_id(pokemon) in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX} for pokemon in board.all_my_pokemon):
             return -2400.0
     if card_id == MEGA_SIGNAL and board.needs_mega_signal_target():
@@ -1497,7 +1637,9 @@ class BossOrdersStrategy(DefaultStrategy):
         if board.can_win_by_killing_bench_pokemon():
             return 99999.0
         if board.can_boss_around_crustle_for_prize():
-            return 9800.0
+            return 12800.0
+        if board.can_boss_crustle_preevo_for_prize():
+            return 11800.0
         if board.can_boss_delay_active_sweeper():
             return 7600.0
         if board.can_boss_disrupt_setup():
@@ -1510,7 +1652,7 @@ class BossOrdersStrategy(DefaultStrategy):
         for pokemon in board.opp_bench:
             card_id = board.card_id(pokemon)
             if card_id in CRUSTLE_PRE_EVOS and board.can_take_prize(board.active, pokemon):
-                score += 7000.0
+                score += 9800.0
             elif card_id in DREEPY_PRE_EVOS and board.can_take_prize(board.active, pokemon):
                 score += 6200.0
             elif card_id in SETUP_THREAT_PRE_EVOS:
@@ -1552,17 +1694,24 @@ class PerilousRuinsStrategy(DefaultStrategy):
 
 class DarknessEnergyStrategy(DefaultStrategy):
     def evaluate_attach(self, board: BoardState, target: Pokemon) -> float:
-        if board.card_id(target) == MUNKIDORI:
+        target_id = board.card_id(target)
+        if target_id == MUNKIDORI:
+            if board.count_energy(target, BASIC_UNLICHT_ENERGIE) > 0:
+                return -4200.0
             return 8000.0 if board.wants_mashimashira_dark_energy else 3500.0
-        if board.card_id(target) == YVELTAL:
+        if target_id == MEGA_STARMIE_EX and board.opponent_has_crustle_line:
+            missing = board.attack_energy_shortfall(target, board.get_attack(NEBULA_BEAM), ["DARKNESS"])
+            if missing < board.attack_energy_shortfall(target, board.get_attack(NEBULA_BEAM)):
+                return 5200.0
+        if target_id == YVELTAL:
             score = 1800.0
             if board.opp_active is not None and (
                 board.card_id(board.opp_active) in SETUP_THREAT_PRE_EVOS | SETUP_THREAT_FINALS
                 or board.calculate_max_damage(board.opp_active, next_turn=True) >= 180
             ):
                 score += 3600.0
-            if board.opponent_active_is_crustle_wall:
-                score += 3000.0
+            if board.opponent_has_crustle_line:
+                score += 4400.0
             if board.active is target:
                 score += 1200.0
             return score
@@ -1586,15 +1735,17 @@ class WaterEnergyStrategy(DefaultStrategy):
             )
             if can_finish_now:
                 return 3600.0
-            if target_id == YUKIMENOKO and board.opponent_active_is_crustle_wall:
-                return 2400.0
+            if target_id == YUKIMENOKO and board.opponent_has_crustle_line:
+                return 4200.0
             return -6800.0
         if primary_line == "STARMIE" and target_id in {HITODEMAN, MEGA_STARMIE_EX}:
+            if board.opponent_has_crustle_line and target_id == MEGA_STARMIE_EX:
+                return 9200.0 if board.attack_energy_shortfall(target, board.get_attack(NEBULA_BEAM)) > 0 else 2400.0
             return 7600.0 if board.count_energy(target, BASIC_WATER_ENERGIE) == 0 else 3600.0
         if primary_line == "YUKI" and target_id in {YUKIWARASHI, MEGA_YUKIMENOKO_EX}:
             return 7000.0 if board.count_energy(target, BASIC_WATER_ENERGIE) == 0 else 3400.0
-        if board.opponent_active_is_crustle_wall and board.card_id(target) == YUKIMENOKO:
-            return 5200.0 if board.count_energy(target, BASIC_WATER_ENERGIE) == 0 else 2400.0
+        if board.opponent_has_crustle_line and board.card_id(target) == YUKIMENOKO:
+            return 6200.0 if board.count_energy(target, BASIC_WATER_ENERGIE) == 0 else 2800.0
         if board.card_id(target) in {YUKIWARASHI, YUKIMENOKO} and board.should_reserve_water_for_starmie:
             return -7600.0
         if board.card_id(target) == YUKIWARASHI and MEGA_YUKIMENOKO_EX in board.hand_ids:
@@ -1603,7 +1754,7 @@ class WaterEnergyStrategy(DefaultStrategy):
             return -2200.0
         if board.bench_basic_should_be_built(target):
             return 6200.0 if board.count_energy(target, BASIC_WATER_ENERGIE) == 0 else 2400.0
-        if board.opponent_has_alakazam_line and board.card_id(target) == MEGA_YUKIMENOKO_EX:
+        if board.opponent_has_hand_alakazam_line and board.card_id(target) == MEGA_YUKIMENOKO_EX:
             return 5600.0 if board.count_energy(target, BASIC_WATER_ENERGIE) == 0 else 2600.0
         if board.card_id(target) == MEGA_STARMIE_EX:
             return 5200.0 if board.count_energy(target, BASIC_WATER_ENERGIE) == 0 else 2600.0
@@ -1616,8 +1767,42 @@ class WaterEnergyStrategy(DefaultStrategy):
         if board.card_id(target) == MUNKIDORI:
             return -1200.0
         if board.card_id(target) == YVELTAL:
-            return -4200.0
+            return -800.0 if board.opponent_has_crustle_line else -4200.0
         return -3200.0
+
+
+class IgnitionEnergyStrategy(DefaultStrategy):
+    def evaluate_attach(self, board: BoardState, target: Pokemon) -> float:
+        target_id = board.card_id(target)
+        data = board.get_card_data(target_id)
+        if data is None or data.basic:
+            return -5200.0
+
+        if target_id == MEGA_STARMIE_EX:
+            attack = board.get_attack(NEBULA_BEAM)
+            missing_before = board.attack_energy_shortfall(target, attack)
+            missing_after = board.attack_energy_shortfall(target, attack, ["COLORLESS", "COLORLESS", "COLORLESS"])
+            if missing_after == 0 and missing_before > 0:
+                score = 11200.0
+                if board.opponent_has_crustle_line:
+                    score += 5200.0
+                if target is board.active:
+                    score += 2600.0
+                return score
+            return 4200.0 if missing_after < missing_before else 800.0
+
+        if target_id == MEGA_YUKIMENOKO_EX:
+            attack = board.get_attack(ABSOLUTE_SNOW)
+            missing_before = board.attack_energy_shortfall(target, attack)
+            missing_after = board.attack_energy_shortfall(target, attack, ["COLORLESS", "COLORLESS", "COLORLESS"])
+            return 3600.0 if missing_after < missing_before else -1200.0
+
+        return -1800.0
+
+    def evaluate_trash(self, board: BoardState) -> float:
+        if board.count_in_play(MEGA_STARMIE_EX) > 0 or MEGA_STARMIE_EX in board.hand_ids:
+            return -2600.0
+        return 800.0
 
 
 class BenchPokemonStrategy(DefaultStrategy):
@@ -1654,8 +1839,10 @@ class MegaStarmieStrategy(DefaultStrategy):
 class SnoruntStrategy(DefaultStrategy):
     def evaluate_placement(self, board: BoardState) -> float:
         if board.opponent_has_crustle_wall:
-            return 3400.0 if board.count_in_play(YUKIWARASHI) == 0 else 2600.0
-        if board.opponent_has_alakazam_line:
+            return 1200.0 if board.count_in_play(MEGA_STARMIE_EX) > 0 else 600.0
+        if board.opponent_has_crustle_preevo:
+            return 1400.0 if board.count_in_play(YUKIWARASHI) == 0 else 900.0
+        if board.opponent_has_hand_alakazam_line:
             return 3000.0 if board.count_in_play(YUKIWARASHI) == 0 else 2400.0
         return 1100.0
 
@@ -1675,6 +1862,8 @@ class MunkidoriStrategy(DefaultStrategy):
             score += 1400.0
         if board.count_in_play(YUKIMENOKO) > 0:
             score += 900.0
+        if board.opponent_has_crustle_line:
+            score += 1200.0
         return score
 
 
@@ -1686,8 +1875,8 @@ class YveltalStrategy(DefaultStrategy):
         score += 900.0 if is_early_game(board) else 200.0
         if board.opp_active is not None and board.card_id(board.opp_active) in SETUP_THREAT_FINALS:
             score += 1800.0
-        if board.opponent_active_is_crustle_wall:
-            score += 1800.0
+        if board.opponent_has_crustle_line:
+            score += 2600.0
         if any(board.setup_threat_value(pokemon) >= 6200.0 for pokemon in board.opp_bench):
             score += 1200.0
         return score
@@ -1707,7 +1896,7 @@ class HandTrimmerStrategy(DefaultStrategy):
         if opp_hand <= 5:
             return -1600.0
         score = 1800.0 + (opp_hand - 5) * 1400.0
-        if board.opponent_has_alakazam_line:
+        if board.opponent_has_hand_alakazam_line:
             score += 1600.0
         if board.opp_active is not None and board.card_id(board.opp_active) in SETUP_THREAT_FINALS:
             score += 900.0
@@ -1724,15 +1913,24 @@ class HandTrimmerStrategy(DefaultStrategy):
         return score
 
     def evaluate_trash(self, board: BoardState) -> float:
-        if int(board.opp.handCount or 0) >= 7:
+        opp_hand = int(board.opp.handCount or 0)
+        opponent_setup_threat = (
+            (board.opp_active is not None and board.card_id(board.opp_active) in SETUP_THREAT_PRE_EVOS | SETUP_THREAT_FINALS)
+            or any(board.card_id(pokemon) in SETUP_THREAT_PRE_EVOS | SETUP_THREAT_FINALS for pokemon in board.opp_bench)
+        )
+        if opponent_setup_threat and opp_hand >= 6:
+            return -3200.0
+        if opp_hand >= 7:
             return -2600.0
-        if board.opponent_has_alakazam_line and int(board.opp.handCount or 0) >= 6:
+        if board.opponent_has_hand_alakazam_line and opp_hand >= 6:
             return -2200.0
         return 600.0
 
 
 class PokePadStrategy(DefaultStrategy):
     def evaluate_play(self, board: BoardState) -> float:
+        if board.should_avoid_deck_dig:
+            return -2600.0
         if is_board_fully_set_up(board):
             return 0.0
         if board.has_no_backup_pokemon:
@@ -1744,6 +1942,8 @@ class PokePadStrategy(DefaultStrategy):
 
 class PokegearStrategy(DefaultStrategy):
     def evaluate_play(self, board: BoardState) -> float:
+        if board.should_avoid_deck_dig:
+            return -2200.0 if not board.is_wally_compassion_live() else 400.0
         if not board.deck_is_visible:
             return 1800.0
         if not board.deck_has_card_matching(board.is_supporter_card):
@@ -1757,6 +1957,8 @@ class PokegearStrategy(DefaultStrategy):
 
 class PofinStrategy(DefaultStrategy):
     def evaluate_play(self, board: BoardState) -> float:
+        if board.should_avoid_deck_dig:
+            return -2400.0
         if is_board_fully_set_up(board):
             return 0.0
         if board.has_no_backup_pokemon:
@@ -1771,7 +1973,7 @@ class TankerStrategy(DefaultStrategy):
         if not board.needs_tanker_recovery():
             return 0.0
         if board.needs_water_energy() and board.count_in_discard(BASIC_WATER_ENERGIE):
-            return 5200.0
+            return 7200.0
         if board.needs_dark_energy() and board.count_in_discard(BASIC_UNLICHT_ENERGIE):
             return 3600.0
         if board.count_in_discard(HITODEMAN):
@@ -1836,6 +2038,8 @@ class HeroCapeStrategy(DefaultStrategy):
 
 class MegaSignalStrategy(DefaultStrategy):
     def evaluate_play(self, board: BoardState) -> float:
+        if board.should_avoid_deck_dig and not board.wants_mega_starmie_for_hitodeman:
+            return -1800.0
         if not board.needs_mega_signal_target():
             return 0.0
         if not board.deck_is_visible:
@@ -1850,16 +2054,24 @@ class WallyCompassionStrategy(DefaultStrategy):
 
 class ZeiyuStrategy(DefaultStrategy):
     def evaluate_play(self, board: BoardState) -> float:
+        if board.should_avoid_deck_dig:
+            return -6500.0
         duplicate_zeiyu = board.hand_ids.count(CARMINE) >= 2
         board_is_thin = len(board.bench) < 2 or board.is_development_starved
+        protected_cards = IMPORTANT_CARDS | {BASIC_WATER_ENERGIE, HERO_CAPE, MEGA_SIGNAL}
+        protected_count = sum(1 for card_id in board.hand_ids if card_id in protected_cards)
+        if protected_count >= 2:
+            if board.has_no_backup_pokemon and board.is_development_starved and len(board.hand_ids) <= 3:
+                return 300.0
+            return -7000.0
+        if protected_count > 0:
+            if board.is_development_starved and len(board.hand_ids) <= 3:
+                return 300.0
+            if duplicate_zeiyu and not is_board_fully_set_up(board):
+                return 400.0
+            return -5200.0
         if duplicate_zeiyu and board_is_thin:
             return 3600.0 if board.has_no_backup_pokemon else 2600.0
-        if any(card_id in IMPORTANT_CARDS for card_id in board.hand_ids):
-            if board.is_development_starved and len(board.hand_ids) <= 3:
-                return 900.0
-            if duplicate_zeiyu and not is_board_fully_set_up(board):
-                return 1200.0
-            return -4000.0
         if HYPERBALL in board.hand_ids:
             return 1200.0 if duplicate_zeiyu and board_is_thin else 0.0
         if board.is_development_starved:
@@ -1869,6 +2081,8 @@ class ZeiyuStrategy(DefaultStrategy):
 
 class LillieDeterminationStrategy(DefaultStrategy):
     def evaluate_play(self, board: BoardState) -> float:
+        if board.should_avoid_deck_dig:
+            return -7200.0
         if board.has_no_backup_pokemon:
             return 3600.0
         penalty = 0.0
@@ -2064,6 +2278,7 @@ class MasterEvaluator:
             DENGEROUS_RUINE: PerilousRuinsStrategy(),
             BASIC_UNLICHT_ENERGIE: DarknessEnergyStrategy(),
             BASIC_WATER_ENERGIE: WaterEnergyStrategy(),
+            IGNITION_ENERGIE: IgnitionEnergyStrategy(),
             HITODEMAN: StaryuStrategy(),
             MEGA_STARMIE_EX: MegaStarmieStrategy(),
             YUKIWARASHI: SnoruntStrategy(),
@@ -2100,10 +2315,11 @@ class MasterEvaluator:
         return self.strategy(card_id).evaluate_placement(self.board)
 
     def evaluate_trash_target(self, card_id: int) -> float:
-        return max(
-            evaluate_trash_cost_priority(card_id, self.board),
-            self.strategy(card_id).evaluate_trash(self.board),
-        )
+        priority = evaluate_trash_cost_priority(card_id, self.board)
+        strategy = self.strategy(card_id).evaluate_trash(self.board)
+        if priority < 0.0 or strategy < 0.0:
+            return min(priority, strategy)
+        return max(priority, strategy)
 
     def evaluate_target_priority(self, target: Optional[Pokemon]) -> float:
         if target is None:
@@ -2116,9 +2332,13 @@ class MasterEvaluator:
         elif self.board.card_id(target) in SETUP_THREAT_FINALS:
             score += 2200.0
         if self.board.card_id(target) in CRUSTLE_PRE_EVOS:
-            score += 6500.0
+            score += 8600.0
         if self.board.card_id(target) == 345:
-            score += 2500.0
+            score += 900.0 if self.board.is_ex_pokemon(self.board.active) else 3400.0
+        if self.board.card_id(target) in LUCARIO_PRE_EVOS:
+            score += 7800.0
+        if self.board.card_id(target) == MEGA_LUCARIO_EX:
+            score += 3600.0
         if self.board.card_id(target) in DREEPY_PRE_EVOS:
             score += 5200.0
         if self.board.card_id(target) == DRAGAPULT_EX:
@@ -2148,8 +2368,8 @@ class SearchResolver:
             if not self.board.is_poffin_target(card_id):
                 return -99999.0
             rescue = 3000.0 if self.board.has_no_backup_pokemon else 0.0
-            alakazam_bonus = 2800.0 if self.board.opponent_has_alakazam_line and card_id == YUKIWARASHI else 0.0
-            starmie_penalty = 1800.0 if self.board.opponent_has_alakazam_line and card_id == HITODEMAN and self.board.count_in_play(YUKIWARASHI) == 0 else 0.0
+            alakazam_bonus = 2800.0 if self.board.opponent_has_hand_alakazam_line and card_id == YUKIWARASHI else 0.0
+            starmie_penalty = 1800.0 if self.board.opponent_has_hand_alakazam_line and card_id == HITODEMAN and self.board.count_in_play(YUKIWARASHI) == 0 else 0.0
             return rescue + need + pair_bonus + alakazam_bonus - starmie_penalty + self.evaluator.evaluate_pokemon_placement(card_id)
         if effect_id == POKE_PAD:
             if not self.board.is_poke_pad_target(card_id):
@@ -2172,7 +2392,9 @@ class SearchResolver:
                 if self.board.can_win_by_killing_bench_pokemon():
                     return 4200.0
                 if self.board.can_boss_around_crustle_for_prize():
-                    return 3600.0
+                    return 5200.0
+                if self.board.can_boss_crustle_preevo_for_prize():
+                    return 4800.0
                 if self.board.can_boss_delay_active_sweeper():
                     return 3400.0
                 return 1800.0
@@ -2183,11 +2405,15 @@ class SearchResolver:
             if not self.board.is_pokemon_card(card_id):
                 return -99999.0
             primary_line = self.board.primary_water_line()
-            if self.board.opponent_active_is_crustle_wall:
+            if self.board.opponent_has_crustle_line:
+                if card_id == MEGA_STARMIE_EX and self.board.count_in_play(HITODEMAN):
+                    return need + pair_bonus + 10400.0
                 if card_id == YUKIMENOKO:
-                    return need + 7600.0
-                if card_id in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX}:
-                    return need + 900.0
+                    return need + 3800.0
+                if card_id == YVELTAL:
+                    return need + 3600.0
+                if card_id == MEGA_YUKIMENOKO_EX:
+                    return need + 1200.0
             if self.board.has_no_backup_pokemon:
                 active_id = self.board.card_id(self.board.active) if self.board.active is not None else None
                 if card_id == MEGA_YUKIMENOKO_EX and active_id == YUKIWARASHI:
@@ -2199,7 +2425,7 @@ class SearchResolver:
                 if card_id in {HITODEMAN, MUNKIDORI, YUKIWARASHI} or self.board.is_poffin_target(card_id):
                     return 8000.0 + need + pair_bonus + self.evaluator.evaluate_pokemon_placement(card_id)
                 return 500.0
-            alakazam_bonus = 4600.0 if self.board.opponent_has_alakazam_line and card_id == MEGA_YUKIMENOKO_EX else 0.0
+            alakazam_bonus = 4600.0 if self.board.opponent_has_hand_alakazam_line and card_id == MEGA_YUKIMENOKO_EX else 0.0
             primary_bonus = 0.0
             if primary_line == "STARMIE":
                 primary_bonus = 2400.0 if card_id in {HITODEMAN, MEGA_STARMIE_EX} else -1200.0
@@ -2210,10 +2436,12 @@ class SearchResolver:
             if not self.board.is_mega_signal_target(card_id):
                 return -99999.0
             primary_line = self.board.primary_water_line()
+            if self.board.opponent_has_crustle_line and card_id == MEGA_STARMIE_EX:
+                return need + pair_bonus + 10800.0
             if primary_line == "STARMIE":
                 if card_id == MEGA_STARMIE_EX:
                     return need + pair_bonus + 9800.0
-                if card_id == MEGA_YUKIMENOKO_EX and not self.board.opponent_has_alakazam_line:
+                if card_id == MEGA_YUKIMENOKO_EX and not self.board.opponent_has_hand_alakazam_line:
                     return need + 400.0
             elif primary_line == "YUKI":
                 if card_id == MEGA_YUKIMENOKO_EX:
@@ -2223,14 +2451,14 @@ class SearchResolver:
             if card_id == MEGA_STARMIE_EX and self.board.wants_mega_starmie_for_hitodeman:
                 return need + pair_bonus + 8200.0
             if card_id == MEGA_YUKIMENOKO_EX:
-                if self.board.opponent_has_alakazam_line:
+                if self.board.opponent_has_hand_alakazam_line:
                     return need + 8800.0
                 if self.board.count_in_play(YUKIWARASHI):
                     return need + 5600.0
             return need + pair_bonus + 1200.0
         if effect_id == TANKER:
             if card_id == BASIC_WATER_ENERGIE and self.board.needs_water_energy():
-                return 5600.0
+                return 7600.0
             if card_id == BASIC_UNLICHT_ENERGIE and self.board.needs_dark_energy():
                 return 3600.0
             if card_id in (HITODEMAN, YUKIWARASHI, MUNKIDORI):
@@ -2240,25 +2468,27 @@ class SearchResolver:
             return -99999.0
         if effect_id == TOUKO:
             primary_line = self.board.primary_water_line()
-            if self.board.opponent_active_is_crustle_wall and card_id == YUKIMENOKO:
-                return need + 8200.0
-            if self.board.opponent_active_is_crustle_wall and card_id in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX}:
+            if self.board.opponent_has_crustle_line and card_id == YUKIMENOKO:
+                return need + 3600.0
+            if self.board.opponent_has_crustle_line and card_id == MEGA_STARMIE_EX:
+                return need + pair_bonus + 9800.0
+            if self.board.opponent_has_crustle_line and card_id == MEGA_YUKIMENOKO_EX:
                 return need + 1200.0
-            if self.board.opponent_has_alakazam_line and card_id == MEGA_YUKIMENOKO_EX:
+            if self.board.opponent_has_hand_alakazam_line and card_id == MEGA_YUKIMENOKO_EX:
                 return need + 9800.0
             if card_id == MEGA_STARMIE_EX:
-                alakazam_penalty = 2400.0 if self.board.opponent_has_alakazam_line and self.board.count_in_play(YUKIWARASHI) > 0 else 0.0
+                alakazam_penalty = 2400.0 if self.board.opponent_has_hand_alakazam_line and self.board.count_in_play(YUKIWARASHI) > 0 else 0.0
                 primary_bonus = 1800.0 if primary_line == "STARMIE" else (-1200.0 if primary_line == "YUKI" else 0.0)
                 return need + pair_bonus + 4300.0 + primary_bonus - alakazam_penalty
             if card_id == MEGA_YUKIMENOKO_EX:
-                primary_bonus = 1800.0 if primary_line == "YUKI" else (-1200.0 if primary_line == "STARMIE" and not self.board.opponent_has_alakazam_line else 0.0)
-                return need + (5200.0 if self.board.opponent_has_alakazam_line else 4100.0) + primary_bonus
+                primary_bonus = 1800.0 if primary_line == "YUKI" else (-1200.0 if primary_line == "STARMIE" and not self.board.opponent_has_hand_alakazam_line else 0.0)
+                return need + (5200.0 if self.board.opponent_has_hand_alakazam_line else 4100.0) + primary_bonus
             if card_id == YUKIMENOKO:
-                return need + (2600.0 if self.board.opponent_has_alakazam_line else 1800.0)
+                return need + (2600.0 if self.board.opponent_has_hand_alakazam_line else 1800.0)
             if card_id == BASIC_UNLICHT_ENERGIE and self.board.needs_dark_energy():
                 return 2800.0
             if card_id == BASIC_WATER_ENERGIE:
-                return 2400.0 if self.board.needs_water_energy() else 900.0
+                return 4200.0 if self.board.needs_water_energy() else 1200.0
             return -99999.0
         if effect_id == AKAMATSU:
             if card_id == BASIC_WATER_ENERGIE and self.board.needs_water_energy():
@@ -2289,6 +2519,8 @@ class SearchResolver:
         if data.attacks:
             return need + self.evaluator.evaluate_pokemon_placement(card_id)
         if card_id in {BASIC_WATER_ENERGIE, BASIC_UNLICHT_ENERGIE}:
+            if card_id == BASIC_WATER_ENERGIE and self.board.needs_water_energy():
+                return need + 4200.0
             return need + 400.0
         return need + self.evaluator.evaluate_card_play(card_id)
 
@@ -2299,7 +2531,10 @@ class TargetResolver:
         self.evaluator = evaluator
 
     def score_target(self, target: Pokemon, mine: bool) -> float:
+        effect_id = self.board.effect_card_id or self.board.context_card_id
         if mine:
+            if effect_id == HERO_CAPE:
+                return self.evaluator.strategy(HERO_CAPE).evaluate_attach(self.board, target)
             card_id = self.board.card_id(target)
             score = self.board.calculate_max_damage(target, next_turn=True) + self.board.current_hp(target) * 0.1
             if card_id == MUNKIDORI:
@@ -2311,7 +2546,7 @@ class TargetResolver:
             elif card_id in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX}:
                 score += 1800.0
             return score
-        if (self.board.effect_card_id or self.board.context_card_id) == BEFEHL_VON_BOSS:
+        if effect_id == BEFEHL_VON_BOSS:
             if self.board.can_boss_around_crustle_for_prize():
                 return self.board.boss_around_crustle_target_value(target)
             if self.board.can_boss_delay_active_sweeper():
@@ -2444,7 +2679,7 @@ class GameAction:
             return value
 
         if option_type == OptionType.ATTACH or option.energyIndex is not None:
-            if target is not None and card_id in {BASIC_WATER_ENERGIE, BASIC_UNLICHT_ENERGIE}:
+            if target is not None and card_id in ENERGY_CARD_TO_TYPE:
                 return self.evaluator.evaluate_energy_attach(card_id, target)
             return 0.0
 
@@ -2479,8 +2714,8 @@ class AttackAction(GameAction):
         self.action_score = 5000.0 + damage * 5.0
         attacker_id = self.board.card_id(attacker)
         can_knock_out = damage >= self.board.current_hp(defender)
-        if self.board.crustle_blocks_ex_attack(attacker, defender):
-            self.action_score -= 12000.0
+        if self.board.crustle_blocks_ex_attack(attacker, defender, attack):
+            self.action_score -= 70000.0
         wins_now = can_knock_out and self.board.calculate_prize_value(defender) >= self.board.my_remaining_prizes
         pre_attack_value = self._best_pre_attack_option_value()
         if can_knock_out:
@@ -2493,6 +2728,8 @@ class AttackAction(GameAction):
             self.action_score += 7600.0
             if self.board.active_knockout_loses_game:
                 self.action_score += 9000.0
+            elif self.board.opponent_is_near_win:
+                self.action_score += 3600.0
         if (
             attacker_id in {HITODEMAN, YUKIWARASHI, MUNKIDORI}
             and not can_knock_out
@@ -2501,13 +2738,15 @@ class AttackAction(GameAction):
             self.action_score -= 5200.0
         if not wins_now and not can_knock_out and not urgent_active_attack and pre_attack_value >= 1000.0:
             self.action_score -= min(18000.0, 4200.0 + pre_attack_value * 1.8)
-        if self.board.card_id(attacker) == MEGA_YUKIMENOKO_EX and self.board.opponent_has_alakazam_line:
+        if self.board.card_id(attacker) == MEGA_YUKIMENOKO_EX and self.board.opponent_has_hand_alakazam_line:
             self.action_score += 2200.0
         if attacker_id == MEGA_YUKIMENOKO_EX and attack.attackId == RESENTFUL_REFRAIN:
             if can_knock_out:
                 self.action_score += 7200.0
             elif damage >= 250:
                 self.action_score += 2400.0
+            if self.board.opponent_has_hand_alakazam_line:
+                self.action_score += 1800.0
         if attacker_id == YUKIMENOKO and defender is not None:
             if damage >= self.board.current_hp(defender):
                 self.action_score += 900.0
@@ -2554,7 +2793,7 @@ class EvolveAction(GameAction):
         if card_id == MEGA_STARMIE_EX:
             self.card_score = 3800.0
             if self.board.opponent_active_is_crustle_wall:
-                self.card_score -= 7600.0
+                self.card_score += 3600.0
             if self.board.has_no_backup_pokemon and target_is_active:
                 self.card_score += 1800.0
             primary_line = self.board.primary_water_line()
@@ -2585,7 +2824,7 @@ class EvolveAction(GameAction):
             )
             if (
                 existing_mega_yuki
-                and not self.board.opponent_has_alakazam_line
+                and not self.board.opponent_has_hand_alakazam_line
                 and not target_can_attack_next
                 and not active_mega_yuki_in_danger
             ):
@@ -2596,8 +2835,8 @@ class EvolveAction(GameAction):
                 ):
                     self.card_score -= 2600.0
             if self.board.opponent_active_is_crustle_wall:
-                self.card_score -= 5200.0
-            if self.board.opponent_has_alakazam_line:
+                self.card_score -= 2200.0
+            if self.board.opponent_has_hand_alakazam_line:
                 self.card_score += 1400.0
             if target_is_active and self.board.active_will_be_knocked_out and same_basic_on_bench:
                 self.card_score -= 3600.0
@@ -2610,7 +2849,7 @@ class EvolveAction(GameAction):
                 self.card_score += 2200.0
             elif (
                 primary_line == "STARMIE"
-                and not self.board.opponent_has_alakazam_line
+                and not self.board.opponent_has_hand_alakazam_line
                 and not target_can_attack_next
                 and not active_mega_yuki_in_danger
             ):
@@ -2622,7 +2861,7 @@ class EvolveAction(GameAction):
             my_ability_targets = len(self.board.freezing_shroud_targets(mine=True))
             if opp_ability_targets > 0:
                 self.card_score += opp_ability_targets * 850.0 - my_ability_targets * 220.0
-            if self.board.opponent_has_alakazam_line and self.board.count_in_play(MEGA_YUKIMENOKO_EX) == 0:
+            if self.board.opponent_has_hand_alakazam_line and self.board.count_in_play(MEGA_YUKIMENOKO_EX) == 0:
                 self.card_score += 800.0
             if MEGA_YUKIMENOKO_EX in self.board.hand_ids:
                 self.card_score -= 700.0
@@ -2640,17 +2879,17 @@ class EvolveAction(GameAction):
                 self.action_score -= 2600.0
             if (
                 self.board.count_in_play(MEGA_YUKIMENOKO_EX) > 0
-                and not self.board.opponent_has_alakazam_line
+                and not self.board.opponent_has_hand_alakazam_line
                 and not target_can_attack_next
                 and not active_mega_yuki_in_danger
             ):
                 self.action_score -= 2400.0 if existing_safe else 800.0
-            if self.board.opponent_has_alakazam_line:
+            if self.board.opponent_has_hand_alakazam_line:
                 self.action_score += 1100.0
             if self.board.opponent_active_is_crustle_wall:
-                self.action_score -= 2600.0
+                self.action_score -= 1200.0
         elif card_id == MEGA_STARMIE_EX and self.board.opponent_active_is_crustle_wall:
-            self.action_score -= 3200.0
+            self.action_score += 3600.0
         elif card_id == YUKIMENOKO and MEGA_YUKIMENOKO_EX in self.board.hand_ids:
             self.action_score -= 700.0
 
@@ -2674,7 +2913,7 @@ class RetreatAction(GameAction):
                 5200 if danger and active_id in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX, YUKIMENOKO} and board.card_id(pokemon) == YVELTAL else 0,
                 3000 if board.card_id(pokemon) == MEGA_STARMIE_EX else 0,
                 2200 if board.card_id(pokemon) == MEGA_YUKIMENOKO_EX else 0,
-                2500 if board.opponent_has_alakazam_line and board.card_id(pokemon) == MEGA_YUKIMENOKO_EX else 0,
+                2500 if board.opponent_has_hand_alakazam_line and board.card_id(pokemon) == MEGA_YUKIMENOKO_EX else 0,
                 -3500 if board.card_id(pokemon) in {MUNKIDORI, YUKIMENOKO} else 0,
                 board.calculate_max_damage(pokemon, next_turn=True),
                 board.current_hp(pokemon),
@@ -2704,6 +2943,13 @@ class RetreatAction(GameAction):
         defensive_switch = danger and target is not self.board.active and self.board.current_hp(target) > self.board.my_active_remaining_hp + 80
         justified_mega_switch = offensive_switch or defensive_switch
         spends_scarce_water = self.board.retreat_would_spend_water(self.board.active) and self.board.water_energy_is_scarce()
+        if (
+            self.board.my_active_can_attack()
+            and self.board.retreat_would_spend_water(self.board.active)
+            and not danger
+            and not target_can_take_prize
+        ):
+            score -= 12000.0
         if spends_scarce_water and not justified_mega_switch:
             score -= 5200.0
             if target_is_mega_attacker and target_damage <= 0:
@@ -2735,13 +2981,25 @@ class RetreatAction(GameAction):
                 score += 800.0
             else:
                 score -= 6500.0
+        if (
+            active_id in {HITODEMAN, YUKIWARASHI}
+            and danger
+            and not target_can_take_prize
+            and target_id != YVELTAL
+            and any(
+                option.type in {OptionType.EVOLVE, OptionType.PLAY}
+                for _, option in self.board.iter_options()
+                if option is not self.option
+            )
+        ):
+            score -= 7200.0
         if active_id in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX, YUKIMENOKO} and danger and target_id == YVELTAL:
             score += 5200.0
         if target_id == MEGA_STARMIE_EX:
             score += 3200.0
         elif target_id == MEGA_YUKIMENOKO_EX:
             score += 2400.0
-            if self.board.opponent_has_alakazam_line:
+            if self.board.opponent_has_hand_alakazam_line:
                 score += 2200.0
         elif target_id in {MUNKIDORI, YUKIMENOKO}:
             score -= 4200.0
@@ -2783,9 +3041,30 @@ class PlayCardAction(GameAction):
             TOUKO,
             AKAMATSU,
         }:
-            self.card_score -= 7200.0
+            penalty = 7200.0
+            if self.board.opponent_has_hand_alakazam_line and card_id in {
+                YUKIWARASHI,
+                MEGA_YUKIMENOKO_EX,
+                POFIN,
+                POKE_PAD,
+                MEGA_SIGNAL,
+                HYPERBALL,
+                TOUKO,
+            }:
+                penalty = 3600.0
+            self.card_score -= penalty
             if self.board.active_knockout_loses_game:
                 self.card_score -= 5000.0
+        if self.board.should_avoid_deck_dig and card_id in {
+            POFIN,
+            POKE_PAD,
+            POKEGEAR,
+            MEGA_SIGNAL,
+            HYPERBALL,
+            CARMINE,
+            LILLIE_DETERMINATION,
+        }:
+            self.card_score -= 5200.0
         self.action_score = 500.0 + GameSimulator(self.board).evaluate_after_action(self) * 0.03
 
     def apply(self, board: BoardState) -> BoardState:
@@ -2805,6 +3084,23 @@ class PlayCardAction(GameAction):
 
 class EndAction(GameAction):
     def evaluate(self) -> None:
+        option_types = {option.type for _, option in self.board.iter_options()}
+        attack_phase_gate = (
+            self.board.select_context == SelectContext.MAIN
+            and self.board.my_active_can_attack()
+            and option_types.issubset({OptionType.RETREAT, OptionType.END})
+        )
+        if attack_phase_gate:
+            active = self.board.active
+            damage = self.board.best_attack_damage(active)
+            score = 2600.0 + damage * 14.0
+            if self.board.can_take_prize(active, self.board.opp_active):
+                score += self.board.calculate_prize_value(self.board.opp_active) * 6200.0
+            if self.board.retreat_would_spend_water(active):
+                score += 5200.0
+            self.action_score = score
+            return
+
         best_development = self._best_development_option_value()
         score = -500.0
         if best_development >= 1000.0:
@@ -2844,7 +3140,11 @@ class AbilityAction(GameAction):
 
 class CountAction(GameAction):
     def evaluate(self) -> None:
-        number = int(getattr(self.option, "number", 0) or 0)
+        try:
+            raw_number = self.option.number
+        except AttributeError:
+            raw_number = 0
+        number = int(raw_number or 0)
         if self.board.select_context == SelectContext.DRAW_COUNT:
             self.action_score = number * 1000.0
             if self.board.is_development_starved:
@@ -2860,19 +3160,30 @@ class AttachEnergyAction(GameAction):
             return "UNKNOWN"
         return ENERGY_CARD_TO_TYPE.get(card_id, f"CARD_{card_id}")
 
+    def energy_tokens(self, target: Optional[Pokemon]) -> List[str]:
+        card_id = self.board.option_card_id(self.option)
+        if card_id is None:
+            return ["UNKNOWN"]
+        return self.board._energy_tokens_from_card_id(card_id, target)
+
     def evaluate(self) -> None:
         target = self.board.get_option_target(self.option)
         card_id = self.board.option_card_id(self.option)
         if card_id is None or target is None:
             self.action_score = -99999.0
             return
+        if card_id == HERO_CAPE:
+            self.card_score = self.evaluator.strategy(HERO_CAPE).evaluate_attach(self.board, target)
+            self.action_score = self.card_score
+            return
         self.card_score = self.evaluator.evaluate_energy_attach(card_id, target)
         if card_id not in ENERGY_CARD_TO_TYPE:
             self.action_score = 900.0
             self.action_score += GameSimulator(self.board).evaluate_after_action(self) * 0.03
             return
+        energy_tokens = self.energy_tokens(target)
         before = self.board.best_attack_damage(target)
-        after = self.board.best_attack_damage(target, [self.energy_token()])
+        after = self.board.best_attack_damage(target, energy_tokens)
         self.action_score = 1000.0 + max(0, after - before) * 10.0
         target_id = self.board.card_id(target)
         if self.board.active_basic_is_decoy(target):
@@ -2901,13 +3212,13 @@ class AttachEnergyAction(GameAction):
             self.action_score -= 2600.0
         has_priority_setup = self.board.has_priority_setup_before_energy()
         progress_before = self.board.high_impact_attack_progress(target)
-        progress_after = self.board.high_impact_attack_progress(target, [self.energy_token()])
+        progress_after = self.board.high_impact_attack_progress(target, energy_tokens)
         self.action_score += max(0.0, progress_after - progress_before)
         attack = self.board.high_impact_attack(target)
         completes_ko_now = False
         if attack is not None:
             missing_before = self.board.attack_energy_shortfall(target, attack)
-            missing_after = self.board.attack_energy_shortfall(target, attack, [self.energy_token()])
+            missing_after = self.board.attack_energy_shortfall(target, attack, energy_tokens)
             self.action_score += max(0, missing_before - missing_after) * 900.0
             if missing_after == 0 and missing_before > 0:
                 self.action_score += 1800.0
@@ -2921,7 +3232,9 @@ class AttachEnergyAction(GameAction):
     def apply(self, board: BoardState) -> BoardState:
         if self.board.option_card_id(self.option) not in ENERGY_CARD_TO_TYPE:
             return board
-        board.add_virtual_energy(board.get_option_target(self.option), self.energy_token())
+        card_id = self.board.option_card_id(self.option)
+        if card_id is not None:
+            board.add_virtual_energy_card(board.get_option_target(self.option), card_id)
         return board
 
 
@@ -2936,14 +3249,14 @@ class EnergySelectionAction(GameAction):
         if self.board.select_context == SelectContext.TO_HAND_ENERGY:
             if self.board.context_card_id == TANKER or self.board.effect_card_id == TANKER:
                 if card.id == BASIC_WATER_ENERGIE and self.board.needs_water_energy():
-                    self.action_score = 5600.0
+                    self.action_score = 7600.0
                     return
                 if card.id == BASIC_UNLICHT_ENERGIE and self.board.needs_dark_energy():
                     self.action_score = 3600.0
                     return
             if self.board.context_card_id == AKAMATSU or self.board.effect_card_id == AKAMATSU:
                 if card.id == BASIC_WATER_ENERGIE and self.board.needs_water_energy():
-                    self.action_score = 4600.0
+                    self.action_score = 5600.0
                     return
                 if card.id == BASIC_UNLICHT_ENERGIE and self.board.needs_dark_energy():
                     self.action_score = 3400.0
@@ -3210,7 +3523,12 @@ class ActionFactory:
         token = board.option_type_token(option)
         option_type = option.type
 
-        if getattr(option, "number", None) is not None or board.select_context in (
+        try:
+            option_number = option.number
+        except AttributeError:
+            option_number = None
+
+        if option_number is not None or board.select_context in (
             SelectContext.DRAW_COUNT,
             SelectContext.DAMAGE_COUNTER_COUNT,
             SelectContext.REMOVE_DAMAGE_COUNTER_COUNT,
