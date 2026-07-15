@@ -25,7 +25,8 @@ from cg.api import to_observation_class, LogType
 def load_deck(path: str = "deck.csv") -> list[int]:
     """deck.csv（カードIDが1行に1つ、60行）を読み込んでリストにする。"""
     with open(path, "r") as f:
-        ids = [line for line in f.read().split("\n") if line.strip()]
+        ids = [line.strip().rstrip(",").strip() for line in f.read().split("\n")]
+        ids = [x for x in ids if x]
     return [int(x) for x in ids[:60]]
 
 

@@ -115,3 +115,94 @@
 - **steelは我々の現状最高デッキ+パイロットに直接対決で89.5%勝つ**。ゲージ非依存の決定的な差。Kaggle 820 vs 420 とも整合。クラッシュ0(約1000戦)。
 - **前セッションD9「Archaludon却下(対Alakazam 40%)」は誤りと確定**。同じArchaludonデッキがパイロット次第で対Alakazam 93.5%。デッキではなくパイロットが問題だった、という監査結論を第三者コードが裏付け。
 - steel_agent.py / decks/steel_archaludon.csv として保存(検証専用・提出tarには入れない)。
+
+## メタ再観測 (2026-07-14, 184エピソード, LB上位15チーム+rank50/100/200/400/800の直近10戦)
+
+7/8観測(TOP1の20デッキ)の検証。取得: LeaderboardService/GetLeaderboard → ListEpisodes → replay.json×184。
+
+### サンプルチーム本人のデッキ(rank順)
+1,2,5,14,15,50位=Alakazam / 3,8,11,13位=Kangaskhan+Crustle / 4,12,800位=Grimmsnarl / 6位=Dragapult / 7位=TR Mewtwo(Spidops) / **9位=Mega Starmie+Dusknoir(1130.9)** / 10位=Crustle+Cinderace / 100位=Garchomp / 200位=GreatTusk / 400位=Lucario
+
+### 対戦相手アーキタイプ分布
+| アーキタイプ | top15帯(n=147) | mid帯50-200(n=30) | low帯400-800(n=20) |
+|---|---|---|---|
+| Alakazam/Dudunsparce | **42.2%** | 26.7% | 20.0% |
+| Grimmsnarl/Munkidori | **16.3%** | 13.3% | 10.0% |
+| Kangaskhan ex(+Crustle) | 11.6% | – | – |
+| TR Mewtwo(Spidops) | 7.5% | 3.3% | 5.0% |
+| Archaludon | 0.7% | **23.3%** | **25.0%** |
+| Lucario / Dragapult / Starmie / Garchomp | 各4-5% | 各3-10% | 各10-15% |
+
+### 7/8観測の訂正
+- Alakazam支配は正しい(42%)。Kangaskhan+Crustleも上位柱で正しい(2位グループ)。
+- **見落とし: Grimmsnarl/Munkidoriが相手シェア2位(16%)**。7/8のN=20では2件しか出ず過小評価していた。
+- **帯で別のゲーム**: 我々が実際に戦う600-900帯はArchaludonが最多勢力(23-25%)でAlakazamと二強。頑健性マトリクスはtop15メタとmid/low帯メタの両方で測る必要がある。
+- Mega Starmieは上位で実在(9位)。メンバーのデッキ線は「一旦」としては妥当な筋。
+
+### ゲージ用に実リスト保存(verification/decks/)
+meta_alakazam / meta_kangaskhan_crustle / meta_grimmsnarl_munkidori / meta_starmie_dusknoir / meta_tr_mewtwo (各_2026-07-14.csv、最頻出の実60枚)
+
+## メンバーagent弱点マップ (2026-07-15, mega-starmie-ex-deck@origin, 200戦/セル)
+
+環境: verification/bench.py。エンジンは旧リポジトリからコピー。**全セルCRASH=0**。速度 ~925ms/戦（v1の~9msの100倍、要調査）。
+
+| セル | 相手 | 勝率 | 95%CI | 読み方 |
+|---|---|---|---|---|
+| A | random | 95.5% | 91.7〜97.6 | 健全 |
+| B | Alakazamゲージ(専用AI+v0) | 63.5% | 56.6〜69.9 | v1の63.0%と同等 |
+| C | Grimmsnarlゲージ(専用AI+v0) | 65.5% | 58.7〜71.7 | v1の75.3%より低い |
+| D | 実メタAlakazam(ミラー操縦) | 94.0% | 89.8〜96.5 | 過大評価(操縦者の壁) |
+| E | 実メタKangaskhan+Crustle(ミラー) | **82.5%** | 76.6〜87.1 | ミラー4セル中の最低=**相対的に苦手** |
+| F | 実メタGrimmsnarl(ミラー) | 94.5% | 90.4〜96.9 | 過大評価 |
+| G | 実メタTR Mewtwo(ミラー) | 98.0% | 95.0〜99.2 | 過大評価 |
+| H | **実メタStarmie/Dusknoir(rank9型・ミラー)** | **36.5%** | 30.1〜43.4 | **同一パイロット=公平なデッキ比較。負け越し** |
+
+### H（同型対決）の含意 — デッキ差分（メンバー型 vs rank9型）
+- メンバー型: Starmie+**Mega Froslass ex/Munkidori 悪スプラッシュ**（悪エネ3・Risky Ruins4・Boss's Orders3）= アタッカー2本立て
+- rank9型: **水単Starmie厚積み**(Staryu4/Starmie4?)+Dusknoirライン+Ignition Energy4+ドローサポ厚(Wally's Compassion3/Hilda2/Judge3/Carmine1)+Pokégear/Ultra Ball
+- 同じagentで36.5% vs 63.5% → **60枚の差だけで27pt**。rank9型は「1本目を太く+徹底したドロー一貫性」、メンバー型は2本目に枠を割いて主線が細い。
+- 次アクション候補: メンバー型を段階的にrank9型へ寄せてA/B（①ドローサポ入替のみ ②Froslass線→Dusknoir線 ③全量）。
+
+### その他の観測
+- E(82.5%)がミラー系で突出して低い → Kangaskhan ex(HP300 basic)+Mist/Spiky Energyは実弱点の可能性。専用ゲージ化して確認する価値あり。
+- 残る疑問: 925ms/戦の重さ。手番制限時間との余裕を/submission-check系で確認要。
+
+## エンジン同梱探索API PoC (2026-07-15, 穴A可否検証)
+
+エンジンには**エージェント用探索APIが公式に組み込み済み**（Export.cpp/Search.h/Api.h、ソースはKaggle Dataページ ptcg_engine、ライセンス=大会期間内利用限定のためリポジトリ非同梱・scratchpad保管）。
+
+- 仕組み: 毎観測に `obs["search_begin_input"]`（相手非公開情報を消去したシリアライズ盤面base64）が**本番・ローカル共に既に入っている**（kaggle-environments cabt.py L187で確認）。`AgentStart()`→`SearchBegin(盤面, 自分の山札/サイド・相手の山札/サイド/手札の推定=決定化, enemyActive, manualCoin)`→`SearchStep(searchId, 選択)`で分岐状態を無限に展開。`shuffle`で再決定化、`SearchRelease/SearchEnd`で解放。**両プレイヤーの手を自分で選んで進められる**＝MCTS/expectimaxの土台そのもの。
+- PoC実測（member機、ターン2起点、決定化1本）: **23,666 SearchSteps/秒**（JSON往復込み）。ランダムプレイアウトは約200step/本→**約100プレイアウト/秒**。手番600秒のovergage予算に対し余裕が桁で違う。
+- 検証スクリプト: scratchpad/poc_search.py（determinize: 自分の未見カード→山札+サイドに分割 / 相手の60枚仮定→サイド+手札+山札に分割）。
+- 含意: 相手デッキの推定（アーキタイプ判定→60枚仮定）が探索の入力になる → メタ観測(7/14)の実リスト5種がそのまま推定辞書になる。
+
+## エンジンのデッキ検証の訂正 (2026-07-15)
+
+7/8の「エンジンは同名4枚制限を強制しない(6枚受理)」は**誤り**。現バイナリで再検証: 同名7枚デッキは battle_start が **errorType=2 で拒否**。ソース(Api.h ApiBattleStart)も同名≤4(基本エネ除く)・ACE SPEC≤1・basic≥1体を強制している。7/8のテストは「同名と思った2枚のIDが実は別名だった」可能性が高い。→ CLAUDE.mdの「デッキ合法性は自前で守る」は維持しつつ、エンジンも防波堤になることを確認。
+
+## v2探索パイロット 初回計測 (2026-07-15, src/input/datasets/decks/v2-search, サンプルデッキ)
+
+構成: v1ヒューリスティック + 探索層（決定化2本 × 候補手全展開(重複群約) × **v1誘導ロールアウト**(相手の返し=turn+2まで) × 静的評価。**v1の選択を評価マージン120以上で上回るときだけ上書き**。予算0.6s/手、実測 平均7.6ms・最大49ms/手）。
+
+| 相手 | v1 | **v2** | 差 |
+|---|---|---|---|
+| random (100戦) | 91.0% | **94.0%** (CI 87.5〜97.2) | +3.0 |
+| **v1直接対決 (200戦)** | 50% | **58.5%** (CI 51.6〜65.1) | **+8.5、CI下限51.6%で有意** |
+| Alakazamゲージ (200戦) | 63.0% | 62.5% | ±0 |
+| Grimmsnarlゲージ (200戦) | 75.3% | 75.5% | ±0 |
+
+全セルCRASH=0。教訓: 深さ1+静的評価は失敗した（vs random 25%、評価がフラット+手札項の歪みで先頭手を機械選択）。**ロールアウトで相手の返しまで見る+「v1に対する明確な改善時のみ上書き」構造**にした途端に有意な改善。ゲージ戦が横ばいなのは、上書きが効く局面がスクリプト相手だと勝敗に直結しにくいためとみられる（要深掘り: 上書き発生率のログ取り）。
+
+### v2 提出前ゲート (2026-07-15, 対戦相手条件を揃えた最終比較)
+
+| 項目 | v1 | v2 | 判定 |
+|---|---|---|---|
+| vs random (100-300戦) | 91.0% | 94.0% | ✓ |
+| Alakazamゲージ (200-300戦) | 63.0% | 62.5% | ✓ 同等 |
+| Grimmsnarlゲージ (200-300戦) | 75.3% | 75.5% | ✓ |
+| vs v1操縦lunasol (300-400戦) | 59.7% (bench) / 58.5% (donk計) | 57.7% (bench) / **65.8%** (donk計) | ✓ 同等以上 |
+| donk_meter 早期敗北率 (400戦, 相手=v1lunasol) | 14.8% | 15.5% | ✓ 悪化なし(CI内) |
+| CRASH | 0 | 0 | ✓ |
+| デッキ合法性 | – | サンプルデッキ無変更・同名≤4 | ✓ |
+
+**ゲート判定: PASS**。注意: 当初のlunasol比較(53.7% vs 59.7%)は相手操縦者が違い(v2操縦lunasol vs v1操縦lunasol)非対称だった。条件を揃えると同等以上。v1直接対決58.5-61.0%と合わせ、v2は提出可の状態。
