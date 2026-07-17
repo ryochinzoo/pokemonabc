@@ -141,6 +141,20 @@ def _opp_active_hp(state, me: int) -> int | None:
         return None
 
 
+def _max_attack_cost(card_id: int) -> int:
+    """カードのワザの最大エネルギーコスト（エネ貼り先の必要数判定）。"""
+    cards, attacks = _card_db()
+    c = cards.get(card_id)
+    if not c:
+        return 0
+    need = 0
+    for aid in c.attacks:
+        a = attacks.get(aid)
+        if a and a.energies is not None:
+            need = max(need, len(a.energies))
+    return need
+
+
 def _best_attack_damage_of_card(card_id: int) -> int:
     """カードが持つワザの最大基礎ダメージ（エネ貼り先の価値付けに使う）。"""
     cards, attacks = _card_db()
@@ -243,6 +257,15 @@ def _choose_main(obs: Observation) -> list[int]:
                 return i
         return None
 
+    # 山札温存モード: 残り山札が少ないとき、山札を消費する行動(ドロー/サーチ系)を
+    # 打ち切って攻撃で決めにいく。自滅デッキアウト対策(2026-07-18 実測: 対random負けの
+    # 100%が自分のデッキアウトだった)。
+    try:
+        my_deck_count = state.players[me].deckCount or 0
+    except (TypeError, AttributeError, IndexError):
+        my_deck_count = 99
+    preserve_deck = my_deck_count <= 5
+
     # 1. 進化（進化トリガー能力・HP増を無条件で取る。環境2強の核であり損が少ない）
     evolve_best, evolve_hp = None, -1
     for i, o in enumerate(options):
@@ -255,10 +278,11 @@ def _choose_main(obs: Observation) -> list[int]:
     if evolve_best is not None:
         return [evolve_best]
 
-    # 2. 能力（提示されている=使用可能。原則すべて使う）
-    idx = first(lambda o: o.type == OptionType.ABILITY)
-    if idx is not None:
-        return [idx]
+    # 2. 能力（提示されている=使用可能。原則すべて使う。温存モード中は使わない）
+    if not preserve_deck:
+        idx = first(lambda o: o.type == OptionType.ABILITY)
+        if idx is not None:
+            return [idx]
 
     # 3. 手札から出す（ポケモン > グッズ/スタジアム/どうぐ > サポート）
     play_best, play_rank = None, 99
@@ -280,21 +304,30 @@ def _choose_main(obs: Observation) -> list[int]:
             rank = 2
         else:
             rank = 3
+        if preserve_deck and rank != 0:
+            continue  # 温存モード: ポケモン以外は場に出さない(ドロー/サーチで山を削らない)
         if rank < play_rank:
             play_best, play_rank = i, rank
     if play_best is not None:
         return [play_best]
 
-    # 4. エネ貼り（最も打点の高いポケモンに。同点ならバトル場優先）
-    attach_best, attach_key = None, (-1, -1)
+    # 4. エネ貼り。ワザコストが足りないポケモン優先(その中でバトル場>高打点)。
+    # 全員足りているなら高打点に予備を1枚だけ(9枚積み・バトル場エネ0の詰み対策)。
+    attach_best, attach_key = None, (-1, -1, -1, -99)
     for i, o in enumerate(options):
         if o.type != OptionType.ATTACH:
             continue
         pk = _pokemon_at(state, me, o.inPlayArea, o.inPlayIndex)
-        dmg = _best_attack_damage_of_card(pk.id) if pk else 0
+        if pk is None:
+            continue
+        have = len(pk.energies) if pk.energies else 0
+        need = _max_attack_cost(pk.id)
+        hungry = 1 if have < need else 0
         is_active = 1 if o.inPlayArea == AreaType.ACTIVE else 0
-        if (dmg, is_active) > attach_key:
-            attach_best, attach_key = i, (dmg, is_active)
+        dmg = _best_attack_damage_of_card(pk.id)
+        key = (hungry, is_active if hungry else 0, dmg, -have)
+        if key > attach_key:
+            attach_best, attach_key = i, key
     if attach_best is not None:
         return [attach_best]
 
@@ -604,6 +637,11 @@ def _evaluate(node_cur: dict, me: int) -> float:
     score += 30.0 * me_energy - 20.0 * fe  # エネ供給
     score += 40.0 * mp - 30.0 * fp         # 展開数
     score += 10.0 * len(you.get("hand") or []) - 6.0 * (foe.get("handCount") or 0)
+    # 山札残数: 少なくなるほど1枚の価値が跳ね上がる(自滅デッキアウト対策)
+    my_dc = you.get("deckCount") or 0
+    foe_dc = foe.get("deckCount") or 0
+    score += 8.0 * min(my_dc, 15) - 8.0 * min(foe_dc, 15)
+    score += 30.0 * min(my_dc, 6) - 30.0 * min(foe_dc, 6)
     return score
 
 
