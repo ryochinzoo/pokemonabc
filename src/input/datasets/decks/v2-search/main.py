@@ -342,6 +342,26 @@ def _choose_main(obs: Observation) -> list[int]:
             dmg += 10000  # リーサルは他のすべてに優先
         if dmg > attack_dmg:
             attack_best, attack_dmg = i, dmg
+    if attack_best is not None and attack_dmg > 0:
+        return [attack_best]
+
+    # 5.5 リトリート: 攻撃で進展がない番に、ベンチに「ワザコスト充足＋打点あり」の
+    # ポケモンがいれば逃げる。バトル場棒立ち→エネ枯渇→敗北のロック対策
+    # (2026-07-19 実ラダー検死: プライズ0のまま35ターン膠着して山札切れが実在)。
+    retreat_idx = first(lambda o: o.type == OptionType.RETREAT)
+    if retreat_idx is not None:
+        try:
+            for pk in state.players[me].bench or []:
+                if pk is None:
+                    continue
+                need = _max_attack_cost(pk.id)
+                have = len(pk.energies) if pk.energies else 0
+                if need > 0 and have >= need and _best_attack_damage_of_card(pk.id) > 0:
+                    return [retreat_idx]
+        except (TypeError, AttributeError):
+            pass
+
+    # 5.9 打点0でも攻撃が唯一の進展手段なら攻撃する
     if attack_best is not None:
         return [attack_best]
 
