@@ -700,6 +700,19 @@ def _dedupe_candidates(options) -> tuple[list[int], dict]:
     return out, rep
 
 
+def _engine_json(r):
+    """v2.1c: エンジン戻り値(c_char_p)を安全にJSONへ。NULLはNone。
+    string_at(None)はtry/exceptで捕えられないセグフォルト(=対局没収)になるため必ずここを通す。"""
+    if r is None:
+        return None
+    try:
+        if isinstance(r, (bytes, bytearray)):
+            return json.loads(bytes(r).decode())
+        return json.loads(_ct.string_at(r).decode())
+    except Exception:
+        return None
+
+
 def _search_decide(obs_dict: dict, sel, v1_answer: list[int]) -> list[int] | None:
     """探索による1手選択。候補手→v1誘導ロールアウト（相手の返しまで）→評価。
     使えない/自信がない場合は None（=v1採用）。"""
@@ -750,16 +763,16 @@ def _search_decide(obs_dict: dict, sel, v1_answer: list[int]) -> list[int] | Non
             md, mp, fd, fp, fh = _determinize(cur, me, my_deck60)
             r = _lib.SearchBegin(ptr, sbi_b, len(sbi_b), _arr(md), _arr(mp),
                                  _arr(fd), _arr(fp), _arr(fh), _arr([]), 0)
-            res = json.loads(_ct.string_at(r).decode())
-            if res.get("error"):
+            res = _engine_json(r)
+            if res is None or res.get("error"):
                 return None
             root_id = res["state"]["searchId"]
             for c in candidates:
                 if _time.monotonic() > deadline:
                     break
                 r = _lib.SearchStep(ptr, _ct.c_int64(root_id), _arr([c], 1), 1)
-                node = json.loads(_ct.string_at(r).decode())
-                if node.get("error"):
+                node = _engine_json(r)
+                if node is None or node.get("error"):
                     totals[c] += -1e6  # エンジンが拒否した手は選ばない
                     counts[c] += 1
                     continue
@@ -778,8 +791,8 @@ def _search_decide(obs_dict: dict, sel, v1_answer: list[int]) -> list[int] | Non
                     if pick is None:
                         break
                     r = _lib.SearchStep(ptr, _ct.c_int64(sid), _arr(pick, max(1, len(pick))), len(pick))
-                    nxt = json.loads(_ct.string_at(r).decode())
-                    if nxt.get("error"):
+                    nxt = _engine_json(r)
+                    if nxt is None or nxt.get("error"):
                         break
                     sid = nxt["state"]["searchId"]
                     nobs = nxt["state"]["observation"]

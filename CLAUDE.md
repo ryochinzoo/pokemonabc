@@ -8,6 +8,11 @@ Team workspace for the Pokémon TCG AI Battle Challenge (Kaggle). An agent =
 **deck (60 cards) × pilot (`main.py`)**. The game engine is a **precompiled C
 library** (`cg/libcg.*`, `cg/cg.dll`) accessed through `ctypes`.
 
+**READ `docs/memo/playbook.md` BEFORE planning any development or measurement
+work** — it encodes the team's debiasing discipline (control experiments first,
+out-of-family calibration, pre-registered N and kill criteria, `/council` for
+big decisions) and the operational rules that past sessions learned the hard way.
+
 ## Layout
 
 - `src/input/datasets/decks/<deck-name>/` — one directory per deck experiment,
