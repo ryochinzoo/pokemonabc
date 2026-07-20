@@ -130,6 +130,18 @@ def check_smoke(rep: Report, submission_dir: str, games: int, time_warn_ms: floa
     cwd = os.getcwd()
     os.chdir(submission_dir)
     sys.path.insert(0, submission_dir)
+    # selfplay は verification/ にある。環境変数(PYTHONPATH)を覚えている前提にすると
+    # SKILL.md記載の手順どおり実行しただけで ModuleNotFoundError で落ちる(2026-07-21監査)。
+    # スクリプト自身の位置からリポジトリルートを辿って解決する。
+    # 階層数を数えるのではなく、verification/ が見つかるまで親を辿る(移動に強い)。
+    probe = os.path.dirname(os.path.abspath(__file__))
+    while probe != os.path.dirname(probe):
+        cand = os.path.join(probe, "verification")
+        if os.path.isdir(cand):
+            if cand not in sys.path:
+                sys.path.insert(0, cand)
+            break
+        probe = os.path.dirname(probe)
     try:
         import selfplay
         import main as our_main
@@ -183,7 +195,11 @@ def check_smoke(rep: Report, submission_dir: str, games: int, time_warn_ms: floa
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--submission", default="src/input/datasets/decks/mega-starmie-ex-deck")
+    # 既定値は持たせない。2人チームで別々のデッキを持つため、どちらかを既定にすると
+    # 「checkした対象と違うデッキを提出する」事故の地雷を相手側に移すだけになる
+    # (2026-07-21の運用監査。実際に既定値が旧デッキを指したまま放置されていた)。
+    ap.add_argument("--submission", required=True,
+                    help="提出するデッキディレクトリ(main.py + deck.csv + cg/ がある場所)")
     ap.add_argument("--carddata", default="verification/data/EN_Card_Data.csv")
     ap.add_argument("--tar", default="submission.tar.gz")
     ap.add_argument("--games", type=int, default=20)
@@ -213,8 +229,10 @@ def main() -> None:
     if rep.failed:
         print("FAIL があります。提出しないこと。上の項目を直してから再実行する。")
         sys.exit(1)
+    # tarコマンドは必ず「今チェックした対象」を指す。ハードコードすると、
+    # checkを通したデッキと別のデッキを詰めて提出する事故になる(2026-07-21監査)。
     print("すべて合格。提出してよい。tar を作り直すなら:")
-    print("  cd src/input/datasets/decks/mega-starmie-ex-deck && tar czf ../../submission.tar.gz main.py deck.csv cg")
+    print(f"  cd {submission_dir} && tar czf {tar_path} main.py deck.csv cg")
     sys.exit(0)
 
 

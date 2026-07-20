@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""CEW = 較正済み遭遇加重合成指標（decisions.md D29 / D31）。
+
+提出可否の主指標。族外(較正済み)ゲージの勝率を、実ラダーの遭遇率で加重した1指標。
+手計算だと重み一つの付け忘れで採否が反転しうる(D31は+2.18pt vs 閾値+2.0ptの僅差)ため、
+ここに固定して再現可能にする。
+
+    python3 verification/cew.py --lucario 48.9 --archaludon 21.4 --abomasnow 32.3
+    # → CEW と 基準比、採用/棄却の判定を出す
+
+**重みは「現在の帯の実遭遇分布」に紐づく。帯が変われば再計算する**(playbook §2)。
+再計算せずに使い続けると「較正が古いまま最適化を続ける」事故になる(D26で実際に発生)。
+"""
+import argparse
+import datetime as _dt
+
+# --- 重み表（算出日・N・出典を必ず残す。ここが古びると全判定が狂う） ---
+WEIGHTS_DATE = _dt.date(2026, 7, 21)   # data.md「実ラダー全60戦の遭遇分布」より
+WEIGHTS_SOURCE = "decisions.md D29 / data.md 2026-07-21 (実ラダー全60戦, N=60)"
+WEIGHTS = {          # 較正済みゲージが存在する43.3%の遭遇を再正規化した重み
+    "lucario": 0.538,     # 公式Lucario agent(遭遇23.3%)
+    "archaludon": 0.386,  # steel Archaludon(遭遇16.7%)
+    "abomasnow": 0.076,   # 公式Abomasnow agent(遭遇3.3%)
+}
+BASELINE = 34.51     # 現行(EXP8採用前)の CEW。data.md 2026-07-21
+ADOPT_THRESHOLD = 2.0  # 基準比 +2.0pt 以上で採用検討(N=800/セル前提)
+STALE_DAYS = 7       # この日数を超えたら再検死の警告
+
+
+def cew(winrates: dict) -> float:
+    total_w = sum(WEIGHTS[k] for k in winrates if k in WEIGHTS)
+    if total_w == 0:
+        raise ValueError("既知のゲージ名(lucario/archaludon/abomasnow)が1つも無い")
+    # 一部のゲージだけ渡された場合も、渡された分の重みで正規化して合成
+    return sum(WEIGHTS[k] * v for k, v in winrates.items() if k in WEIGHTS) / total_w
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--lucario", type=float, help="vs 公式Lucario の勝率(%%)")
+    ap.add_argument("--archaludon", type=float, help="vs steel Archaludon の勝率(%%)")
+    ap.add_argument("--abomasnow", type=float, help="vs 公式Abomasnow の勝率(%%)")
+    ap.add_argument("--baseline", type=float, default=BASELINE,
+                    help=f"比較する基準線(既定 {BASELINE})")
+    args = ap.parse_args()
+
+    wr = {k: v for k, v in vars(args).items()
+          if k in WEIGHTS and v is not None}
+    if not wr:
+        ap.error("少なくとも1つのゲージ勝率を渡すこと")
+
+    age = (_dt.date.today() - WEIGHTS_DATE).days
+    print(f"重み算出日: {WEIGHTS_DATE} ({age}日前)  出典: {WEIGHTS_SOURCE}")
+    if age > STALE_DAYS:
+        print(f"⚠ 重みが{age}日前のもの。実ラダー遭遇分布を再検死してから使うこと"
+              f"(playbook §2、replay_analysis)。")
+    missing = [k for k in WEIGHTS if k not in wr]
+    if missing:
+        print(f"※ 未指定ゲージ {missing} は除外し、残りの重みで正規化した")
+
+    val = cew(wr)
+    diff = val - args.baseline
+    print(f"CEW = {val:.2f}%   基準 {args.baseline:.2f}%   差 {diff:+.2f}pt")
+    verdict = "採用検討(要 独立追試)" if diff >= ADOPT_THRESHOLD else "棄却域"
+    print(f"判定: {verdict}  (採用閾値 +{ADOPT_THRESHOLD}pt)")
+
+
+if __name__ == "__main__":
+    main()

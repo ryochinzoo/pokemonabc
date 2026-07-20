@@ -5,3 +5,8 @@ __pycache__/
 *.dylib
 *.so
 *.dll
+
+# セッション生成物・ビルド成果物(コミットしない)
+.agy-explains/
+submission*.tar.gz
+project_overview.html

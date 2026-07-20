@@ -47,6 +47,18 @@ _SCALING_DAMAGE = {
 # ダメカン「乗せ」のワザ。弱点・抵抗・軽減の計算を通らない別レーンで扱う。
 _PLACEMENT_ATTACKS = {1072}
 
+# 「効果を無視」するワザ: 相手バトルポケモンにかかる効果・弱点・抵抗を通らない。
+# 1488 = Mega Starmie「Nebula Beam」(実機検証: 壁Crustleに43/43でKO — data.md 2026-07-20)
+_EFFECT_IGNORING_ATTACKS = {1488}
+
+# Ignition Energy: 進化ポケモンに付いている間だけ{C}{C}{C}を供給し、ターン終了時に破棄。
+# バトル場のMega Starmie ex(進化)に貼れば即Nebula Beam(210)が撃てる使い切り札。
+_IGNITION_ID = 17
+
+# ex/メガのワザの全ダメージを防ぐ「壁」能力の持ち主(初回アクセス時にテキストから抽出)。
+# 345=Crustle「Mysterious Rock Inn」(Jetting Blow 0ダメ×203の実測)/ 330=Sylveon「Safeguard」
+_EX_WALL_IDS = None
+
 
 def _card_db():
     global _CARDS, _ATTACKS
@@ -54,6 +66,29 @@ def _card_db():
         _CARDS = {c.cardId: c for c in all_card_data()}
         _ATTACKS = {a.attackId: a for a in all_attack()}
     return _CARDS, _ATTACKS
+
+
+def _ex_wall_ids():
+    global _EX_WALL_IDS
+    if _EX_WALL_IDS is None:
+        ids = set()
+        try:
+            cards, _ = _card_db()
+            for c in cards.values():
+                for sk in c.skills or []:
+                    text = getattr(sk, "text", "") or ""
+                    # Farigiraf ex(Basic ex限定の壁)は対象外に落とす:
+                    # うちのex打点はMega Starmie(非Basic)のみなので影響しない。
+                    if (
+                        "Prevent all damage done to this Pokémon" in text
+                        and "{ex}" in text
+                        and "Basic" not in text
+                    ):
+                        ids.add(c.cardId)
+        except Exception:
+            ids = {330, 345}
+        _EX_WALL_IDS = ids
+    return _EX_WALL_IDS
 
 
 # ---------------------------------------------------------------------------
@@ -115,6 +150,8 @@ def _estimate_damage(attack_id: int, state, me: int) -> int:
             pass
     if attack_id in _PLACEMENT_ATTACKS:
         return dmg  # 乗せダメージ: 弱点・抵抗の適用なし
+    if attack_id in _EFFECT_IGNORING_ATTACKS:
+        return dmg  # 効果無視ワザ: 壁能力も弱点・抵抗も通らない素点
 
     try:
         my_active = state.players[me].active[0]
@@ -124,6 +161,10 @@ def _estimate_damage(attack_id: int, state, me: int) -> int:
         attacker = cards.get(my_active.id)
         defender = cards.get(opp_active.id)
         if attacker and defender and dmg > 0:
+            if (
+                getattr(attacker, "ex", False) or getattr(attacker, "megaEx", False)
+            ) and defender.cardId in _ex_wall_ids():
+                return 0  # 壁: ex/メガのワザは全ダメージ無効(0ダメ連打の実敗因)
             if defender.weakness is not None and defender.weakness == attacker.energyType:
                 dmg *= 2
             if defender.resistance is not None and defender.resistance == attacker.energyType:
@@ -233,15 +274,26 @@ def _gain_value(obs: Observation, opt) -> int:
     return 4
 
 
-def _pokemon_value_for_active(state, me: int, opt) -> tuple:
-    """バトル場に出すポケモンの評価（エネが付いている>打点が高い>HPが高い）。"""
+def _pokemon_value_for_active(obs: Observation, me: int, opt) -> tuple:
+    """バトル場に出すポケモンの評価（エネが付いている>打点が高い>HPが高い）。
+
+    ゲーム開始時の最初のバトルポケモン選択(SETUP_ACTIVE_POKEMON)は、候補が場ではなく
+    「手札」にある。場だけを見ていた頃はここで全候補が同点になり、実質ランダムに
+    選んでいた(2026-07-21のプローブで発覚)。手札の候補はカードDBから評価する。
+    """
+    state = obs.current
     pk = _pokemon_at(
         state, opt.playerIndex if opt.playerIndex is not None else me, opt.area, opt.index
     )
-    if pk is None:
+    if pk is not None:
+        energy = len(pk.energies) if pk.energies else 0
+        return (energy, _best_attack_damage_of_card(pk.id), pk.hp or 0)
+    cid = _card_id_of_option(obs, opt)
+    if cid is None:
         return (0, 0, 0)
-    energy = len(pk.energies) if pk.energies else 0
-    return (energy, _best_attack_damage_of_card(pk.id), pk.hp or 0)
+    cards, _ = _card_db()
+    c = cards.get(cid)
+    return (0, _best_attack_damage_of_card(cid), (c.hp if c else 0) or 0)
 
 
 def _choose_main(obs: Observation) -> list[int]:
@@ -313,7 +365,16 @@ def _choose_main(obs: Observation) -> list[int]:
 
     # 4. エネ貼り。ワザコストが足りないポケモン優先(その中でバトル場>高打点)。
     # 全員足りているなら高打点に予備を1枚だけ(9枚積み・バトル場エネ0の詰み対策)。
-    attach_best, attach_key = None, (-1, -1, -1, -99)
+    #
+    # Ignition Energy(17)は「進化ポケモンに付いていれば{C}{C}{C}を供給、ターン終了時に破棄」。
+    # Mega Starmie ex は進化ポケモンなので、**バトル場のMega Starmieに1枚貼るだけで
+    # その場でNebula Beam(210)が撃てる**。逆にたね(Staryu)やベンチに貼ると1エネしか
+    # 供給せずターン終了で捨てるだけの純損失になる。
+    # 現行キーは貼り先しか見ずエネ種を区別しないため、実測では
+    # 「バトル場Mega Starmieに貼れる232機会のうち61回(26%)しか使わず、
+    #  たねStaryuに33回貼って捨てていた」(data.md 2026-07-21)。
+    # 基本エネで3枚に届く局面(have>=2)ではIgnitionを温存する。
+    attach_best, attach_key = None, (-1, -1, -1, -1, -99)
     for i, o in enumerate(options):
         if o.type != OptionType.ATTACH:
             continue
@@ -325,7 +386,23 @@ def _choose_main(obs: Observation) -> list[int]:
         hungry = 1 if have < need else 0
         is_active = 1 if o.inPlayArea == AreaType.ACTIVE else 0
         dmg = _best_attack_damage_of_card(pk.id)
-        key = (hungry, is_active if hungry else 0, dmg, -have)
+        pri = 1  # 通常のエネ
+        try:
+            ecid = (
+                state.players[me].hand[o.index].id
+                if o.area == AreaType.HAND
+                else None
+            )
+        except (IndexError, TypeError, AttributeError):
+            ecid = None
+        if ecid == _IGNITION_ID:
+            c_t = cards.get(pk.id)
+            evolved = bool(
+                c_t and (getattr(c_t, "stage1", False) or getattr(c_t, "stage2", False))
+            )
+            # 進化体がバトル場にいて、基本エネでは3に届かない(have<2)ときだけ最優先。
+            pri = 2 if (evolved and is_active and have < 2) else 0
+        key = (pri, hungry, is_active if hungry else 0, dmg, -have)
         if key > attach_key:
             attach_best, attach_key = i, key
     if attach_best is not None:
@@ -387,6 +464,8 @@ def _choose_cards(obs: Observation) -> list[int]:
         return ranked[:count]
 
     # 相手にダメージ/ダメカンを置く: HPが低い順（KOを最大化）
+    # 注: 進化先の脅威度で優先度を変える案(EXP6/6b, 2026-07-21)は、脅威を主キーにすると
+    # KOへの変換を失い(-8pt級)、タイブレークに落とすと効果が消える(正味-0.09pt)ため棄却済み。
     if ctx in (
         SelectContext.DAMAGE_COUNTER,
         SelectContext.DAMAGE_COUNTER_ANY,
@@ -423,7 +502,7 @@ def _choose_cards(obs: Observation) -> list[int]:
         count = max(sel.minCount, min(1, sel.maxCount)) or max(sel.minCount, 0)
         ranked = sorted(
             range(n),
-            key=lambda i: _pokemon_value_for_active(state, me, options[i]),
+            key=lambda i: _pokemon_value_for_active(obs, me, options[i]),
             reverse=True,
         )
         return ranked[:count]

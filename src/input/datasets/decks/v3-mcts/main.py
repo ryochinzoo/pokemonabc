@@ -513,9 +513,14 @@ def _v1_decide(obs: Observation) -> list[int]:
 #
 # アブレーション用フラグ(環境変数。成分別寄与の計測に使う):
 #   V2_NO_SEARCH=1     探索を全停止(=v1相当)
-#   V3_NO_MCTS=1       MCTSを止め、v2.1bの平坦全展開+固定ロールアウトに戻す
-#   V3_NO_OPPMODEL=1   相手モデリングを止め、v2.1bの「現在可視札のargmax・5型辞書」推定に戻す
-#   V3_NO_PRIZETRADE=1 サイドトレード評価を止め、v2.1bの評価関数に戻す
+#   V3_MCTS=1          第1世代の決定化MCTSを有効化(iter4既定は平坦探索)
+#   V3_OPPMODEL=1      9型相手モデリングを有効化(既定はv2.1bの5型argmax)
+#   V3_PRIZETRADE=1    サイドトレード評価を有効化(既定はv2.1b評価関数)
+#   (旧 V3_NO_* も後方互換で解釈: 指定時はオプトインを打ち消す)
+# iter4(D19)のクラス限定上書き:
+#   V3_SHADOW=1        上書きを記録するだけで適用しない(反実仮想の露出分布収集)
+#   V3_CLASSES=a,b     上書き許可クラス。既定 retreat,attack,energy。"all"でゲート無効
+#   V3_NO_LETHAL=1     リーサル/ブランダー層(終局検知のみ・評価関数フリー)を停止
 # ============================================================
 import ctypes as _ct
 import json
@@ -552,10 +557,25 @@ _MAX_TREE_DEPTH = _env_int("V3_DEPTH", 1)
 _MCTS_EVAL_SCALE = 3000.0  # 生評価値→tanh正規化のスケール
 _MAX_ENGINE_STEPS = 6000   # 1判断あたりのSearchStep上限(メモリ・時間の安全弁)
 
-_FLAG_NO_MCTS = bool(os.environ.get("V3_NO_MCTS"))
-_FLAG_NO_OPPMODEL = bool(os.environ.get("V3_NO_OPPMODEL"))
-_FLAG_NO_PRIZETRADE = bool(os.environ.get("V3_NO_PRIZETRADE"))
+def _flag_on(name: str) -> bool:
+    return os.environ.get(name, "") not in ("", "0")
+
+
+# iter4(第2世代, D19): 既定=v2.1b完全等価(平坦探索+v2評価+5型辞書)。
+# 第1世代の3成分は機構診断(対標本差分推定器の破壊)によりオプトインへ降格。
+_FLAG_NO_MCTS = (not _flag_on("V3_MCTS")) or _flag_on("V3_NO_MCTS")
+_FLAG_NO_OPPMODEL = (not _flag_on("V3_OPPMODEL")) or _flag_on("V3_NO_OPPMODEL")
+_FLAG_NO_PRIZETRADE = (not _flag_on("V3_PRIZETRADE")) or _flag_on("V3_NO_PRIZETRADE")
 _LOG_PATH = os.environ.get("V3_LOG")  # 設定時のみ判断ログをJSON行で追記(ローカル計測用)
+
+# クラス限定上書き(iter4層2)とシャドーモード。ability/playへの上書きはv1の
+# 実証済みパッチ(能力使用規則・展開規則)保護のため既定で拒否する。
+_SHADOW = _flag_on("V3_SHADOW")
+_ALLOWED_CLASSES = frozenset(
+    (os.environ.get("V3_CLASSES") or "retreat,attack,energy").replace(" ", "").split(","))
+_FLAG_NO_LETHAL = _flag_on("V3_NO_LETHAL")
+# 直近の上書き提案の由来層: "search"(層2=評価関数比較) / "lethal" / "blunder"(層1=終局検知)
+_OVR_CLS = ["search"]
 
 # 相手デッキ推定の辞書: 実ラダー/メタ観測の最頻出60枚(docs/memo/data.md)。
 # 前半5つ=v2.1b当時の辞書(V3_NO_OPPMODEL はこの5つのargmaxに退行)。
@@ -889,6 +909,60 @@ def _engine_json(r) -> dict | None:
         return None
 
 
+_CLS_BY_OPTTYPE = {
+    OptionType.RETREAT: "retreat",
+    OptionType.ATTACK: "attack",
+    OptionType.ENERGY: "energy",
+    OptionType.ATTACH: "energy",
+    OptionType.ABILITY: "ability",
+    OptionType.PLAY: "play",
+    OptionType.EVOLVE: "evolve",
+    OptionType.END: "end",
+}
+
+
+# D23: クラス上書きの価値は対面で符号反転する(energyはGrimm対面で実害-11pt対照確定)。
+# 相手アーキタイプの推定が立つ間、該当クラスを対面条件付きで無効化する。
+# V3_NO_MATCHUPVETO=1 でアブレーション可。
+_CLASS_MATCHUP_VETO = {"energy": ("grimmsnarl_munkidori",)}
+_FLAG_NO_MATCHUPVETO = _flag_on("V3_NO_MATCHUPVETO")
+
+
+def _likely_archetype() -> str | None:
+    """累積可視カウンタから最尤メタ型名。情報不足・低適合ならNone(veto不発動)。"""
+    try:
+        seen = dict(_OPP_MEM["seen"])
+        cands, total = _archetype_posterior(seen)
+        if total < 4:
+            return None
+        name, _cand, s = max(cands, key=lambda t: t[2])
+        return name if s >= 0.35 else None
+    except Exception:
+        return None
+
+
+def _decision_class(sel, picked) -> str:
+    """判断クラス: 選んだ先頭オプションの型で分類(害分析とクラスゲートの単位)。"""
+    try:
+        if not picked:
+            return "other"
+        return _CLS_BY_OPTTYPE.get(sel.option[picked[0]].type, "other")
+    except Exception:
+        return "other"
+
+
+def _preserve_deck_active(obs_dict) -> bool:
+    """v1の山札温存モード(D15実証パッチ)中か。層2の上書きはこの間全面拒否する。"""
+    try:
+        cur = obs_dict.get("current") or {}
+        me = cur.get("yourIndex")
+        if me not in (0, 1):
+            return False
+        return (cur["players"][me].get("deckCount") or 0) <= 5
+    except Exception:
+        return False
+
+
 def _v3_log(rec: dict) -> None:
     if not _LOG_PATH:
         return
@@ -1198,6 +1272,8 @@ def _search_decide_flat(obs_dict: dict, sel, v1_answer: list[int]) -> list[int] 
     root_turn = cur.get("turn") or 0
     totals = {c: 0.0 for c in candidates}
     counts = {c: 0 for c in candidates}
+    twin = {c: 0 for c in candidates}   # ロールアウトが終局「勝ち」に到達した回数
+    tloss = {c: 0 for c in candidates}  # 同「負け」到達回数(層1=評価関数フリーの材料)
     try:
         for _ in range(_DETERMINIZATIONS):
             if _time.monotonic() > deadline:
@@ -1239,6 +1315,12 @@ def _search_decide_flat(obs_dict: dict, sel, v1_answer: list[int]) -> list[int] 
                         break
                     sid = nxt["state"]["searchId"]
                     nobs = nxt["state"]["observation"]
+                fin = (nobs.get("current") or {}).get("result", -1)
+                if fin >= 0:
+                    if fin == me:
+                        twin[c] += 1
+                    elif fin == 1 - me:
+                        tloss[c] += 1
                 totals[c] += _evaluate(nobs.get("current") or {}, me)
                 counts[c] += 1
     except Exception:
@@ -1251,6 +1333,23 @@ def _search_decide_flat(obs_dict: dict, sel, v1_answer: list[int]) -> list[int] 
     evaluated = [c for c in candidates if counts[c] >= _DETERMINIZATIONS]
     if not evaluated or v1_rep not in evaluated:
         return None
+
+    # 層1: リーサル/ブランダー(終局検知のみ・評価関数フリー。D19: 最も信用できる層)
+    if not _FLAG_NO_LETHAL:
+        sure_wins = [c for c in evaluated if twin[c] == counts[c]]
+        if sure_wins:
+            if v1_rep in sure_wins:
+                return None  # v1自身が必勝手ならそのまま
+            _OVR_CLS[0] = "lethal"
+            return [sure_wins[0]]
+        if tloss[v1_rep] == counts[v1_rep]:
+            # v1の手が全決定化で終局負けに到達。負けない代替があれば退避
+            alts = [c for c in evaluated if c != v1_rep and tloss[c] < counts[c]]
+            if alts:
+                _OVR_CLS[0] = "blunder"
+                return [min(alts, key=lambda c: tloss[c] / counts[c])]
+
+    # 層2: 評価関数比較(マージン上書き。クラスゲートはagent()側で適用)
     best = max(evaluated, key=lambda c: totals[c] / counts[c])
     if best == v1_rep:
         return None
@@ -1260,6 +1359,7 @@ def _search_decide_flat(obs_dict: dict, sel, v1_answer: list[int]) -> list[int] 
 
 
 def _search_decide(obs_dict: dict, sel, v1_answer: list[int]) -> list[int] | None:
+    _OVR_CLS[0] = "search"
     if _FLAG_NO_MCTS:
         return _search_decide_flat(obs_dict, sel, v1_answer)
     return _search_decide_mcts(obs_dict, sel, v1_answer)
@@ -1306,7 +1406,34 @@ def agent(obs_dict: dict) -> list[int]:
                     and len(set(picked)) == len(picked)
                     and all(0 <= p < len(sel.option) for p in picked)
                 ):
-                    return picked
+                    # iter4 層2ゲート: 上書きは許可クラスのみ。層1(lethal/blunder)は
+                    # 評価関数フリーのためゲートと温存vetoを免除。シャドーは全層不適用。
+                    layer = _OVR_CLS[0]
+                    cls_v1 = _decision_class(sel, v1)
+                    cls_new = _decision_class(sel, picked)
+                    preserve = _preserve_deck_active(obs_dict)
+                    if layer in ("lethal", "blunder"):
+                        allowed = True
+                    elif preserve:
+                        allowed = False  # 山札温存パッチ(D15)の拒否権
+                    elif "all" in _ALLOWED_CLASSES:
+                        allowed = True
+                    else:
+                        allowed = (cls_new in _ALLOWED_CLASSES
+                                   and cls_v1 in _ALLOWED_CLASSES)
+                    arch = None
+                    if allowed and layer == "search" and not _FLAG_NO_MATCHUPVETO:
+                        arch = _likely_archetype()
+                        if arch and any(
+                            arch in _CLASS_MATCHUP_VETO.get(c, ())
+                            for c in (cls_new, cls_v1)
+                        ):
+                            allowed = False
+                    _v3_log({"ev": "gate", "layer": layer, "cls_v1": cls_v1,
+                             "cls_new": cls_new, "preserve": preserve,
+                             "arch": arch, "allowed": allowed, "shadow": _SHADOW})
+                    if allowed and not _SHADOW:
+                        return picked
         except Exception:
             pass
         return v1

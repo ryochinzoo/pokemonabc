@@ -13,11 +13,15 @@ Kaggle へ提出する**前**に必ず通す検査。提出は1日5回まで・�
 
 ## 実行
 
-リポジトリのルートから:
+リポジトリのルートから、**提出するデッキディレクトリを必ず指定して**実行する:
 
 ```
-python3 "${CLAUDE_SKILL_DIR}/scripts/check.py"
+python3 "${CLAUDE_SKILL_DIR}/scripts/check.py" --submission src/input/datasets/decks/starmie-aggro
 ```
+
+`--submission` は必須(既定値なし)。2人チームで別々のデッキを持つため、どちらかを
+既定値にすると「検査した対象と違うデッキを提出する」事故になるため
+(2026-07-21の運用監査で、既定値が旧デッキを指したまま放置されていた)。
 
 ## 検査内容
 

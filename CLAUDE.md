@@ -40,7 +40,11 @@ voids matches. Run `@robustness-guard` after changing agent logic.
 ## Team rules (agreed process)
 
 - **Measure before submitting**: pass the gate in `verification/README.md`
-  (vs random + 3 gauges + donk_meter, CRASH=0) before any Kaggle submission.
+  before any Kaggle submission. **Effect-size judging uses the calibrated
+  encounter-weighted score (CEW) over out-of-family gauges, not self-piloted
+  in-family gauges** (D27: in-family benches over-estimate by +8~+62pt; D29). The
+  only independent checks are validity, not effect size: CRASH=0 / vs random ≥96%
+  / `check.py --submission <deck-dir>`.
 - **Submissions are budgeted** (5/day, final ranking = latest 2): keep the two
   most recent submissions = our two best versions.
 - **Deck legality is on us**: the engine does NOT enforce the 4-copies-per-name
