@@ -30,8 +30,13 @@
   - `official_lucario_agent.py` + `decks/official_lucario_2026-07-21.csv`
     (**ホスト公式サンプル。実ラダーの相手と60/60枚一致=実環境の再現**)
   - `official_abomasnow_agent.py` + `decks/official_abomasnow_2026-07-21.csv`
+  - `tomato_archaludon_agent.py` + `decks/tomato_archaludon_2026-07-22.csv`
+    (**実ラダーArchaludonの正体=この系譜**、deck 60/60一致×2。D34。ライセンス未確認
+    のため再配布・派生禁止、対戦相手としてのみ使用)
+  - `official_dragapult_agent.py` + `decks/official_dragapult_2026-07-22.csv`
   - チームメイトのagent(`decks/mega-starmie-ex-deck/main.py`)も族外操縦者として使える
-  他アーキタイプの公式サンプルはKaggle Codeタブ(著者kiyotah)から同様に取り込める。
+  公式サンプルの全容(kiyotah、2026-07-22確認): Lucario/Abomasnow/Dragapult/Iono'sの4種のみ。
+  **Alakazam版と壁版は存在しない**。
 - **事前登録**: 仮説・N・合格閾値を測定前にdocs/memoに書く。
   N=200のSEは約3.5pt → **3pt差の結論をN=200で語らない**。効果量5ptの検出はN≈800。
   8対面の符号一致(方向性)は少数Nでも堅い証拠として扱ってよい。
@@ -39,8 +44,10 @@
   複数の非退行ゲートを独立に課してはいけない: **4条件だと真に効果ゼロの変更でも
   65.1%の確率でどれかが「退行」と誤検出され、良い変更を系統的に捨てる**。
   退行は合成指標に遭遇率の重みで自動反映される。
-  現行のCEW = Lucario(公式agent) 53.8% + Archaludon(steel) 38.6% + Abomasnow(公式agent) 7.6%、
-  基準線34.5%。**N=800/セル・閾値+2pt**(真の+5ptの採用率96.4%、1実験2,400戦≒36分)。
+  現行のCEW(2026-07-22 D35改訂) = Lucario(公式agent) 49.0% +
+  Archaludon(**tomato系譜agent優先**・steel副参照) 35.3% + Dragapult(公式agent) 9.8% +
+  Abomasnow(公式agent) 5.9%、**基準線41.5%**(プールN=120遭遇分布、カバレッジ42.5%)。
+  **N=800/セル・閾値+2pt**(1実験3,200戦≒50分)。計算は必ず `verification/cew.py` で行う。
   別建てで残すのは効果量ではなく**正当性の検査**のみ: CRASH=0 / vs random ≥96% / check.py。
 - **標的選定はデッキ側を優先する**: 実測の効果量はデッキ介入 平均+7.7pt に対し
   パイロット介入 平均+0.1pt(2026-07-21時点、n=2/n=6)。パイロット微調整に時間を

@@ -15,14 +15,20 @@ import argparse
 import datetime as _dt
 
 # --- 重み表（算出日・N・出典を必ず残す。ここが古びると全判定が狂う） ---
-WEIGHTS_DATE = _dt.date(2026, 7, 21)   # data.md「実ラダー全60戦の遭遇分布」より
-WEIGHTS_SOURCE = "decisions.md D29 / data.md 2026-07-21 (実ラダー全60戦, N=60)"
-WEIGHTS = {          # 較正済みゲージが存在する43.3%の遭遇を再正規化した重み
-    "lucario": 0.538,     # 公式Lucario agent(遭遇23.3%)
-    "archaludon": 0.386,  # steel Archaludon(遭遇16.7%)
-    "abomasnow": 0.076,   # 公式Abomasnow agent(遭遇3.3%)
+# 2026-07-22 D35改訂(ゆうじ承認): ①Dragapult第4成分を追加(カバレッジ42.5%へ)
+# ②Archaludon成分の参照エージェントは tomato_archaludon_agent.py を優先
+#   (実ラダー相手の正体=tomato系譜、deck 60/60一致×2。steelは副参照として保持。
+#    較正は三者一致: steel21.4 ≈ tomato22.0 ≈ 実ラダー25.0)
+WEIGHTS_DATE = _dt.date(2026, 7, 22)
+WEIGHTS_SOURCE = "D35 / data.md 2026-07-22 (実ラダー2提出プール N=120)"
+WEIGHTS = {          # 較正済みゲージが存在する42.5%(51/120)の遭遇を再正規化した重み
+    "lucario": 0.490,     # 公式Lucario agent(遭遇25/120)
+    "archaludon": 0.353,  # tomato Archaludon優先・steel副参照(遭遇18/120)
+    "dragapult": 0.098,   # 公式Dragapult agent(遭遇5/120)
+    "abomasnow": 0.059,   # 公式Abomasnow agent(遭遇3/120)
 }
-BASELINE = 34.51     # 現行(EXP8採用前)の CEW。data.md 2026-07-21
+BASELINE = 41.51     # 現行ライブ(EXP8×starmie-aggro)のCEW。成分N非均一に注意:
+                     # Lucario48.9(N1600)/tomato22.0(N300)/Dragapult80.3(N300)/Aboma32.3(N1600)
 ADOPT_THRESHOLD = 2.0  # 基準比 +2.0pt 以上で採用検討(N=800/セル前提)
 STALE_DAYS = 7       # この日数を超えたら再検死の警告
 
@@ -39,7 +45,9 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--lucario", type=float, help="vs 公式Lucario の勝率(%%)")
-    ap.add_argument("--archaludon", type=float, help="vs steel Archaludon の勝率(%%)")
+    ap.add_argument("--archaludon", type=float,
+                    help="vs tomato Archaludon(優先)/steel(副) の勝率(%%)")
+    ap.add_argument("--dragapult", type=float, help="vs 公式Dragapult の勝率(%%)")
     ap.add_argument("--abomasnow", type=float, help="vs 公式Abomasnow の勝率(%%)")
     ap.add_argument("--baseline", type=float, default=BASELINE,
                     help=f"比較する基準線(既定 {BASELINE})")
