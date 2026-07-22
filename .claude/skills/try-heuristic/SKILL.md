@@ -45,7 +45,8 @@ allowed-tools: Bash(cd *) Bash(python3 *) Bash(cp *) Bash(mkdir *) Bash(ruff *)
       vs random が **96%未満** → 不採用。手順6へ。
 
    b. **効果量の判定 = CEW**（較正済み族外ゲージ4種の遭遇加重合成）。
-      基準線 **41.5%**、**N=800/セル**、閾値 **+2pt**。計算は `verification/cew.py`、
+      基準線 **41.03%**、**Neyman配分 合計N=3,200 (1712/1024/272/192)**、閾値 **+2pt**
+      (D38。閾値は約1.7σでしかない — `cew_stats.py` のCIを必ず併記)。計算は `verification/cew.py`、
       手順は `verification/README.md` の提出前ゲート。
       **族内ゲージ（自パイロットが相手を操縦）や新旧直接対決の勝率は、相手操縦者との
       実力差ぶん過大評価する（D27: +8〜+62pt）ので採否には使わない**——

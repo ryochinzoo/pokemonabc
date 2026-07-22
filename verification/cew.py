@@ -27,9 +27,15 @@ WEIGHTS = {          # 較正済みゲージが存在する42.5%(51/120)の遭�
     "dragapult": 0.098,   # 公式Dragapult agent(遭遇5/120)
     "abomasnow": 0.059,   # 公式Abomasnow agent(遭遇3/120)
 }
-BASELINE = 41.51     # 現行ライブ(EXP8×starmie-aggro)のCEW。成分N非均一に注意:
-                     # Lucario48.9(N1600)/tomato22.0(N300)/Dragapult80.3(N300)/Aboma32.3(N1600)
-ADOPT_THRESHOLD = 2.0  # 基準比 +2.0pt 以上で採用検討(N=800/セル前提)
+BASELINE = 41.03     # D38 (2026-07-23): 墓場バッチ(i) 4反復×Neyman N=800 の平均(計3,200戦)。
+                     # プールSE 0.82pt。旧41.51(成分N非均一)から実質不変だが測定として上位。
+                     # 成分N: Lucario1712 / tomato1024 / Dragapult272 / Abomasnow192
+ADOPT_THRESHOLD = 2.0  # 基準比 +2.0pt 以上で採用検討。
+                     # D38前提: 測定は Neyman配分 合計N=3,200 (1712/1024/272/192)。
+                     # この構成での実効: 誤採用率4.2% / 真+2.5ptへの検出力67%
+                     # (基準線の系統誤差0.82ptが床。検定力計算=data.md 2026-07-23 D38節)。
+                     # 一様N=800/セルは同じ3,200戦で誤採用6.4%に劣化するので使わない。
+                     # CIの計算は cew_stats.py。
 STALE_DAYS = 7       # この日数を超えたら再検死の警告
 
 

@@ -49,8 +49,8 @@ cd src/input/datasets/decks/starmie-aggro && python3 "$(git rev-parse --show-top
 実力差に比例して勝率を **+8〜+62pt 過大評価する**（D27で実測）。族内ゲージは
 **スクリーニング用途のみ**。
 
-**採否の主指標は CEW**（較正済み族外ゲージ4種の遭遇加重合成、基準線41.5%、
-N=800/セル、閾値+2pt）。計算は `verification/cew.py`、手順は
+**採否の主指標は CEW**（較正済み族外ゲージ4種の遭遇加重合成、基準線41.03%、
+Neyman配分 合計N=3,200 (1712/1024/272/192)、閾値+2pt。D38）。計算は `verification/cew.py`、手順は
 `verification/README.md` の提出前ゲート。族外ゲージ（公式サンプル / tomato系譜）は
 `verification/reference/` にあり、**検証専用・提出禁止**。
 
