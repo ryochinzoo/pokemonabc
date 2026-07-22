@@ -142,3 +142,11 @@
 - **probe.py**: 行動プローブの定型15行だけを抽出(測定ロジックはテンプレ化しない=規律維持)。
 - 自己発見: 今夜の final_gate.sh 自身が「README.md準拠」と書いて族内ゲージを最終ゲートに
   していた=文書が能動的に誤らせた実例(今回EXP8は両方通ったので実害はなし)。
+
+## 2026-07-23 未明: E1先行ゲートプローブ(30戦)
+- 変種 starmie-belt-e1 構築(deck.csv 1行差分、main.pyバイト同一=凍結証明)。
+- 起動前検証2件シロ(Starmie{W}vs弱点{P}=W/R無関係、Gravity MountainはStage2のみ)。
+- ゲート(1)PASS 3/10ちょうど。(2)貼付先=Starmie×4/Staryu×2+手札燃やし25%の新観測。
+- (3)+50をログ実測で確認: Jetting+Belt=170×4、条件節両方向OK、Mega ex={ex}クローズ。
+  厳格形(Nebula260)は0件(as-piloted起因)→目的基準で通過、開示つき(D39)。
+- Bomb起爆2/10=counterfactual実測。7/27の本測定(Neyman3,200)へ。
