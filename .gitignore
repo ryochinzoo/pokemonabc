@@ -6,3 +6,22 @@ __pycache__/
 # 必要に応じて、巨大なバイナリファイルもGit管理から外したい場合は追加
 # *.so
 # *.dylib
+
+src/input/datasets/decks/underground-arena/
+.Python
+[Bb]in
+[Ii]nclude
+[Ll]ib
+[Ll]ib64
+[Ll]ocal
+[Ss]cripts
+pyvenv.cfg
+.venv
+.python311
+.python311x64
+.venv-kaggle311x64
+.venv-kaggle311/
+.venv-kaggle311x64
+.venv-kaggle311
+pip-selfcheck.json
+参考ログ/
