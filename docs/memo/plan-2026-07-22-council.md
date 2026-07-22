@@ -55,7 +55,22 @@ python3 ../../../../../verification/bench.py 300 --opponent main.py --opponent-d
 #   「energy限定と現行全クラスの実効不一致率」<0.3回/試合なら機構消滅を確認し正式閉鎖
 ```
 
-## 4. kaggle-environments方針(確定)
+## 4. kaggle-environments方針(**§4はD37で訂正済み — 下の訂正注記を先に読むこと**)
+
+> **【D37 (2026-07-22) による訂正】** 外部確認の結果、**`cabt` は Kaggle/kaggle-environments
+> の公式環境=本番ランナーそのもの**と確定(この §4 の前提①は正しかった)。ただし:
+> - **盲点②は存在しない機構だった** — `cabt.json` は `actTimeout: 0` /
+>   `remainingOverageTime: 600`。**1手ごとの制限時間は無く**エピソード単位のバンク制。
+>   現行は1戦約325msで約1800倍の余裕につき**閉じた**(探索を重くしたら再検)。
+> - **盲点④は kaggle-envs では閉じない** — Mac上では `libcg.dylib` しか読まれない。
+>   Docker(linux/amd64) か Kaggle notebook のみ。
+> - **工数2-4hは不要だった**。`cabt.py` は `battle_start`/`battle_select` の薄いラッパで
+>   追加ゲームロジックを持たないため、自作ハーネスは構造的に忠実。適合検査は
+>   `verification/conformance.py`(新設、実行1秒)で足り、**提出前ゲート第4項**に制定済み。
+> - **実インストールの優先度は低い** — 残る用途は盲点①のみだが、T1の実ラダー60戦
+>   (全DONE/DONE, CRASH=0)が既により強い担保。パイロットが探索APIを本格使用したら再浮上。
+
+
 
 - **統計測定は自作ハーネス一択**(9ms〜1s/戦。CEW N=3,200戦の物量はkaggle-envsでは不成立)。
 - **本番忠実度の主担保はT1**(実ラダー前向き検証。7/22に予測37.0 vs実測35.0で的中済み)。
