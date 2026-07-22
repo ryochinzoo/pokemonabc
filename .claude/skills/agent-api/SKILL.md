@@ -5,7 +5,8 @@ description: Reference for writing the Pokémon TCG agent's decision logic — t
 
 # agent-api
 
-Decision-relevant summary of `src/input/datasets/decks/mega-starmie-ex-deck/cg/api.py`. Open that file
+Decision-relevant summary of `src/input/datasets/decks/starmie-aggro/cg/api.py`
+(`cg/api.py` is byte-identical across deck directories). Open that file
 for full enum members and field lists; this is the orientation. Assume enums/dataclasses may
 gain members during the competition — handle unknown values gracefully.
 

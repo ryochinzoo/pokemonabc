@@ -34,7 +34,23 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/check.py" --submission src/input/datasets/d
 4. **スモーク対戦** — `main.agent` を20戦走らせ、大会の**ハード要件**を実測で確認:
    - 一度も**クラッシュしない**
    - 常に**合法手**を返す（範囲内・重複なし・min/maxCount内）
-   - 各判断が**時間内**（最遅判断のms表示。手番ごとの制限時間は要確認）
+   - 各判断が**時間内**。※D37で確定: **1手ごとの制限時間は存在しない**
+     (`cabt.json`: `actTimeout: 0`)。実体は**エピソード単位600のバンク**
+     (`observation.remainingOverageTime`)。現行は1戦約325msで約1800倍の余裕。
+5. **本番ランナー適合** — `verification/conformance.py`（D37で新設）。**これは他の4項目では
+   絶対に検出できない経路を見る**:
+   ```
+   cd <デッキディレクトリ> && python3 ../../../../../verification/conformance.py
+   ```
+   本番の interpreter は**デッキを `agent()` の戻り値から取る**(`decks = [state[i].action]`)
+   が、`verification/selfplay.py` は `deck.csv` から読んで `battle_start` に直接渡すため、
+   **デッキ返却分岐はベンチでも CEW でも一度も実行されない**。壊れていても全ての数値は
+   正常に出て、本番だけ全敗する。検査するのは:
+   - `agent({"select": None, ...})` が**ちょうど60枚**の int リストを返す
+     （60枚でなければ本番は `INVALID` → reward -1 = 即敗北）
+   - `deck.csv` との一致 / 同名4枚制限
+   - `battle_start` の **`errorPlayer < 0`**（エンジン自身のデッキ検証。
+     4枚制限は見ないが**別種のデッキエラーは見る**）
 
 ## 結果の扱い
 

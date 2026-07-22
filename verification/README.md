@@ -5,15 +5,18 @@
 
 ## 前提
 
-各ツールは **デッキディレクトリ**（`main.py` + `deck.csv` + `cg/` が揃った場所、
-例: `src/input/datasets/decks/mega-starmie-ex-deck/`）から実行する。
+各ツールは **デッキディレクトリ**（`main.py` + `deck.csv` + `cg/` が揃った場所）から
+実行する。**現行の王者＝`src/input/datasets/decks/starmie-aggro/`**（D34）。
+`decks/mega-starmie-ex-deck/` は**チームメイトのデッキ**なので、自分の測定対象として
+`cd` しないこと（取り違えても数値は普通に出るので無言で通る。D35: りょーちんの
+ディレクトリは変更もしない）。
 `cg/` のバイナリ（libcg.dylib 等）は gitignore なので、無い場合は
 Kaggle の sample_submission からコピーすること。
 
 ## 使い方（デッキディレクトリで実行）
 
 ```bash
-cd src/input/datasets/decks/mega-starmie-ex-deck
+cd src/input/datasets/decks/starmie-aggro
 
 # 1) 対ランダム勝率（95%信頼区間つき）
 python3 ../../../../../verification/bench.py 300
@@ -51,8 +54,18 @@ python3 ../../../../../verification/bench.py 300 --deck ../../../../../verificat
 2. **正当性の検査**（効果量ではない、独立に残す）: CRASH=0 / vs random ≥96% / `check.py`。
    ※donk_meterやゲージ勝率を独立ゲートとして課さない（D29: 独立4条件で真に効果ゼロでも
    65.1%が「退行」と誤検出され良い変更を捨てる）。
-3. デッキは**同名カード合計4枚以下**（エンジンは検査しない！5枚でも通ってしまう）
-4. 最終順位は「直近2提出」＝**直近2枠は常にベスト2本**を維持する
+3. デッキは**同名カード合計4枚以下**（エンジンは**4枚制限は**検査しない！5枚でも通る）。
+   ただし D37 で判明: エンジンは**別種のデッキエラーは検査する**
+   (`battle_start` の `start_data.errorPlayer >= 0` → 本番 `INVALID` = 即敗北)。
+   「エンジンは何も見ない」と一般化しないこと。
+4. **本番ランナー適合検査** = `conformance.py`（D37新設）。**agent() のデッキ返却経路は
+   他のどのツールでも実行されない**（selfplay.py は deck.csv から直接 `battle_start` に
+   渡すため）。壊れていても全数値は正常に出て本番だけ全敗するので、提出前に必ず通す:
+   ```
+   cd src/input/datasets/decks/starmie-aggro
+   python3 ../../../../../verification/conformance.py     # → CONFORMANCE=PASS
+   ```
+5. 最終順位は「直近2提出」＝**直近2枠は常にベスト2本**を維持する
 
 ## 中身
 

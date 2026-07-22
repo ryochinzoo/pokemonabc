@@ -16,9 +16,15 @@ allowed-tools: Bash(cd *) Bash(python3 *)
 必ず提出物ディレクトリから実行する（`import main / selfplay / cg` がそこでしか解決
 しないため）。`$ARGUMENTS` は対戦数（省略時200）。
 
+**既定は現行の王者デッキ `starmie-aggro`**（D34で確定）。別のデッキを測るときは
+呼び出し側がディレクトリを明示する。`decks/mega-starmie-ex-deck/` は**チームメイトの
+デッキ**なので、ここを既定にしてはいけない（測定対象の取り違えは無言で通る）。
+
 ```
-cd src/input/datasets/decks/mega-starmie-ex-deck && python3 "$(git rev-parse --show-toplevel)/verification/bench.py" $ARGUMENTS
+cd src/input/datasets/decks/starmie-aggro && python3 "$(git rev-parse --show-toplevel)/verification/bench.py" $ARGUMENTS
 ```
+
+**どのデッキディレクトリで測ったかを必ず報告の1行目に書く。**
 
 引数なしのときは `200` で実行する。
 
@@ -36,34 +42,33 @@ cd src/input/datasets/decks/mega-starmie-ex-deck && python3 "$(git rev-parse --s
   デッキ差を消して `agent()` の差だけを見る。
 - デッキ込みの強さを測りたいときは `--opponent-deck` を使う（下記）。
 
-## メタ再現モード（標準仮想敵）
+## ゲージと採否判定（D27/D29/D35 で改訂済み — ここが最重要）
 
-LB上位で観測された Alakazam + Dudunsparce 型を、スクリプトAI＋専用デッキとして
-提出物ディレクトリに常備してある（2026-07-07 に cabt 実機でキーカード挙動を検証済み）:
+**このスキルの生の勝率で採否を決めてはいけない。** 自前パイロットが相手デッキを操縦する
+「族内ゲージ」（`verification/gauges/` の Alakazam型・Grimmsnarl型）は、相手操縦者との
+実力差に比例して勝率を **+8〜+62pt 過大評価する**（D27で実測）。族内ゲージは
+**スクリーニング用途のみ**。
+
+**採否の主指標は CEW**（較正済み族外ゲージ4種の遭遇加重合成、基準線41.5%、
+N=800/セル、閾値+2pt）。計算は `verification/cew.py`、手順は
+`verification/README.md` の提出前ゲート。族外ゲージ（公式サンプル / tomato系譜）は
+`verification/reference/` にあり、**検証専用・提出禁止**。
+
+族内ゲージをスクリーニングで回すとき（パスは deck ディレクトリからの相対）:
 
 ```
 python3 "$(git rev-parse --show-toplevel)/verification/bench.py" 200 \
-  --opponent alakazam_agent.py --opponent-deck decks/alakazam_v0.csv
+  --opponent "$(git rev-parse --show-toplevel)/verification/gauges/alakazam_agent.py" \
+  --opponent-deck "$(git rev-parse --show-toplevel)/verification/decks/alakazam_v0.csv"
 ```
 
-第2ゲージ（Grimmsnarl型、2026-07-08 追加）:
-
-```
-python3 "$(git rev-parse --show-toplevel)/verification/bench.py" 200 \
-  --opponent grimmsnarl_agent.py --opponent-deck decks/grimmsnarl_v0.csv
-```
-
-- ランダム相手の勝率が飽和したら、**2ゲージの平均を標準の強さ指標にする**。
-  「環境上位アーキタイプに何%勝てるか」が Kaggle レーティングの代理変数。
-  基準（v1+サンプルデッキ, 2026-07-08）: 対Alakazam 63.0% / 対Grimmsnarl 75.3%。
-- 関連ファイル: `alakazam_agent.py` / `grimmsnarl_agent.py`（貪欲スクリプトAI）,
-  `decks/*.csv`（60枚リスト）, `verify_alakazam.py`（挙動検証の再実行用）,
-  `deck_tournament.py`（同一パイロットのデッキ総当たり）。
-  いずれも**提出 tar.gz には含めない**こと。
+`grimmsnarl_agent.py` / `grimmsnarl_v0.csv` も同様。いずれのゲージ資材も
+**提出 tar.gz には含めない**こと。
 
 ## 補足
 
-- 既定の相手はランダムAI（`selfplay.random_agent`）。現状の `main.py` もほぼランダム
-  なので、初期は勝率〜50%が正常。
+- 既定の相手はランダムAI（`selfplay.random_agent`）。これは**強さの指標ではなく
+  正当性の検査**（提出前ゲート: vs random ≥96%）。現行の王者は95〜99%帯にいるので、
+  ここが落ちていたら効果ではなく事故を疑う。
 - 過去バージョンとの直接対決は `--opponent <path>.py` で可能。`/try-heuristic` が
   新旧比較に使う。

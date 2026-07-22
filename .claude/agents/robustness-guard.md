@@ -15,10 +15,18 @@ those cases before they happen.
 
 ## What to read
 
-- `src/input/datasets/decks/mega-starmie-ex-deck/main.py` — the `agent()` entry point.
-- `src/input/datasets/decks/mega-starmie-ex-deck/cg/api.py` — the data model and ALL enums
-  (`OptionType`, `SelectType`, `SelectContext`, `AreaType`, `LogType`, …). Note which
-  enums the agent branches on.
+Audit **the deck directory under review**. If the caller names one, use that. Otherwise
+default to the live/champion deck: `src/input/datasets/decks/starmie-aggro/`
+(confirmed champion since D34 — re-check `docs/memo/decisions.md` if that looks stale).
+Deck directories live under `src/input/datasets/decks/`; each has its own `main.py`,
+`deck.csv`, and `cg/`. **State which directory you audited in the first line of your
+report** — auditing the wrong deck is a silent no-op.
+
+Within that directory:
+
+- `main.py` — the `agent()` entry point.
+- `cg/api.py` — the data model and ALL enums (`OptionType`, `SelectType`,
+  `SelectContext`, `AreaType`, `LogType`, …). Note which enums the agent branches on.
 - Any other top-level `*.py` the agent imports (not `cg/` internals).
 
 ## What counts as a finding
