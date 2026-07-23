@@ -1,0 +1,31 @@
+=== E3 OFF-arm CEW screening start: Fri Jul 24 05:15:14 JST 2026 ===
+deck: alakazam-e3 (meta_alakazam_2026-07-14), pilot = 王者コピー フラグOFF素
+--- lucario N=300 ---
+我々: main.py   相手: ../../../../../verification/reference/official_lucario_agent.py + ../../../../../verification/decks/official_lucario_2026-07-21.csv   対戦数: 300   (407.0秒, 1356.5 ms/戦)
+結果: 182勝 117敗 1分
+勝率: 60.7%  (95%信頼区間 55.0%〜66.0%)   引分除く勝率: 60.9%
+WINRATE=0.6067
+CI_LOW=0.5504
+CRASH=0
+--- archaludon(tomato) N=300 ---
+我々: main.py   相手: ../../../../../verification/reference/tomato_archaludon_agent.py + ../../../../../verification/decks/tomato_archaludon_2026-07-22.csv   対戦数: 300   (452.8秒, 1509.3 ms/戦)
+結果: 146勝 154敗 0分
+勝率: 48.7%  (95%信頼区間 43.1%〜54.3%)   引分除く勝率: 48.7%
+WINRATE=0.4867
+CI_LOW=0.4306
+CRASH=0
+--- dragapult N=300 ---
+我々: main.py   相手: ../../../../../verification/reference/official_dragapult_agent.py + ../../../../../verification/decks/official_dragapult_2026-07-22.csv   対戦数: 300   (401.4秒, 1338.0 ms/戦)
+結果: 204勝 96敗 0分
+勝率: 68.0%  (95%信頼区間 62.5%〜73.0%)   引分除く勝率: 68.0%
+WINRATE=0.6800
+CI_LOW=0.6252
+CRASH=0
+--- abomasnow N=300 ---
+我々: main.py   相手: ../../../../../verification/reference/official_abomasnow_agent.py + ../../../../../verification/decks/official_abomasnow_2026-07-21.csv   対戦数: 300   (506.9秒, 1689.6 ms/戦)
+結果: 208勝 92敗 0分
+勝率: 69.3%  (95%信頼区間 63.9%〜74.3%)   引分除く勝率: 69.3%
+WINRATE=0.6933
+CI_LOW=0.6390
+CRASH=0
+=== done: Fri Jul 24 05:44:43 JST 2026 ===

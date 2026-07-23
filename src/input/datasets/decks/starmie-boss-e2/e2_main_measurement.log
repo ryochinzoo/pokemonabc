@@ -1,0 +1,52 @@
+=== E2 main measurement start: Fri Jul 24 00:06:38 JST 2026 ===
+deck: starmie-boss-e2 (-2 Judge / +2 Boss's Orders, Bomb kept), pilot frozen
+--- safety: vs random 300 ---
+我々: main.py   相手: random   対戦数: 300   (86.4秒, 287.9 ms/戦)
+結果: 292勝 8敗 0分
+勝率: 97.3%  (95%信頼区間 94.8%〜98.6%)   引分除く勝率: 97.3%
+WINRATE=0.9733
+CI_LOW=0.9483
+CRASH=0
+--- lucario N=1712 ---
+我々: main.py   相手: ../../../../../verification/reference/official_lucario_agent.py + ../../../../../verification/decks/official_lucario_2026-07-21.csv   対戦数: 1712   (452.0秒, 264.0 ms/戦)
+結果: 798勝 908敗 6分
+勝率: 46.6%  (95%信頼区間 44.3%〜49.0%)   引分除く勝率: 46.8%
+WINRATE=0.4661
+CI_LOW=0.4426
+CRASH=0
+--- archaludon(tomato) N=1024 ---
+我々: main.py   相手: ../../../../../verification/reference/tomato_archaludon_agent.py + ../../../../../verification/decks/tomato_archaludon_2026-07-22.csv   対戦数: 1024   (301.9秒, 294.9 ms/戦)
+結果: 246勝 777敗 1分
+勝率: 24.0%  (95%信頼区間 21.5%〜26.7%)   引分除く勝率: 24.0%
+WINRATE=0.2402
+CI_LOW=0.2151
+CRASH=0
+--- dragapult N=272 ---
+我々: main.py   相手: ../../../../../verification/reference/official_dragapult_agent.py + ../../../../../verification/decks/official_dragapult_2026-07-22.csv   対戦数: 272   (72.5秒, 266.4 ms/戦)
+結果: 219勝 53敗 0分
+勝率: 80.5%  (95%信頼区間 75.4%〜84.8%)   引分除く勝率: 80.5%
+WINRATE=0.8051
+CI_LOW=0.7540
+CRASH=0
+--- abomasnow N=192 ---
+我々: main.py   相手: ../../../../../verification/reference/official_abomasnow_agent.py + ../../../../../verification/decks/official_abomasnow_2026-07-21.csv   対戦数: 192   (57.9秒, 301.4 ms/戦)
+結果: 59勝 133敗 0分
+勝率: 30.7%  (95%信頼区間 24.6%〜37.6%)   引分除く勝率: 30.7%
+WINRATE=0.3073
+CI_LOW=0.2463
+CRASH=0
+--- wall screening (判定外・族内): E2 variant vs crustle wall N=150 ---
+我々: main.py   相手: main.py + ../../../../../verification/decks/ladder_crustle_wall_2026-07-19.csv   対戦数: 150   (118.6秒, 790.7 ms/戦)
+結果: 143勝 7敗 0分
+勝率: 95.3%  (95%信頼区間 90.7%〜97.7%)   引分除く勝率: 95.3%
+WINRATE=0.9533
+CI_LOW=0.9068
+CRASH=0
+--- wall screening (判定外・族内): champion vs crustle wall N=150 (対照) ---
+我々: main.py   相手: main.py + ../../../../../verification/decks/ladder_crustle_wall_2026-07-19.csv   対戦数: 150   (189.2秒, 1261.4 ms/戦)
+結果: 141勝 9敗 0分
+勝率: 94.0%  (95%信頼区間 89.0%〜96.8%)   引分除く勝率: 94.0%
+WINRATE=0.9400
+CI_LOW=0.8899
+CRASH=0
+=== done: Fri Jul 24 00:27:57 JST 2026 ===

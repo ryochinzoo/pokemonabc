@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>現状認識合わせ 2026-07-23 — D39まで整理と7/27 E1本測定の前提</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --card: #ffffff; --ink: #1a1a1a; --sub: #555;
+    --accent: #0b6e6e; --accent-soft: #e2f1f1; --warn-bg: #fff6e5; --warn-edge: #e0a800;
+    --danger-bg: #fdecec; --danger-edge: #c0392b; --ok-bg: #e9f7ec; --ok-edge: #2e8b57;
+    --line: #ddd; --code-bg: #f0f0ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181a; --card: #1f2225; --ink: #e8e6e3; --sub: #a5a5a0;
+      --accent: #4fc3c3; --accent-soft: #12383a; --warn-bg: #3a2f14; --warn-edge: #d4a017;
+      --danger-bg: #3a1f1d; --danger-edge: #e07060; --ok-bg: #1d3324; --ok-edge: #5cb87f;
+      --line: #3a3d40; --code-bg: #2a2d30;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font-family: "Hiragino Sans", "Noto Sans JP", -apple-system, sans-serif;
+         line-height: 1.75; font-size: 15.5px; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 24px 20px 80px; }
+  h1 { font-size: 1.5em; border-bottom: 3px solid var(--accent); padding-bottom: 8px; line-height: 1.4; }
+  h2 { font-size: 1.25em; margin-top: 2.2em; color: var(--accent);
+       border-left: 5px solid var(--accent); padding-left: 10px; }
+  h3 { font-size: 1.05em; margin-top: 1.6em; }
+  p { margin: 0.7em 0; }
+  .meta { color: var(--sub); font-size: 0.88em; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 16px 20px; margin: 14px 0; }
+  .tldr { border-left: 6px solid var(--accent); background: var(--accent-soft); }
+  .warn { border-left: 6px solid var(--warn-edge); background: var(--warn-bg); }
+  .danger { border-left: 6px solid var(--danger-edge); background: var(--danger-bg); }
+  .ok { border-left: 6px solid var(--ok-edge); background: var(--ok-bg); }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.92em; }
+  .tablewrap { overflow-x: auto; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code-bg); }
+  code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; }
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  ul, ol { padding-left: 1.5em; }
+  li { margin: 0.35em 0; }
+  .tag { display: inline-block; font-size: 0.75em; font-weight: bold; padding: 1px 8px;
+         border-radius: 10px; background: var(--accent-soft); color: var(--accent);
+         margin-right: 6px; vertical-align: middle; }
+  .toc { font-size: 0.92em; columns: 2; column-gap: 30px; }
+  @media (max-width: 640px) { .toc { columns: 1; } }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  details { margin: 0.6em 0; }
+  summary { cursor: pointer; color: var(--accent); font-weight: bold; }
+  .timeline { list-style: none; padding-left: 0; }
+  .timeline li { padding-left: 1.6em; position: relative; margin: 0.5em 0; }
+  .timeline li::before { content: "●"; position: absolute; left: 0; color: var(--accent); }
+  .timeline li.done::before { color: var(--ok-edge); content: "✔"; }
+  .timeline li.yuji::before { color: var(--warn-edge); content: "☝"; }
+  .small { font-size: 0.88em; color: var(--sub); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>現状認識合わせ — D39までの整理と「7/27窓開でE1本測定」の前提<br>
+<span class="meta">作成 2026-07-23 / 作成者 Claude (Fable 5) / 一次資料: decisions.md D27〜D39・data.md・claims-ledger.md・writeup-draft.md・playbook.md を直読して作成</span></h1>
+
+<div class="card tldr">
+<b>30秒版</b>
+<ol>
+<li><b>主戦場はStrategy部門(writeup審査、配点 Model70/Deck20/Report10)</b>。競争相手はLBの5,068エージェントではなく<b>197本のwriteup</b>。LBは配点の約14%。</li>
+<li>プロジェクト最大の発見=<b>D27: 自前ベンチ(族内)は+8〜+62pt過大評価</b>で、しかも<b>実ラダーの相手そのもの(公式サンプル)をローカルで完全再現できた</b>。以後の全判定はこの較正済み計器(CEW)の上で行っている。</li>
+<li>判定規則は3回自己監査して現在形に到達: <b>Neyman配分 N=3,200 単発・閾値+2pt・基準線41.03%・95%CI併記義務</b>(D38)。</li>
+<li><b>D39: E1(Maximum Belt)の先行ゲート通過</b>。+50の機構はエンジンログで実測確認済み。ただし留保3つ(貼付先1/3死に先・手札燃やし25%・厳格形0件)を開示した上での通過。</li>
+<li><b>次=7/27の実験窓オープンでE1本測定(3,200戦, 約25-30分)→E2</b>。8/13朝に凍結、9/12にwriteup提出。</li>
+</ol>
+</div>
+
+<div class="card">
+<b>目次</b>
+<div class="toc">
+<a href="#goal">1. ゴール・締切・ライブ状況</a><br>
+<a href="#d27">2. 前提転換: D27 較正の法則</a><br>
+<a href="#rule">3. 判定規則の現在形(D29→#22→D38)</a><br>
+<a href="#d39">4. D39: E1先行ゲートの中身</a><br>
+<a href="#next">5. 次にやること: E1本測定→E2→E3</a><br>
+<a href="#yuji">6. ゆうじの手作業リスト</a><br>
+<a href="#writeup">7. writeup背骨の現在形</a><br>
+<a href="#confirm">8. 認識合わせしたい論点(要返答)</a>
+</div>
+</div>
+
+<h2 id="goal">1. ゴール・締切・ライブ状況</h2>
+
+<h3>目的関数(D12で合意、変更なし)</h3>
+<p>賞金はStrategy部門。<b>Model 70% / Deck 20% / Report 10%</b>の審査で、審査員5人中3人がポケモン社。
+Simulation部門(LB)は賞金なし・実証台。だから「LBで勝つこと」より「<b>測定と発見をwriteupで語れること</b>」に資源を割いている。</p>
+
+<h3>スケジュール(確定分)</h3>
+<ul class="timeline">
+<li class="done">〜7/23: 第1実験予算終了。EXP8採用(唯一の合格)、基準線41.03確定、E1先行ゲート通過(D39)</li>
+<li><b>7/27〜8/8: 第2実験窓</b>(16h上限・事前登録3本まで=E1/E2/E3)。<b>窓開と同時にE1本測定</b></li>
+<li class="yuji">8/1-8/2: りょーちん最新版のfetch+再測定(固定。8/3判断を2世代古いv4データで行わないため)</li>
+<li class="yuji">8/3: 穴D=最終デッキ・メンバー統合の判断</li>
+<li class="yuji">8/5まで(推奨): Kaggleのwriteupスロット作成(New Writeupで空枠を作るだけ)</li>
+<li class="yuji">8/8: E3(Alakazam手札温存)の採用判断</li>
+<li>8/13朝: <b>エージェント凍結</b>(以後は執筆のみ、不可侵)</li>
+<li>8/17-31: 本執筆 → <b>9/12 提出目標</b>(締切 9/14 08:59 JST)</li>
+</ul>
+
+<h3>ライブ状況</h3>
+<div class="tablewrap"><table>
+<tr><th>枠</th><th>提出</th><th>中身</th><th>備考</th></tr>
+<tr><td>1</td><td class="num">54832323</td><td>starmie-aggro</td><td class="num">785.3(スコアは±150-400点ぶれる=台帳#20、順位は主指標にしない)</td></tr>
+<tr><td>2</td><td class="num">54858780</td><td>starmie-aggro + EXP8(Ignition貼り先規則)</td><td>実ラダー60戦 全DONE/DONE・CRASH=0(T1検証済み、予測37.0 vs 実測35.0で的中)</td></tr>
+</table></div>
+<p class="small">最終順位は「最新2提出」で決まるため、常に「最新2つ=ベスト2つ」を維持する運用。
+ローカルの王者=<code>starmie-aggro</code>(EXP8込み、CEW基準線41.03%)。
+git未追跡の<code>mega-starmie-ex-deck/</code>はりょーちんagentの読解用ローカルコピー(7/13版=v4、先端より2世代古い点は台帳#1に明記済み)。</p>
+
+<h2 id="d27">2. 前提転換: D27「較正の法則」— すべての判断の土台</h2>
+
+<div class="card">
+<p><b>発見1(較正の法則)</b>: デッキを固定して操縦者だけ入れ替えて測ったところ、
+<b>族内ベンチ(自分のパイロットが相手デッキも操縦する測定)の誤差は「実際の相手操縦者と自分の操縦者の実力差」に比例する</b>ことが3アーキタイプで一致した:
+steel相手<b>+62pt</b> / 公式Lucario相手<b>+41pt</b> / りょーちんagent相手<b>+8pt</b>(各N=300)。
+つまり族内ベンチが測っていたのは「相手のデッキを<i>自分が</i>操縦したときの勝率」で、上位帯ほど無意味になる。</p>
+<p><b>発見2(決定打)</b>: Kaggle公式サンプルエージェント(Lucario版、997 Copy&amp;Edit)が<b>実ラダーの対戦相手そのもの</b>だった
+— 実ラダーで遭遇したデッキリストと<b>60/60枚完全一致</b>。遭遇率1位(現重み49%)の対面をローカルで完全再現できた。</p>
+<p><b>帰結</b>: 過去5件の介入棄却は「実在しない優勢(ローカル84.7%等)を前提に的外れな対面を磨いていた」で説明がつく。
+以後、<b>効果量の判定は必ず較正済み族外ゲージで行い、族内ベンチはスクリーニング専用</b>。
+この発見自体がwriteup §3(検証基盤)の主砲。前向き検証も済んでいる(T1: 予測37.0% vs 実ラダー実測35.0%、族内の含意84%は+49pt外れ)。</p>
+</div>
+
+<h2 id="rule">3. 判定規則の現在形 — 3回の自己監査を経てここにいる(D29→#22→D38)</h2>
+
+<p>writeup背骨Aの核でもあるので、進化の系列ごと理解しておくのが重要:</p>
+
+<div class="tablewrap"><table>
+<tr><th>段</th><th>何を暴いたか</th><th>どう直したか</th></tr>
+<tr><td><b>D29</b>(7/21)</td><td>非退行4条件の旧規則は、真の効果ゼロでも<b>65.1%が偽の「退行」判定</b>=装置として機能不全</td><td>単一合成指標<b>CEW</b>(較正済みゲージを実ラダー遭遇率で加重)へ一本化</td></tr>
+<tr><td><b>台帳#22</b>(7/23)</td><td>新規則の閾値+2ptが<b>約1.1σでしかない</b>(誤採用~14%/実験)ことを自分で計算して発見</td><td>レビューが「独立2回再現の二段規則」を提案 → 正式計算で検証へ</td></tr>
+<tr><td><b>D38</b>(7/23)</td><td>モンテカルロ40万試行の正式計算が<b>二段規則を棄却</b>(基準線の系統誤差0.82ptは候補側の反復では消えない=偽陽性が生き残る)</td><td><b>Neyman配分・合計N=3,200・単発・閾値+2pt・CI併記義務</b>を標準化。同一戦数で誤採用6.4→4.2%の無料改善</td></tr>
+</table></div>
+
+<h3>現在の判定規則(E1本測定はこれで走る)</h3>
+<div class="card">
+<ul>
+<li><b>主指標</b>: CEW = 4成分の遭遇率加重合成。重み: <b>Lucario 49.0 / Archaludon 35.3 / Dragapult 9.8 / Abomasnow 5.9%</b>(プールN=120、カバレッジ42.5%)</li>
+<li><b>測定</b>: Neyman配分 <b>合計N=3,200(Lucario 1712 / Archaludon 1024 / Dragapult 272 / Abomasnow 192)</b>・単発・CPU直列</li>
+<li><b>採用閾値</b>: 基準線 <b>41.03%</b>(4反復×3,200戦で引き直し、プールSE 0.82pt)に対し<b>+2pt</b>。<code>cew_stats.py</code>の95%CI併記が義務(+2ptは約1.7σでしかないため)</li>
+<li><b>実効性能</b>: 誤採用率4.2%、真+2.5ptへの検出力67%</li>
+<li><b>安全ゲート(効果量とは別建て)</b>: CRASH=0 / vs random ≥96% / <code>check.py</code> / <code>conformance.py</code>=PASS(D37新設: デッキ返却経路はベンチで一度も実行されない盲点があった)</li>
+<li><b>残る床(正直な限界)</b>: 基準線の系統誤差0.82ptは候補Nを無限にしても消えない(誤採用の下限~0.7%)。緩和は「E1/E2/E3が同じ基準線と比較される=相互の序列は影響を受けない」+採用後のT4懐疑パス+T1ラダー予測</li>
+</ul>
+</div>
+
+<div class="card warn">
+<b>⚠ D38の注記 — 明示報告(登録済みの義務)</b><br>
+ゆうじが承認したのは「独立2回再現の<b>二段規則</b>」の文面だったが、レビュー自身が付けた条件「正式な検定力計算で検証してから採用」を実行したところ、<b>計算が二段規則を棄却</b>したため、採用内容は<b>Neyman N=3,200単発</b>に変わっている。承認パッケージの趣旨(計算で検証してから直す)の範囲内と判断して採用したが、<b>「承認した文面と採用内容が違う」事実はこの場で明示報告する</b>(D38に「次の会話で明示報告する」と登録した義務の履行)。異議があれば差し戻し可能 — E1本測定はまだ走っていない。
+</div>
+
+<h2 id="d39">4. D39: E1先行ゲートの中身 — 何を確認して、何を留保したか</h2>
+
+<h3>E1とは何か</h3>
+<div class="card">
+<p><b>介入</b>: <code>-1 Deluxe Bomb[1167] / +1 Maximum Belt[1158]</code>(デッキ1枚差のみ、<b>パイロット凍結</b>=main.pyは王者とバイト同一を<code>cmp</code>で証明済み)。</p>
+<p><b>1対1は制約であって設計判断ではない</b>: 両方ACE SPECでデッキに1枚のみ。純増ではなく<b>トレードオフ</b>として登録。</p>
+<p><b>機構仮説</b>: Beltは「相手のバトル場が<b>ex</b>のとき、装着ポケモンの攻撃+50」。較正済み4ゲージの主力アタッカーは<b>全てex</b>(=CEW測定面の100%に適用可)。
+特に対Mega Lucario ex(HP340): 現行はNebula 210+Jetting 120=<b>330で10点不足</b>のところ、Beltが乗れば2発KO線を跨ぐ。</p>
+<p><b>失うもの</b>: Bomb=被弾時に攻撃側へ120ダメカン。D36は「対Archaludon資産(120+Nebula210=330&gt;HP300)」と評価していた。</p>
+</div>
+
+<h3>先行ゲート結果(プローブ30戦: belt10+延長10+base10、7/23)</h3>
+<div class="tablewrap"><table>
+<tr><th>ゲート</th><th>結果</th><th>中身</th></tr>
+<tr><td>(1) 盤面付与</td><td><b>PASS(ぎりぎり)</b></td><td>Belt盤面付与3/10=基準「3以上」ちょうど。延長も3/10(計6/20=30%)</td></tr>
+<tr><td>(2) 貼付先</td><td>記録(killなし)</td><td>Mega Starmie ex×4 / <b>Staryu×2=1/3が死に先</b>。加えて新観測: <b>Beltが手札の捨てコスト(Ultra Ball等)として盤面到達前に燃えたゲーム5/20=25%</b>(Bomb基準0/10)</td></tr>
+<tr><td>(3) +50機構</td><td><b>確認</b></td><td>Jetting Blow(120)+Belt→<b>ΔHP=170が4イベント</b>(対Mega Lucario ex)。条件節も両方向検証: 非ex相手は+50なし/Belt無しNebulaは210ちょうど×11。<b>「Mega Pokémon exはBeltの{ex}判定を受けるか」というエンジン疑問=YESでクローズ</b></td></tr>
+</table></div>
+
+<div class="card warn">
+<b>⚠ 通過判定の正直な開示(D39+追記)</b><br>
+改訂2で登録した<b>厳格形(Nebula 210+Belt→ΔHP=260)は20戦で0件</b>だった。原因はas-piloted: Beltつき個体はエネ3個が揃う前にJettingで殴る局面が支配的で、Nebula+Beltの同時イベントが生成されない。
+判定の根拠: 登録のkill条件は「<b>+50が観測できなければ即kill</b>」であり+50は4イベント観測済み=不発火。「延長後も厳格形0件」という分岐は<b>登録に存在しない空白</b>で、有効に残っている登録kill基準へのフォールバックで解決した(=killの上書きではなく文言の範囲内の判定。ゆうじの「ほんとにそれでいい?」を受けた再監査で確認、D39-追記)。<br>
+<b>再審フック</b>: 本測定でLucario成分が伸びなければ、この通過判定自体を「甘さの候補」として再審する。
+</div>
+
+<p><b>副産物(counterfactual実測)</b>: Bombの起爆は<b>2/10ゲーム</b>(盤面到達4/10のうち)。「対Archaludon資産330線」の実効はas-pilotedで期待0.2発/ゲーム — Bomb喪失を過大に恐れる必要はなさそう。ただしプローブ相手はLucarioなので、Archaludon対面の起爆率は本測定の対面別で再確認。</p>
+
+<h2 id="next">5. 次にやること: 7/27窓開 → E1本測定 → E2</h2>
+
+<h3>E1本測定(事前登録済み・改訂2まで反映)</h3>
+<div class="card ok">
+<ul>
+<li><b>測定</b>: Neyman N=3,200(1712/1024/272/192)、基準線41.03、閾値+2pt、95%CI併記、CPU直列。所要25-30分。</li>
+<li><b>事前登録した予測(反証可能形)</b>:
+  <ul>
+  <li>Lucario成分(重み49%)が最大の伸び — ただし改訂2の補正: <b>BombもLucarioに450の2攻撃KO線を与えていたので、Lucarioの伸びが小さいこと自体は機構の反証にならない</b>(Belt限界利得=Belt線−Bomb線)</li>
+  <li>Archaludon成分は横ばいか微減(Bomb喪失が最も効く対面)</li>
+  <li>総合CEW +1.5〜+3pt。<b>対面別符号が予測と不一致なら、総合が+2pt超でも「機構未特定」と記録</b></li>
+  </ul></li>
+<li><b>kill基準</b>: CEW &lt; 43.03 → 棄却しコード復帰 / 安全ゲート不合格 → 即kill</li>
+<li><b>判定時の併記義務(D39新観測)</b>: ①貼付先1/3死に先 ②手札燃やし25% ③Bomb起爆2/10</li>
+</ul>
+</div>
+
+<h3>E1のどちらの結果でもwriteupは書ける(D30以来の設計)</h3>
+<p>採用なら「AI固有定石の発見・第2例」(EXP8に続く)。killなら「<b>機構がエンジン実測で正しくても、as-pilotedで死ぬ</b>」の最良の実例=背骨B(デッキはパイロットとセットでしか測れない)の核心。<b>測定が無駄になる分岐がない</b>。</p>
+
+<h3>E2・E3(第2実験窓の残り2本)</h3>
+<ul>
+<li><b>E2 = Boss's Orders再走(Bomb温存版)</b>: 前回のプローブ(CEW 38.71=-2.80pt)は「-1 Deluxe Bomb」が交絡していたという評議会の設計欠陥指摘を受けた再走。E1の結果(Bombの実効0.2発/ゲーム)は解釈の材料になる。</li>
+<li><b>E3 = Alakazam手札温存スパイク</b>: 6hタイムボックス、採用判断は<b>8/8にゆうじ</b>。CEW天井+15.8ptのFuture Work筋。</li>
+<li>E1プローブで出た「ACE SPECを捨てコストから保護する」パイロット規則は、E2以降の候補としてメモ済み(E1のスコープ=パイロット凍結には入れない)。</li>
+</ul>
+
+<h2 id="yuji">6. ゆうじの手作業リスト(ボールがそっちにある項目)</h2>
+<div class="tablewrap"><table>
+<tr><th>期限</th><th>作業</th><th>背景</th></tr>
+<tr><td class="num">なるべく早く</td><td><b>Kaggle Notebook適合走</b>: <code>verification/kaggle_conformance_notebook.py</code>をKaggle Notebookで実行</td><td>D36/D37の盲点①(同一プロセスにlibcgが2経路で載る)と④(darwin/linuxバイナリ差)は<b>Macでは原理的に閉じられない</b>。台本は用意済み、アカウント作業のみ</td></tr>
+<tr><td class="num">8/5まで推奨</td><td><b>writeupスロット作成</b>: HackathonページでNew Writeup(空枠を作るだけ、公開は締切後)</td><td>執筆本番前に枠の存在を確認しておく</td></tr>
+<tr><td class="num">8/1-8/2固定</td><td>りょーちん最新版のfetch承認(再測定保留の解除確認)</td><td>手元のデータは彼の7/13版(v4)。先端は2世代新しいv4.9〜。8/3の統合判断を古いデータでやらないため</td></tr>
+<tr><td class="num">8/3</td><td>穴D: 最終デッキ・メンバー統合の判断</td><td>最終2枠に何を置くか</td></tr>
+<tr><td class="num">8/8</td><td>E3採用判断</td><td>D36登録</td></tr>
+<tr><td class="num">未定</td><td>承認待ち: 壁ゲージのCEW追加</td><td>D36から持ち越し(T3で壁が700+帯に復活の兆候=台帳#16)</td></tr>
+</table></div>
+
+<h2 id="writeup">7. writeup背骨の現在形(R2反映済み)</h2>
+<div class="card">
+<p><b>主張1文(2026-07-23改訂)</b>: 「エージェントより先に計器を作り、それが実ラダーを前向きに予測することを示した。改善は全て計器上で事前登録して判定し、<b>判定規則そのものも監査し続けた</b> — 偽陽性65%の規則の廃止、自らの採用閾値が約1.1σしかないことの発見と再設計、そして<b>自分たちの棄却判断の誤りを較正計器で暴いて報告すること</b>まで含めて」</p>
+<p><b>二重背骨</b>(審査員3/5がポケモン社への対応。Aだけだと汎用ML再現性エッセイに読める):</p>
+<ul>
+<li><b>背骨A(方法論)</b>: 計器を作る→較正する→前向き予測→規則自体を監査(D29→#22→D38の3段)→自分の棄却の誤り(#12)まで暴いて報告</li>
+<li><b>背骨B(ドメイン)</b>: 人間定石はAI操縦で移植不能(ドスク/Cinderace/マリガン3例)→AI固有定石を実測発見(EXP8=Ignition貼り先、<b>E1=ACE SPECトレードオフ</b>、1.5:1サイド非対称)→デッキはパイロットとセット</li>
+</ul>
+<p><b>#12(v3棄却)の決着</b>: 較正計器の再検で差+2.62pt・95%CI[−0.68,+5.93]=検出できず、点推定はむしろv3側。writeupでは「棄却が正しかった」と<b>断定しない</b>。この逆転を恥でなく計器の成果として§6に書く。</p>
+<p class="small">22主張は3層に刈り込み済み(主砲=数値+CI明記 / 1行圧縮 / 台帳のみ)。本文の全数値はclaims-ledger.md経由(T6)。E1の台帳行は本測定後に追加。</p>
+</div>
+
+<h2 id="confirm">8. 論点の決着(2026-07-23 ゆうじ応答 → D40として記録済み)</h2>
+<div class="card ok">
+<p><b>ゆうじの応答</b>: 「優勝できるいい判断の方を採用したい / E1も任せる / 実行順・日程に私の判断はいらない / 私ができるのは承認だけ」。
+→ <b>技術判断の全面委任をD40としてdecisions.mdに記録</b>。以後、選択肢メニューの差し戻しは廃止。</p>
+<ol>
+<li><b>D38 → 確定</b>: Neyman N=3,200単発を採用。二段規則は「同じものさし(基準線、系統誤差0.82pt)と2回比較しても共有誤差は消えない」ため、同一戦数で誤採用・検出力とも劣ることが40万試行の計算で決着済み。意見の分かれる余地のない種類の問題。</li>
+<li><b>E1 → 委任確定</b>: 通過判定の解釈・本測定の実行・kill基準による採否判定まで cc が行う。再審フック(Lucario成分が伸びなければ通過判定自体を再審)は維持。</li>
+<li><b>実行順 → 報告事項</b>: 7/27窓開→E1本測定(25-30分)→判定→(採用ならT4懐疑パス)→E2事前登録。以後この種は報告のみ。</li>
+<li><b>今後ゆうじに回すのは3種のみ</b>: (a)Kaggle提出の最終承認 (b)アカウント物理作業(§6: Notebook適合走・writeupスロット) (c)main統合/最終2枠。8/3穴D・8/8 E3は「推奨1本+承認」形式に変更。</li>
+</ol>
+<p class="small"><b>D40に記録した非対称</b>: ゆうじの介入価値は技術判断ではなく<b>監査トリガーの質問</b>にある(D36/D37/D37-追記/D39-追記の4回、いずれもT1〜T6が取り逃した欠陥を人間の質問が捕まえた)。「ほんとにそれでいい?」を投げる役割だけは、今後も続けてほしい。</p>
+</div>
+
+<p class="meta">出典: decisions.md(D12/D27/D29/D30/D31/D35/D36/D37/D38/D39+追記) / data.md(E1事前登録+改訂1+改訂2・先行ゲート結果・墓場バッチ結果・D38検定力計算) / claims-ledger.md(#1〜#22) / writeup-draft.md(R2) / playbook.md(§0/§1/§7)。数値の正はすべてdata.md。</p>
+
+</div>
+</body>
+</html>
