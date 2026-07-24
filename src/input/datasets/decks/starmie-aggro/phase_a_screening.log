@@ -1,0 +1,45 @@
+=== Phase A screening start: Fri Jul 24 12:55:14 JST 2026 ===
+pilot: starmie-aggro main.py (王者、不変更) / opponent: random mirror
+--- meta_lucario N=300 ---
+我々: main.py + ../../../../../verification/decks/meta_lucario_2026-07-14.csv   相手: random   対戦数: 300   (155.4秒, 518.0 ms/戦)
+結果: 295勝 5敗 0分
+勝率: 98.3%  (95%信頼区間 96.2%〜99.3%)   引分除く勝率: 98.3%
+WINRATE=0.9833
+CI_LOW=0.9616
+CRASH=0
+--- meta_archaludon N=300 ---
+我々: main.py + ../../../../../verification/decks/meta_archaludon_2026-07-14.csv   相手: random   対戦数: 300   (76.7秒, 255.8 ms/戦)
+結果: 293勝 7敗 0分
+勝率: 97.7%  (95%信頼区間 95.3%〜98.9%)   引分除く勝率: 97.7%
+WINRATE=0.9767
+CI_LOW=0.9526
+CRASH=0
+--- meta_garchomp N=300 ---
+我々: main.py + ../../../../../verification/decks/meta_garchomp_2026-07-14.csv   相手: random   対戦数: 300   (190.1秒, 633.6 ms/戦)
+結果: 290勝 10敗 0分
+勝率: 96.7%  (95%信頼区間 94.0%〜98.2%)   引分除く勝率: 96.7%
+WINRATE=0.9667
+CI_LOW=0.9397
+CRASH=0
+--- meta_grimmsnarl_munkidori N=300 ---
+我々: main.py + ../../../../../verification/decks/meta_grimmsnarl_munkidori_2026-07-14.csv   相手: random   対戦数: 300   (312.3秒, 1041.0 ms/戦)
+結果: 287勝 12敗 1分
+勝率: 95.7%  (95%信頼区間 92.7%〜97.5%)   引分除く勝率: 96.0%
+WINRATE=0.9567
+CI_LOW=0.9273
+CRASH=0
+--- meta_tr_mewtwo N=300 ---
+我々: main.py + ../../../../../verification/decks/meta_tr_mewtwo_2026-07-14.csv   相手: random   対戦数: 300   (510.0秒, 1700.1 ms/戦)
+結果: 295勝 5敗 0分
+勝率: 98.3%  (95%信頼区間 96.2%〜99.3%)   引分除く勝率: 98.3%
+WINRATE=0.9833
+CI_LOW=0.9616
+CRASH=0
+--- meta_starmie_dusknoir N=300 ---
+我々: main.py + ../../../../../verification/decks/meta_starmie_dusknoir_2026-07-14.csv   相手: random   対戦数: 300   (114.8秒, 382.8 ms/戦)
+結果: 287勝 13敗 0分
+勝率: 95.7%  (95%信頼区間 92.7%〜97.5%)   引分除く勝率: 95.7%
+WINRATE=0.9567
+CI_LOW=0.9273
+CRASH=0
+=== done: Fri Jul 24 13:17:54 JST 2026 ===
