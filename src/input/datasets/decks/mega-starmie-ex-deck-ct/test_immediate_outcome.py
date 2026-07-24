@@ -200,6 +200,9 @@ class FakeBoard:
         return self.is_supporter(card_id) and not self.state.supporterPlayed
 
     def attack_damage(self, attacker, atk):
+        return self.attack_damage_for_card(self.pid(attacker), atk)
+
+    def attack_damage_for_card(self, attacker_id, atk):
         if atk.attackId == main.RESENTFUL_REFRAIN:
             return int(self.opp.handCount) * 50
         return int(atk.damage)
@@ -214,8 +217,11 @@ class FakeBoard:
         return [card.id for card in target.energyCards]
 
     def energy_tokens(self, target):
+        return self.energy_tokens_as(target, self.pid(target))
+
+    def energy_tokens_as(self, target, card_id):
         tokens = []
-        data = self.data(self.pid(target))
+        data = self.data(card_id)
         ignition_units = 1 if data is not None and data.basic else 3
         for card in target.energyCards:
             if card.id == main.BASIC_WATER_ENERGY:
@@ -231,6 +237,20 @@ class FakeBoard:
 
     def can_pay_attack(self, target, atk):
         return main.can_pay_attack_with_tokens(atk, self.energy_tokens(target))
+
+    def attack_bypasses_ex_wall(self, atk):
+        return atk is not None and atk.attackId == main.NEBULA_BEAM
+
+    def attack_blocked_by_ex_wall_for_card(self, attacker_id, target, atk):
+        if target is None or self.pid(target) not in main.EX_ATTACK_WALLS:
+            return False
+        if self.attack_bypasses_ex_wall(atk):
+            return False
+        data = self.data(attacker_id)
+        return data is not None and (data.ex or data.megaEx)
+
+    def active_evolution_attack_facts(self, opt):
+        return main.BoardView.active_evolution_attack_facts(self, opt)
 
     def prize_value(self, target):
         data = self.data(target.id)

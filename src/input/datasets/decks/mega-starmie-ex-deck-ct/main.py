@@ -236,6 +236,7 @@ TIER_KO = 60
 TIER_WIN = 70
 
 NEXT_TURN_PRESSURE_DISCOUNT = 0.35
+ACTIVE_EVOLVE_CLEAR_DAMAGE_GAIN = 50
 
 
 def _read_deck() -> List[int]:
@@ -335,6 +336,17 @@ def attack_can_damage_opponent_bench(attack: Optional[Any]) -> bool:
     if "opponent's benched pokemon" in text and ("damage" in text or "damage counter" in text):
         return True
     return "opponent's pokemon" in text and "for benched pokemon" in text and ("damage" in text or "damage counter" in text)
+
+
+def attack_bench_damage_amount(attack: Optional[Any]) -> int:
+    if attack is None:
+        return 0
+    explicit = safe_int(getattr(attack, "bench_damage", 0))
+    if explicit > 0 and getattr(attack, "attackId", None) == JETTING_BLOW:
+        return explicit
+    if getattr(attack, "attackId", None) == JETTING_BLOW:
+        return 50
+    return 0
 
 
 def energy_tokens_for_attach(card_id: int, target: Pokemon) -> Optional[Tuple[Any, ...]]:
@@ -465,6 +477,19 @@ class RoleFacts:
     # Free-retreat candidate fact only; this does not mean the Pokemon should be promoted.
     pivot_candidate: bool
     ready_if_promoted: bool
+
+
+@dataclass(frozen=True)
+class ActiveEvolutionAttackFact:
+    attack_id: int
+    supported: bool
+    damage: int
+    blocked: bool
+    knockout: bool
+    prizes_taken: int
+    wins_game: bool
+    bench_damage: int
+    bypasses_wall: bool
 
 
 @dataclass(frozen=True)
@@ -691,8 +716,11 @@ class BoardView:
         return cid in self.energies(pokemon)
 
     def energy_tokens(self, pokemon: Optional[Pokemon]) -> List[int]:
+        return self.energy_tokens_as(pokemon, self.pid(pokemon))
+
+    def energy_tokens_as(self, pokemon: Optional[Pokemon], card_id: Optional[int]) -> List[int]:
         tokens = []
-        data = self.data(self.pid(pokemon))
+        data = self.data(card_id)
         ignition_units = 1 if data is not None and data.basic else 3
         for cid in self.energies(pokemon):
             if cid == BASIC_WATER_ENERGY:
@@ -722,11 +750,67 @@ class BoardView:
         return best
 
     def attack_damage(self, attacker: Optional[Pokemon], attack: Optional[Any]) -> int:
+        return self.attack_damage_for_card(self.pid(attacker), attack)
+
+    def attack_damage_for_card(self, attacker_id: Optional[int], attack: Optional[Any]) -> int:
         if attack is None:
             return 0
         if attack.attackId == RESENTFUL_REFRAIN:
             return safe_int(self.opp.handCount) * 50
         return int(attack.damage)
+
+    def attack_bypasses_ex_wall(self, attack: Any) -> bool:
+        return attack is not None and attack.attackId == NEBULA_BEAM
+
+    def attack_blocked_by_ex_wall_for_card(self, attacker_id: Optional[int], target: Optional[Pokemon], attack: Any) -> bool:
+        if target is None or self.pid(target) not in EX_ATTACK_WALLS:
+            return False
+        if self.attack_bypasses_ex_wall(attack):
+            return False
+        data = self.data(attacker_id)
+        return data is not None and (data.ex or data.megaEx)
+
+    def active_evolution_attack_facts(self, option: Any) -> Tuple[ActiveEvolutionAttackFact, ...]:
+        if option.type != OptionType.EVOLVE:
+            return ()
+        evolution_id = self.option_card(option)
+        target = self.option_target(option)
+        if target is None or target is not self.active or self.opp_active is None:
+            return ()
+        if not self.evolves_from(evolution_id, target):
+            return ()
+        player = getattr(self, "me", None)
+        if getattr(player, "asleep", False) or getattr(player, "paralyzed", False):
+            return ()
+        data = self.data(evolution_id)
+        if data is None:
+            return ()
+
+        tokens = tuple(self.energy_tokens_as(target, evolution_id))
+        facts: List[ActiveEvolutionAttackFact] = []
+        for attack_id in getattr(data, "attacks", ()):
+            attack = self.attack(attack_id)
+            if attack is None or not can_pay_attack_with_tokens(attack, tokens):
+                continue
+            blocked = self.attack_blocked_by_ex_wall_for_card(evolution_id, self.opp_active, attack)
+            damage = 0 if blocked else self.attack_damage_for_card(evolution_id, attack)
+            knockout = damage >= hp_left(self.opp_active)
+            prizes_taken = self.prize_value(self.opp_active) if knockout else 0
+            wins_game = prizes_taken >= self.my_prizes_left() if knockout else False
+            facts.append(
+                ActiveEvolutionAttackFact(
+                    attack_id=int(attack.attackId),
+                    supported=True,
+                    damage=damage,
+                    blocked=blocked,
+                    knockout=knockout,
+                    prizes_taken=prizes_taken,
+                    wins_game=wins_game,
+                    bench_damage=0 if blocked else attack_bench_damage_amount(attack),
+                    bypasses_wall=self.attack_bypasses_ex_wall(attack) and self.pid(self.opp_active) in EX_ATTACK_WALLS,
+                )
+            )
+        return tuple(facts)
 
     def legal_attack_options(self) -> List[Any]:
         attacks = []
@@ -1696,15 +1780,10 @@ class ImmediateOutcomeEvaluator:
         return None
 
     def _bypasses_ex_wall(self, attack: Any) -> bool:
-        return attack is not None and attack.attackId == NEBULA_BEAM
+        return self.b.attack_bypasses_ex_wall(attack)
 
     def _blocked_by_ex_wall(self, attacker: Pokemon, target: Pokemon, attack: Any) -> bool:
-        if self.b.pid(target) not in EX_ATTACK_WALLS:
-            return False
-        if self._bypasses_ex_wall(attack):
-            return False
-        data = self.b.data(self.b.pid(attacker))
-        return data is not None and (data.ex or data.megaEx)
+        return self.b.attack_blocked_by_ex_wall_for_card(self.b.pid(attacker), target, attack)
 
 
 # ============================================================
@@ -1765,6 +1844,13 @@ class Policy:
             return ActionScore(TIER_WIN, immediate=outcome.prizes_taken, legacy=legacy_score)
         if outcome.supported and outcome.knockout:
             return ActionScore(TIER_KO, immediate=outcome.prizes_taken, pressure=outcome.damage, legacy=legacy_score)
+        if self.active_evolution_has_clear_attack_improvement(option):
+            return ActionScore(
+                TIER_HIGH_VALUE_PREP,
+                development=self.prep_development_value(option, legacy_score),
+                resource=max(0, min(legacy_score, 200000)),
+                legacy=legacy_score,
+            )
         if self.is_high_value_attack_preserving_prep(option, legacy_score):
             return ActionScore(
                 TIER_HIGH_VALUE_PREP,
@@ -1809,14 +1895,7 @@ class Policy:
         return active is not None and self.b.can_pay_attack(active, attack)
 
     def attack_bench_damage_amount(self, attack: Any) -> int:
-        if attack is None:
-            return 0
-        explicit = safe_int(getattr(attack, "bench_damage", 0))
-        if explicit > 0 and getattr(attack, "attackId", None) == JETTING_BLOW:
-            return explicit
-        if getattr(attack, "attackId", None) == JETTING_BLOW:
-            return 50
-        return 0
+        return attack_bench_damage_amount(attack)
 
     def bench_attack_pressure_value(self, attack: Any) -> float:
         bench_damage = self.attack_bench_damage_amount(attack)
@@ -1855,6 +1934,50 @@ class Policy:
             if outcome.supported and not outcome.blocked and not outcome.knockout and not outcome.wins_game:
                 return True
         return False
+
+    def current_attack_outcomes(self) -> Tuple[ImmediateOutcome, ...]:
+        outcomes = []
+        for _, option in self.b.iter_options():
+            if option.type != OptionType.ATTACK and option.attackId is None:
+                continue
+            outcomes.append(self.outcome.evaluate_attack(option))
+        return tuple(outcomes)
+
+    def active_evolution_has_clear_attack_improvement(self, option: Any) -> bool:
+        if option.type != OptionType.EVOLVE or self.b.option_target(option) is not self.b.active:
+            return False
+
+        evolved_facts = tuple(fact for fact in self.b.active_evolution_attack_facts(option) if fact.supported)
+        unblocked_evolved = tuple(fact for fact in evolved_facts if not fact.blocked)
+        if not unblocked_evolved:
+            return False
+
+        current_outcomes = self.current_attack_outcomes()
+        if any(outcome.supported and not outcome.blocked and (outcome.wins_game or outcome.knockout) for outcome in current_outcomes):
+            return False
+
+        current_supported = tuple(outcome for outcome in current_outcomes if outcome.supported)
+        current_best_damage = max(
+            (
+                outcome.damage
+                for outcome in current_supported
+                if not outcome.blocked and not outcome.knockout and not outcome.wins_game
+            ),
+            default=0,
+        )
+        current_has_only_blocked_attacks = bool(current_supported) and not any(
+            not outcome.blocked for outcome in current_supported
+        )
+
+        if any(fact.wins_game for fact in unblocked_evolved):
+            return True
+        if any(fact.knockout for fact in unblocked_evolved):
+            return True
+        if current_has_only_blocked_attacks:
+            return True
+
+        evolved_best_damage = max((fact.damage for fact in unblocked_evolved), default=0)
+        return evolved_best_damage >= current_best_damage + ACTIVE_EVOLVE_CLEAR_DAMAGE_GAIN
 
     def is_high_value_attack_preserving_prep(self, option: Any, legacy_score: float) -> bool:
         if legacy_score <= 0 or not self.has_current_non_ko_attack_option():
