@@ -1,0 +1,10 @@
+﻿field_or_source,visible_main_prompts,visible_all_active_prompts,information_class,allowed_use,forbidden_use,note
+Own hand card identities,1539,2958,Decision-time public to the agent,Main and selection policy input,,Non-empty card identities in 1538 Main prompts; the remaining prompt had handCount 0.
+Opponent handCount,1539,2958,Decision-time public count,Resentful Refrain damage and public hand-size logic,Inferring exact card identities,Exact opponent hand cards were never exposed to the audited side.
+Opponent hand card identities,0,0,Hidden,None for decision audit,Policy scoring or claiming a known opponent response,
+Current deck card identities,0,0,Hidden outside a legal search view,Deck count and static own deck list only,Knowing draw order or exact remaining cards at Main,Both players.current.deck stayed hidden.
+select.deck search view,0,456,Legally revealed only during own search/selection context,The current search selection only,Back-propagating the search result into an earlier Main decision,All 456 visible deck views contained only the current player’s cards.
+Prize card identities,0,0,Hidden,Post-game deck stability analysis only,Policy scoring at the match decision point,Only remaining prize counts were observable through hidden placeholders.
+Terminal result / reward,0,0,Post-game label,Win/loss grouping and terminal-condition description,Judging an earlier move as correct merely because the game was won,current.result was non-terminal at every audited prompt; final rewards are top-level replay metadata.
+Full opponent deck family,0,0,Analyst-only full-replay classification,Post-hoc matchup stratification,Claiming the agent should have selected an axis before public cards identified the matchup,"Derived from opponent-side/full-replay information, not the Yser Main observation."
+Later same-turn actions and later turns,0,0,Retrospective sequence data,Describing the realized sequence and validating static card mechanics,Using a later draw/action as an input available to the earlier decision,
