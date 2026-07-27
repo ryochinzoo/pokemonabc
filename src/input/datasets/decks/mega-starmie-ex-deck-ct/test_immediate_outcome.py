@@ -1,3 +1,6 @@
+import json
+import math
+from pathlib import Path
 from types import SimpleNamespace
 from itertools import permutations
 
@@ -12,7 +15,7 @@ def energy_card(card_id, serial):
     return SimpleNamespace(id=card_id, serial=serial)
 
 
-def pokemon(card_id, hp=100, max_hp=100, serial=1, energies=()):
+def pokemon(card_id, hp=100, max_hp=100, serial=1, energies=(), appear_this_turn=False):
     return SimpleNamespace(
         id=card_id,
         hp=hp,
@@ -20,6 +23,7 @@ def pokemon(card_id, hp=100, max_hp=100, serial=1, energies=()):
         serial=serial,
         energyCards=[energy_card(card_id, index) for index, card_id in enumerate(energies, start=1)],
         tools=[],
+        appearThisTurn=appear_this_turn,
     )
 
 
@@ -48,6 +52,12 @@ def attach_option(card_id, target):
 
 def play_option(card_id):
     opt = option(main.OptionType.PLAY)
+    opt.cardId = card_id
+    return opt
+
+
+def card_choice(card_id):
+    opt = option(3)
     opt.cardId = card_id
     return opt
 
@@ -105,6 +115,10 @@ class FakeBoard:
         needs_mega_yuki=False,
         deck_ids=None,
         discard_ids=None,
+        turn=None,
+        first_player=None,
+        your_index=0,
+        deck_count=40,
     ):
         self.active = pokemon(active_id, hp=280, max_hp=280, serial=10, energies=active_energies)
         self.bench = bench or []
@@ -115,7 +129,8 @@ class FakeBoard:
         self.all_opp_pokemon = [self.opp_active] + self.opp_bench
         self.opp = SimpleNamespace(handCount=4)
         self.select = SimpleNamespace(effect=SimpleNamespace(id=effect_id) if effect_id is not None else None, contextCard=None, context=main.SelectContext.MAIN, remainEnergyCost=0, minCount=1, maxCount=1)
-        self.state = SimpleNamespace(supporterPlayed=False)
+        self.state = SimpleNamespace(supporterPlayed=False, turn=turn, firstPlayer=first_player, yourIndex=your_index)
+        self.me = SimpleNamespace(deckCount=deck_count, asleep=False, paralyzed=False, prize=[None] * prizes_left)
         self._hand_ids = []
         self.deck_ids = [] if deck_ids is None else list(deck_ids)
         self.deck_view = [SimpleNamespace(id=card_id) for card_id in self.deck_ids]
@@ -285,7 +300,10 @@ class FakeBoard:
         return set()
 
     def opponent_profile(self):
-        return "GENERAL"
+        return main.BoardView.opponent_profile(self)
+
+    def opp_has(self, ids):
+        return any(self.pid(pokemon) in ids for pokemon in self.all_opp_pokemon)
 
     def opponent_has_bench_damage_threat(self):
         return main.BoardView.opponent_has_bench_damage_threat(self)
@@ -297,16 +315,53 @@ class FakeBoard:
         return main.BoardView.evolves_from(self, evolution_id, target)
 
     def remaining_possible(self, card_id, total=None):
-        if self.deck_view:
-            return card_id in self.deck_ids
-        total = main.DECK.count(card_id) if total is None else total
-        known_out = self.hand_ids.count(card_id) + self.discard_ids.count(card_id)
-        known_out += sum(1 for pokemon in self.all_my_pokemon if self.pid(pokemon) == card_id)
-        known_out += sum(1 for pokemon in self.all_opp_pokemon if self.pid(pokemon) == card_id)
-        return known_out < total
+        return main.BoardView.remaining_possible(self, card_id, total)
+
+    def remaining_possible_count(self, card_id, total=None):
+        return main.BoardView.remaining_possible_count(self, card_id, total)
+
+    def known_prize_ids(self):
+        return main.BoardView.known_prize_ids(self)
+
+    def unknown_prize_count(self):
+        return main.BoardView.unknown_prize_count(self)
+
+    def remaining_deck_count(self):
+        return main.BoardView.remaining_deck_count(self)
+
+    def deck_presence_probability(self, card_id):
+        return main.BoardView.deck_presence_probability(self, card_id)
+
+    def _comb_probability_no_success(self, total, success, draws):
+        return main.BoardView._comb_probability_no_success(self, total, success, draws)
+
+    def pokegear_chain_hit_probability_from_counts(self, hidden_count, deck_count, look_count, supporter_count, evolution_count):
+        return main.BoardView.pokegear_chain_hit_probability_from_counts(
+            self,
+            hidden_count,
+            deck_count,
+            look_count,
+            supporter_count,
+            evolution_count,
+        )
+
+    def pokegear_hit_probability(self, card_id):
+        return main.BoardView.pokegear_hit_probability(self, card_id)
+
+    def pokegear_chain_hit_probability(self, supporter_id, evolution_id):
+        return main.BoardView.pokegear_chain_hit_probability(self, supporter_id, evolution_id)
 
     def salvatore_target_evolution(self, target):
         return main.BoardView.salvatore_target_evolution(self, target)
+
+    def salvatore_can_evolve_from_deck_this_turn(self, target, evolution_id):
+        return main.BoardView.salvatore_can_evolve_from_deck_this_turn(self, target, evolution_id)
+
+    def salvatore_deck_target_evolution(self, target):
+        return main.BoardView.salvatore_deck_target_evolution(self, target)
+
+    def has_salvatore_deck_target(self, evolution_id=None):
+        return main.BoardView.has_salvatore_deck_target(self, evolution_id)
 
     def has_salvatore_target(self, evolution_id=None):
         return main.BoardView.has_salvatore_target(self, evolution_id)
@@ -2554,6 +2609,2078 @@ def test_role_facts_issue3c():
     assert not empty_staryu.role_facts(empty_staryu.active).attack_ready
 
 
+def p0_froslass_attach_board(
+    status: Optional[str] = None,
+    turn: Optional[int] = None,
+    first_player: Optional[int] = None,
+    your_index: int = 0,
+):
+    water = main.BASIC_WATER_ENERGY
+    board = FakeBoard(
+        active_id=main.MEGA_YUKIMENOKO_EX,
+        active_energies=[],
+        bench=[pokemon(main.MEGA_STARMIE_EX, hp=280, max_hp=280, serial=501, energies=[water])],
+        target_hp=140,
+        prizes_left=1,
+        turn=turn,
+        first_player=first_player,
+        your_index=your_index,
+    )
+    board.opp.handCount = 19
+    if status == "asleep":
+        board.me = SimpleNamespace(asleep=True, paralyzed=False)
+    elif status == "paralyzed":
+        board.me = SimpleNamespace(asleep=False, paralyzed=True)
+    else:
+        board.me = SimpleNamespace(asleep=False, paralyzed=False)
+    active_attach = attach_option(water, board.active)
+    bench_attach = attach_option(water, board.bench[0])
+    board._options = [bench_attach, active_attach]
+    return board, active_attach, bench_attach
+
+
+def action_score_for_option(board: FakeBoard, target_option: Any) -> main.ActionScore:
+    for result in main.GameSimulator(board).rank_options():
+        if result.option is target_option:
+            return result.action_score
+    raise AssertionError("option not ranked")
+
+
+class ReplayObject:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+    def __getattr__(self, _name):
+        return None
+
+
+def replay_object(value):
+    if isinstance(value, dict):
+        return ReplayObject(**{key: replay_object(item) for key, item in value.items()})
+    if isinstance(value, list):
+        return [replay_object(item) for item in value]
+    return value
+
+
+def replay_board(relative_path: str, step: int, player_index: int = 0):
+    root = Path(__file__).resolve().parents[5]
+    data = json.loads((root / relative_path).read_text(encoding="utf-8"))
+    entry = data["steps"][step][player_index]
+    board = main.BoardView(replay_object(entry["observation"]))
+    next_action = data["steps"][step + 1][player_index]["action"]
+    return board, next_action
+
+
+def option_description(board: main.BoardView, option: Any) -> tuple:
+    if option.type == main.OptionType.ATTACH:
+        target = board.option_target(option)
+        return ("ATTACH", board.option_card(option), board.pid(target), getattr(target, "serial", None))
+    if option.type == main.OptionType.PLAY:
+        return ("PLAY", board.option_card(option), None, None)
+    if option.type == main.OptionType.ATTACK or option.attackId is not None:
+        return ("ATTACK", option.attackId, None, None)
+    if option.type == main.OptionType.RETREAT:
+        return ("RETREAT", None, None, None)
+    if option.type == main.OptionType.END:
+        return ("END", None, None, None)
+    target = board.option_target(option)
+    return (int(option.type), board.option_card(option), board.pid(target), getattr(target, "serial", None))
+
+
+def energy_ids(pokemon_obj):
+    return [card.id for card in pokemon_obj.energyCards]
+
+
+def test_active_attach_reachable_attack_p0_statusless_win():
+    active_ko_board, active_attach, _bench_attach = p0_froslass_attach_board(turn=2, first_player=1, your_index=0)
+
+    outcome = main.ImmediateOutcomeEvaluator(active_ko_board).evaluate_attach(active_attach)
+    assert outcome.enables_attack
+    assert main.RESENTFUL_REFRAIN in outcome.enabled_attack_ids
+    assert not outcome.enables_knockout
+    assert outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert outcome.reachable_damage == 950
+    assert outcome.reachable_knockout
+    assert outcome.reachable_prizes_taken == 1
+    assert outcome.reachable_wins_game
+    assert not outcome.knockout
+    assert outcome.prizes_taken == 0
+    assert not outcome.wins_game
+
+    ranked = main.GameSimulator(active_ko_board).rank_options()
+    assert ranked[0].option is active_attach
+    assert ranked[0].action_score.tier == main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_active_attach_reachable_attack_p0_asleep_blocks_reachable():
+    board, active_attach, _bench_attach = p0_froslass_attach_board("asleep")
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_attach(active_attach)
+    assert outcome.enables_attack
+    assert main.RESENTFUL_REFRAIN in outcome.enabled_attack_ids
+    assert outcome.reachable_attack_id is None
+    assert not outcome.reachable_knockout
+    assert not outcome.reachable_wins_game
+    assert action_score_for_option(board, active_attach).tier != main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_active_attach_reachable_attack_p0_paralyzed_blocks_reachable():
+    board, active_attach, _bench_attach = p0_froslass_attach_board("paralyzed")
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_attach(active_attach)
+    assert outcome.enables_attack
+    assert main.RESENTFUL_REFRAIN in outcome.enabled_attack_ids
+    assert outcome.reachable_attack_id is None
+    assert not outcome.reachable_knockout
+    assert not outcome.reachable_wins_game
+    assert action_score_for_option(board, active_attach).tier != main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_active_attach_reachable_attack_p0_first_player_turn_one_blocks_reachable():
+    board, active_attach, _bench_attach = p0_froslass_attach_board(turn=1, first_player=0, your_index=0)
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_attach(active_attach)
+    assert outcome.enables_attack
+    assert main.RESENTFUL_REFRAIN in outcome.enabled_attack_ids
+    assert outcome.reachable_attack_id is None
+    assert outcome.reachable_damage == 0
+    assert outcome.reachable_prizes_taken == 0
+    assert not outcome.reachable_knockout
+    assert not outcome.reachable_wins_game
+    assert action_score_for_option(board, active_attach).tier != main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_active_attach_reachable_attack_p0_second_player_first_turn_reachable():
+    board, active_attach, _bench_attach = p0_froslass_attach_board(turn=2, first_player=1, your_index=0)
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_attach(active_attach)
+    assert outcome.enables_attack
+    assert outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert outcome.reachable_knockout
+    assert outcome.reachable_wins_game
+    assert action_score_for_option(board, active_attach).tier == main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_active_attach_reachable_attack_p0_first_player_later_turn_reachable():
+    board, active_attach, _bench_attach = p0_froslass_attach_board(turn=3, first_player=0, your_index=0)
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_attach(active_attach)
+    assert outcome.enables_attack
+    assert outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert outcome.reachable_knockout
+    assert outcome.reachable_wins_game
+    assert action_score_for_option(board, active_attach).tier == main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_active_attach_reachable_attack_p0_already_legal_guard():
+    water = main.BASIC_WATER_ENERGY
+
+    direct_attack = option(main.OptionType.ATTACK, main.RESENTFUL_REFRAIN)
+    already_ready_board = FakeBoard(
+        active_id=main.MEGA_YUKIMENOKO_EX,
+        active_energies=[water],
+        target_hp=140,
+        prizes_left=1,
+        turn=2,
+        first_player=1,
+        your_index=0,
+    )
+    already_ready_board.opp.handCount = 19
+    redundant_attach = attach_option(water, already_ready_board.active)
+    already_ready_board._options = [redundant_attach, direct_attack]
+    redundant_outcome = main.ImmediateOutcomeEvaluator(already_ready_board).evaluate_attach(redundant_attach)
+    assert not redundant_outcome.enabled_attack_ids
+    assert not redundant_outcome.reachable_knockout
+    ranked = main.GameSimulator(already_ready_board).rank_options()
+    assert ranked[0].option is direct_attack
+    assert ranked[0].action_score.tier == main.TIER_WIN
+
+
+def test_active_attack_declare_turn_rule_call_sites_p0():
+    water = main.BASIC_WATER_ENERGY
+
+    first_turn = FakeBoard(
+        active_id=main.MEGA_YUKIMENOKO_EX,
+        active_energies=[water],
+        target_hp=140,
+        prizes_left=1,
+        turn=1,
+        first_player=0,
+        your_index=0,
+    )
+    first_turn.opp.handCount = 19
+    assert not main.ImmediateOutcomeEvaluator(first_turn).has_energy_payable_unblocked_active_attack()
+
+    second_player_first_turn = FakeBoard(
+        active_id=main.MEGA_YUKIMENOKO_EX,
+        active_energies=[water],
+        target_hp=140,
+        prizes_left=1,
+        turn=2,
+        first_player=1,
+        your_index=0,
+    )
+    second_player_first_turn.opp.handCount = 19
+    assert main.ImmediateOutcomeEvaluator(second_player_first_turn).has_energy_payable_unblocked_active_attack()
+
+    later_turn = FakeBoard(
+        active_id=main.MEGA_YUKIMENOKO_EX,
+        active_energies=[water],
+        target_hp=140,
+        prizes_left=1,
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    later_turn.opp.handCount = 19
+    assert main.ImmediateOutcomeEvaluator(later_turn).has_energy_payable_unblocked_active_attack()
+
+
+def test_active_attack_declare_turn_rule_policy_regressions_p0():
+    water = main.BASIC_WATER_ENERGY
+
+    staryu = pokemon(main.HITODEMAN, hp=70, max_hp=70, serial=601)
+    evolve_board = FakeBoard(
+        active_id=main.MEGA_STARMIE_EX,
+        active_energies=[water],
+        bench=[staryu],
+        target_hp=300,
+        turn=2,
+        first_player=1,
+        your_index=0,
+    )
+    evolve = evolve_option(main.MEGA_STARMIE_EX, staryu)
+    non_ko_attack = option(main.OptionType.ATTACK, main.JETTING_BLOW)
+    redundant_attach = attach_option(water, evolve_board.active)
+    evolve_policy = policy_for(evolve_board)
+    assert evolve_policy.score_evolve(evolve) > evolve_policy.score_attack(non_ko_attack)
+    assert evolve_policy.score_evolve(evolve) > evolve_policy.score_attach(redundant_attach)
+
+    class StablePokegearBoard(FakeBoard):
+        def starmie_needs_energy(self):
+            return False
+
+        def needs_mega_starmie(self):
+            return False
+
+        def needs_mega_yuki(self):
+            return False
+
+    pokegear_board = StablePokegearBoard(
+        active_id=main.MEGA_YUKIMENOKO_EX,
+        active_energies=[water],
+        bench=[pokemon(main.HITODEMAN, hp=70, max_hp=70, serial=602)],
+        target_hp=300,
+        salvatore_live=True,
+        turn=2,
+        first_player=1,
+        your_index=0,
+    )
+    pokegear_board._hand_ids = [main.POKEGEAR, main.YVELTAL, main.SHAYMIN, main.BASIC_DARK_ENERGY]
+    pokegear_policy = policy_for(pokegear_board)
+    assert pokegear_policy.score_pokegear_candidate(main.SALVATORE) == 160000
+    assert pokegear_policy.score_pokegear_candidate(main.LILLIE_DETERMINATION) == 1000
+
+
+def test_active_attach_reachable_attack_p0_blocked_guard():
+    water = main.BASIC_WATER_ENERGY
+
+    blocked_board = FakeBoard(
+        active_id=main.MEGA_YUKIMENOKO_EX,
+        active_energies=[],
+        target_id=330,
+        target_hp=40,
+        prizes_left=1,
+    )
+    blocked_board.opp.handCount = 20
+    blocked_attach = attach_option(water, blocked_board.active)
+    blocked_outcome = main.ImmediateOutcomeEvaluator(blocked_board).evaluate_attach(blocked_attach)
+    assert blocked_outcome.enables_attack
+    assert not blocked_outcome.enables_knockout
+    assert not blocked_outcome.reachable_knockout
+    assert not blocked_outcome.reachable_wins_game
+
+
+def test_active_attach_reachable_attack_p0_bench_guard():
+    water = main.BASIC_WATER_ENERGY
+
+    bench_only = pokemon(main.MEGA_YUKIMENOKO_EX, hp=310, max_hp=310, serial=502)
+    bench_board = FakeBoard(
+        active_id=main.CINDERACE,
+        active_energies=[water],
+        bench=[bench_only],
+        target_hp=40,
+        prizes_left=1,
+    )
+    bench_board.opp.handCount = 20
+    bench_outcome = main.ImmediateOutcomeEvaluator(bench_board).evaluate_attach(attach_option(water, bench_only))
+    assert bench_outcome.enables_attack
+    assert not bench_outcome.enables_knockout
+    assert not bench_outcome.reachable_knockout
+
+
+def test_active_attach_reachable_attack_p0_multiple_attack_best_choice():
+    water = main.BASIC_WATER_ENERGY
+
+    custom_attack_a = 920001
+    custom_attack_b = 920002
+    multi_board = FakeBoard(
+        active_id=main.MEGA_YUKIMENOKO_EX,
+        active_energies=[],
+        target_hp=100,
+        prizes_left=2,
+        attacks={
+            custom_attack_a: attack(custom_attack_a, 80, [main.EnergyType.WATER]),
+            custom_attack_b: attack(custom_attack_b, 120, [main.EnergyType.WATER]),
+        },
+    )
+    multi_board._data[main.MEGA_YUKIMENOKO_EX].attacks = [custom_attack_a, custom_attack_b]
+    multi_outcome = main.ImmediateOutcomeEvaluator(multi_board).evaluate_attach(attach_option(water, multi_board.active))
+    assert set(multi_outcome.enabled_attack_ids) == {custom_attack_a, custom_attack_b}
+    assert multi_outcome.reachable_attack_id == custom_attack_b
+    assert multi_outcome.reachable_damage == 120
+    assert multi_outcome.reachable_knockout
+
+
+def test_active_attach_reachable_attack_p0_other_card_guard():
+    dark = main.BASIC_DARK_ENERGY
+
+    starmie_board = FakeBoard(
+        active_id=main.MEGA_STARMIE_EX,
+        active_energies=[dark, dark],
+        target_hp=180,
+        prizes_left=1,
+    )
+    starmie_outcome = main.ImmediateOutcomeEvaluator(starmie_board).evaluate_attach(attach_option(dark, starmie_board.active))
+    assert main.NEBULA_BEAM in starmie_outcome.enabled_attack_ids
+    assert starmie_outcome.reachable_attack_id == main.NEBULA_BEAM
+    assert starmie_outcome.reachable_wins_game
+
+
+def p1_bench_attach_surfing_board(
+    include_access=True,
+    target_id=999,
+    target_hp=180,
+    prizes_left=3,
+    bench_id=main.MEGA_STARMIE_EX,
+    bench_energies=None,
+):
+    water = main.BASIC_WATER_ENERGY
+    dark = main.BASIC_DARK_ENERGY
+    if bench_energies is None:
+        bench_energies = [dark, dark]
+    bench = pokemon(bench_id, hp=280, max_hp=280, serial=701, energies=bench_energies)
+    zero_attack = option(main.OptionType.ATTACK, main.RESENTFUL_REFRAIN)
+    bench_attach = attach_option(water, bench)
+    options = [zero_attack, bench_attach, option(main.OptionType.END)]
+    if include_access:
+        options.insert(2, play_option(main.SURFING_BEACH))
+    board = FakeBoard(
+        active_id=main.MEGA_YUKIMENOKO_EX,
+        active_energies=[water],
+        bench=[bench],
+        target_id=target_id,
+        target_hp=target_hp,
+        prizes_left=prizes_left,
+        options=options,
+        effect_id=None,
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    board.opp.handCount = 0
+    return board, bench_attach, zero_attack, bench
+
+
+def test_bench_attach_same_turn_access_p1_surfing_beach_ko():
+    board, bench_attach, zero_attack, bench = p1_bench_attach_surfing_board()
+    before_energies = [card.id for card in bench.energyCards]
+
+    ranked = main.GameSimulator(board).rank_options()
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_attach(bench_attach)
+
+    assert outcome.enables_attack
+    assert main.NEBULA_BEAM in outcome.enabled_attack_ids
+    assert outcome.reachable_attack_id == main.NEBULA_BEAM
+    assert outcome.reachable_damage == 180
+    assert outcome.reachable_knockout
+    assert outcome.reachable_prizes_taken == 1
+    assert not outcome.reachable_wins_game
+    assert "attach_access_via_surfing_beach" in outcome.reasons
+    assert not outcome.knockout
+    assert ranked[0].option is bench_attach
+    assert ranked[0].option is not zero_attack
+    assert ranked[0].action_score.tier == main.TIER_PRESERVE_WIN_OR_KO_PREP
+    assert [card.id for card in bench.energyCards] == before_energies
+
+
+def test_bench_attach_same_turn_access_p1_surfing_beach_win():
+    board, bench_attach, _zero_attack, _bench = p1_bench_attach_surfing_board(prizes_left=1)
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_attach(bench_attach)
+    ranked = main.GameSimulator(board).rank_options()
+
+    assert outcome.reachable_knockout
+    assert outcome.reachable_wins_game
+    assert ranked[0].option is bench_attach
+    assert ranked[0].action_score.tier == main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_bench_attach_same_turn_access_p1_missing_access_guard():
+    board, bench_attach, zero_attack, _bench = p1_bench_attach_surfing_board(include_access=False)
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_attach(bench_attach)
+    ranked = main.GameSimulator(board).rank_options()
+
+    assert outcome.enables_attack
+    assert outcome.reachable_attack_id is None
+    assert not outcome.reachable_knockout
+    assert ranked[0].option is zero_attack
+    assert action_score_for_option(board, bench_attach).tier != main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_bench_attach_same_turn_access_p1_blocked_guard():
+    board, bench_attach, zero_attack, _bench = p1_bench_attach_surfing_board(
+        target_id=330,
+        target_hp=40,
+        bench_id=main.MEGA_YUKIMENOKO_EX,
+        bench_energies=[],
+    )
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_attach(bench_attach)
+
+    assert outcome.enables_attack
+    assert main.RESENTFUL_REFRAIN in outcome.enabled_attack_ids
+    assert outcome.reachable_attack_id is None
+    assert not outcome.reachable_knockout
+    assert action_score_for_option(board, bench_attach).tier != main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_bench_attach_same_turn_access_p1_direct_ko_guard():
+    water = main.BASIC_WATER_ENERGY
+    dark = main.BASIC_DARK_ENERGY
+    bench = pokemon(main.MEGA_STARMIE_EX, hp=280, max_hp=280, serial=702, energies=[dark, dark])
+    direct_attack = option(main.OptionType.ATTACK, main.JETTING_BLOW)
+    bench_attach = attach_option(water, bench)
+    board = FakeBoard(
+        active_id=main.MEGA_STARMIE_EX,
+        active_energies=[water],
+        bench=[bench],
+        target_hp=50,
+        prizes_left=3,
+        options=[direct_attack, bench_attach, play_option(main.SURFING_BEACH)],
+        effect_id=None,
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+
+    ranked = main.GameSimulator(board).rank_options()
+
+    assert main.ImmediateOutcomeEvaluator(board).evaluate_attack(direct_attack).knockout
+    assert main.ImmediateOutcomeEvaluator(board).evaluate_attach(bench_attach).reachable_knockout
+    assert ranked[0].option is direct_attack
+    assert ranked[0].action_score.tier == main.TIER_KO
+
+
+def test_retreat_ready_attacker_same_turn_access_p1():
+    water = main.BASIC_WATER_ENERGY
+    dark = main.BASIC_DARK_ENERGY
+    ready = pokemon(main.MEGA_STARMIE_EX, hp=280, max_hp=280, serial=703, energies=[water, dark, dark])
+    retreat = option(main.OptionType.RETREAT)
+    weak_attack = option(main.OptionType.ATTACK, 997)
+    board = FakeBoard(
+        active_id=main.YVELTAL,
+        active_energies=[dark],
+        bench=[ready],
+        target_hp=180,
+        prizes_left=3,
+        options=[weak_attack, retreat, option(main.OptionType.END)],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_retreat(retreat)
+    ranked = main.GameSimulator(board).rank_options()
+
+    assert outcome.reachable_attack_id == main.NEBULA_BEAM
+    assert outcome.reachable_damage == 180
+    assert outcome.reachable_knockout
+    assert outcome.retreat_energy_cost == 0
+    assert ranked[0].option is retreat
+    assert ranked[0].option is not weak_attack
+    assert ranked[0].action_score.tier == main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_rework_bench_attach_access_does_not_inherit_other_bench_ko():
+    water = main.BASIC_WATER_ENERGY
+    dark = main.BASIC_DARK_ENERGY
+    bench_a = pokemon(main.YUKIWARASHI, hp=70, max_hp=70, serial=720, energies=[])
+    bench_b = pokemon(main.MEGA_YUKIMENOKO_EX, hp=310, max_hp=310, serial=721, energies=[water])
+    attach_a = attach_option(water, bench_a)
+    retreat = option(main.OptionType.RETREAT)
+    board = FakeBoard(
+        active_id=main.YVELTAL,
+        active_energies=[],
+        bench=[bench_a, bench_b],
+        target_hp=150,
+        prizes_left=3,
+        options=[attach_a, retreat, option(main.OptionType.END)],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    board.opp.handCount = 4
+
+    attach_outcome = main.ImmediateOutcomeEvaluator(board).evaluate_attach(attach_a)
+    retreat_outcome = main.ImmediateOutcomeEvaluator(board).evaluate_retreat(retreat)
+    ranked = main.GameSimulator(board).rank_options()
+
+    assert attach_outcome.enables_attack
+    assert attach_outcome.reachable_attack_id == main.CHILLY
+    assert attach_outcome.reachable_damage == 30
+    assert not attach_outcome.reachable_knockout
+    assert action_score_for_option(board, attach_a).tier != main.TIER_PRESERVE_WIN_OR_KO_PREP
+    assert retreat_outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert retreat_outcome.reachable_knockout
+    assert ranked[0].option is retreat
+    assert ranked[0].option is not attach_a
+
+
+def test_rework_active_attach_first_retreat_access_still_reaches_ready_bench_ko():
+    water = main.BASIC_WATER_ENERGY
+    ready = pokemon(main.MEGA_YUKIMENOKO_EX, hp=310, max_hp=310, serial=722, energies=[water])
+    attach_to_active = attach_option(water, None)
+    board = FakeBoard(
+        active_id=main.MEGA_STARMIE_EX,
+        active_energies=[water],
+        bench=[ready],
+        target_hp=150,
+        prizes_left=3,
+        options=[attach_to_active, option(main.OptionType.ATTACK, main.JETTING_BLOW), option(main.OptionType.END)],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    board._data[main.MEGA_STARMIE_EX].retreatCost = 2
+    attach_to_active.target = board.active
+    board.opp.handCount = 4
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_attach(attach_to_active)
+    ranked = main.GameSimulator(board).rank_options()
+
+    assert outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert outcome.reachable_knockout
+    assert "attach_access_via_retreat" in outcome.reasons
+    assert ranked[0].option is attach_to_active
+
+
+def rework_attach_boss_board(turn=3, first_player=0, your_index=0, status=None, supporter_played=False, include_boss=True):
+    water = main.BASIC_WATER_ENERGY
+    boss_target = pokemon(999, hp=40, max_hp=100, serial=730)
+    active_attach = attach_option(water, None)
+    options = [active_attach, option(main.OptionType.END)]
+    if include_boss:
+        options.insert(1, play_option(main.BEFEHL_VON_BOSS))
+    board = FakeBoard(
+        active_id=main.MEGA_YUKIMENOKO_EX,
+        active_energies=[],
+        target_hp=999,
+        prizes_left=3,
+        opp_bench=[boss_target],
+        options=options,
+        turn=turn,
+        first_player=first_player,
+        your_index=your_index,
+    )
+    active_attach.target = board.active
+    board.opp.handCount = 4
+    board._hand_ids = [main.BEFEHL_VON_BOSS, water] if include_boss else [water]
+    board.state.supporterPlayed = supporter_played
+    if status == "asleep":
+        board.me = SimpleNamespace(asleep=True, paralyzed=False)
+    elif status == "paralyzed":
+        board.me = SimpleNamespace(asleep=False, paralyzed=True)
+    else:
+        board.me = SimpleNamespace(asleep=False, paralyzed=False)
+    return board, active_attach
+
+
+def test_rework_attach_boss_attack_declare_guard():
+    legal_board, legal_attach = rework_attach_boss_board(turn=3, first_player=0, your_index=0)
+    first_turn_board, first_turn_attach = rework_attach_boss_board(turn=1, first_player=0, your_index=0)
+    asleep_board, asleep_attach = rework_attach_boss_board(status="asleep")
+    paralyzed_board, paralyzed_attach = rework_attach_boss_board(status="paralyzed")
+
+    legal_outcome = main.ImmediateOutcomeEvaluator(legal_board).evaluate_attach(legal_attach)
+    first_turn_outcome = main.ImmediateOutcomeEvaluator(first_turn_board).evaluate_attach(first_turn_attach)
+    asleep_outcome = main.ImmediateOutcomeEvaluator(asleep_board).evaluate_attach(asleep_attach)
+    paralyzed_outcome = main.ImmediateOutcomeEvaluator(paralyzed_board).evaluate_attach(paralyzed_attach)
+
+    assert legal_outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert legal_outcome.reachable_knockout
+    assert "attach_access_via_boss" in legal_outcome.reasons
+    for outcome in (first_turn_outcome, asleep_outcome, paralyzed_outcome):
+        assert outcome.enables_attack
+        assert outcome.reachable_attack_id is None
+        assert not outcome.reachable_knockout
+        assert not outcome.reachable_wins_game
+
+
+def test_rework_attach_boss_existing_availability_guards():
+    no_boss_board, no_boss_attach = rework_attach_boss_board(include_boss=False)
+    supporter_board, supporter_attach = rework_attach_boss_board(supporter_played=True)
+
+    no_boss_outcome = main.ImmediateOutcomeEvaluator(no_boss_board).evaluate_attach(no_boss_attach)
+    supporter_outcome = main.ImmediateOutcomeEvaluator(supporter_board).evaluate_attach(supporter_attach)
+
+    assert no_boss_outcome.enables_attack
+    assert no_boss_outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert not no_boss_outcome.reachable_knockout
+    assert "attach_access_via_boss" not in no_boss_outcome.reasons
+    assert supporter_outcome.enables_attack
+    assert supporter_outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert not supporter_outcome.reachable_knockout
+    assert "attach_access_via_boss" not in supporter_outcome.reasons
+
+
+def test_rework_status_blocks_normal_retreat_access():
+    water = main.BASIC_WATER_ENERGY
+    ready = pokemon(main.MEGA_STARMIE_EX, hp=280, max_hp=280, serial=740, energies=[water, main.BASIC_DARK_ENERGY, main.BASIC_DARK_ENERGY])
+    retreat = option(main.OptionType.RETREAT)
+    board = FakeBoard(
+        active_id=main.YVELTAL,
+        active_energies=[],
+        bench=[ready],
+        target_hp=180,
+        prizes_left=3,
+        options=[retreat, option(main.OptionType.END)],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+
+    board.me = SimpleNamespace(asleep=True, paralyzed=False)
+    asleep_outcome = main.ImmediateOutcomeEvaluator(board).evaluate_retreat(retreat)
+    assert asleep_outcome.reachable_attack_id is None
+    assert not asleep_outcome.reachable_knockout
+
+    board.me = SimpleNamespace(asleep=False, paralyzed=True)
+    paralyzed_outcome = main.ImmediateOutcomeEvaluator(board).evaluate_retreat(retreat)
+    assert paralyzed_outcome.reachable_attack_id is None
+    assert not paralyzed_outcome.reachable_knockout
+
+
+def test_rework_surfing_beach_status_allows_legal_switch_target_attack():
+    water = main.BASIC_WATER_ENERGY
+    dark = main.BASIC_DARK_ENERGY
+    ready = pokemon(main.MEGA_STARMIE_EX, hp=280, max_hp=280, serial=741, energies=[water, dark, dark])
+    board = FakeBoard(
+        active_id=main.MEGA_YUKIMENOKO_EX,
+        active_energies=[],
+        bench=[ready],
+        target_hp=180,
+        prizes_left=3,
+        options=[play_option(main.SURFING_BEACH), option(main.OptionType.END)],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    board.me = SimpleNamespace(asleep=True, paralyzed=False)
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_switch_target(ready, "surfing_beach")
+
+    assert outcome.reachable_attack_id == main.NEBULA_BEAM
+    assert outcome.reachable_knockout
+    assert outcome.retreat_energy_cost == 0
+
+
+def test_rework_attach_surfing_status_requires_surfing_option():
+    water = main.BASIC_WATER_ENERGY
+    dark = main.BASIC_DARK_ENERGY
+    with_access_board, with_access_attach, _zero_attack, _bench = p1_bench_attach_surfing_board()
+    with_access_board.me = SimpleNamespace(asleep=True, paralyzed=False)
+
+    without_access_board, without_access_attach, _zero_attack, _bench = p1_bench_attach_surfing_board(include_access=False)
+    without_access_board.me = SimpleNamespace(asleep=True, paralyzed=False)
+
+    with_access_outcome = main.ImmediateOutcomeEvaluator(with_access_board).evaluate_attach(with_access_attach)
+    without_access_outcome = main.ImmediateOutcomeEvaluator(without_access_board).evaluate_attach(without_access_attach)
+
+    assert with_access_outcome.reachable_attack_id == main.NEBULA_BEAM
+    assert with_access_outcome.reachable_knockout
+    assert "attach_access_via_surfing_beach" in with_access_outcome.reasons
+    assert without_access_outcome.enables_attack
+    assert without_access_outcome.reachable_attack_id is None
+    assert not without_access_outcome.reachable_knockout
+
+
+def test_l1_paid_retreat_energy_ledger_allows_reachable_after_attach():
+    water = main.BASIC_WATER_ENERGY
+    ready = pokemon(main.MEGA_YUKIMENOKO_EX, hp=310, max_hp=310, serial=801, energies=[water])
+    attach_to_active = attach_option(water, None)
+    bench = [ready]
+    board = FakeBoard(
+        active_id=main.MEGA_STARMIE_EX,
+        active_energies=[water],
+        bench=bench,
+        target_hp=150,
+        prizes_left=3,
+        options=[attach_to_active, option(main.OptionType.ATTACK, main.JETTING_BLOW), option(main.OptionType.END)],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    board._data[main.MEGA_STARMIE_EX].retreatCost = 2
+    attach_to_active.target = board.active
+    before_active_energy = [card.id for card in board.active.energyCards]
+    before_bench_energy = [card.id for card in ready.energyCards]
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_attach(attach_to_active)
+    ranked = main.GameSimulator(board).rank_options()
+
+    assert outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert outcome.reachable_damage == 200
+    assert outcome.reachable_knockout
+    assert outcome.retreat_energy_cost == 2
+    assert outcome.important_energy_loss == 2
+    assert "attach_access_via_retreat" in outcome.reasons
+    assert ranked[0].option is attach_to_active
+    assert [card.id for card in board.active.energyCards] == before_active_energy
+    assert [card.id for card in ready.energyCards] == before_bench_energy
+
+
+def test_l1_paid_retreat_energy_ledger_blocks_unpayable_retreat_chain():
+    water = main.BASIC_WATER_ENERGY
+    dark = main.BASIC_DARK_ENERGY
+    ready = pokemon(main.MEGA_STARMIE_EX, hp=280, max_hp=280, serial=802, energies=[dark, dark])
+    attach_to_bench = attach_option(water, ready)
+    board = FakeBoard(
+        active_id=main.MEGA_STARMIE_EX,
+        active_energies=[water],
+        bench=[ready],
+        target_hp=150,
+        prizes_left=3,
+        options=[attach_to_bench, option(main.OptionType.RETREAT), option(main.OptionType.ATTACK, main.JETTING_BLOW), option(main.OptionType.END)],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    board._data[main.MEGA_STARMIE_EX].retreatCost = 2
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_attach(attach_to_bench)
+
+    assert outcome.enables_attack
+    assert outcome.reachable_attack_id is None
+    assert not outcome.reachable_knockout
+    assert action_score_for_option(board, attach_to_bench).tier != main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_l1_free_retreat_and_surfing_beach_have_no_energy_loss():
+    board, bench_attach, _zero_attack, _bench = p1_bench_attach_surfing_board()
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_attach(bench_attach)
+
+    assert outcome.reachable_knockout
+    assert outcome.retreat_energy_cost == 0
+    assert outcome.important_energy_loss == 0
+
+
+def test_l1_energy_switch_moves_energy_to_active_without_board_mutation():
+    water = main.BASIC_WATER_ENERGY
+    source = pokemon(main.MEGA_STARMIE_EX, hp=280, max_hp=280, serial=803, energies=[water])
+    energy_switch = play_option(main.ENERGY_SWITCH)
+    board = FakeBoard(
+        active_id=main.MEGA_YUKIMENOKO_EX,
+        active_energies=[],
+        bench=[source],
+        target_hp=150,
+        prizes_left=3,
+        options=[energy_switch, option(main.OptionType.END)],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    board.opp.handCount = 4
+    before_active_energy = [card.id for card in board.active.energyCards]
+    before_source_energy = [card.id for card in source.energyCards]
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_energy_switch_play(energy_switch)
+    ranked = main.GameSimulator(board).rank_options()
+
+    assert outcome.enables_attack
+    assert outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert outcome.reachable_damage == 200
+    assert outcome.reachable_knockout
+    assert outcome.reachable_prizes_taken == 1
+    assert ranked[0].option is energy_switch
+    assert [card.id for card in board.active.energyCards] == before_active_energy
+    assert [card.id for card in source.energyCards] == before_source_energy
+
+
+def test_l1_energy_switch_no_source_energy_no_promotion():
+    energy_switch = play_option(main.ENERGY_SWITCH)
+    board = FakeBoard(
+        active_id=main.MEGA_YUKIMENOKO_EX,
+        active_energies=[],
+        bench=[pokemon(main.MEGA_STARMIE_EX, hp=280, max_hp=280, serial=804, energies=[])],
+        target_hp=150,
+        prizes_left=3,
+        options=[energy_switch, option(main.OptionType.END)],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    board.opp.handCount = 4
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_energy_switch_play(energy_switch)
+
+    assert outcome.supported
+    assert outcome.reachable_attack_id is None
+    assert not outcome.reachable_knockout
+    assert action_score_for_option(board, energy_switch).tier != main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_l4_attach_boss_prize_attack_reachable():
+    water = main.BASIC_WATER_ENERGY
+    boss = play_option(main.BEFEHL_VON_BOSS)
+    attach = attach_option(water, None)
+    direct_attack = option(main.OptionType.ATTACK, main.RESENTFUL_REFRAIN)
+    boss_target = pokemon(999, hp=150, max_hp=150, serial=901)
+    board = FakeBoard(
+        active_id=main.MEGA_YUKIMENOKO_EX,
+        active_energies=[],
+        opp_bench=[boss_target],
+        target_hp=300,
+        prizes_left=3,
+        options=[attach, boss, option(main.OptionType.END)],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    attach.target = board.active
+    board.opp.handCount = 4
+    board._hand_ids = [main.BEFEHL_VON_BOSS, water]
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_attach(attach)
+    ranked = main.GameSimulator(board).rank_options()
+
+    assert outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert outcome.reachable_damage == 200
+    assert outcome.reachable_knockout
+    assert outcome.reachable_prizes_taken == 1
+    assert "attach_access_via_boss" in outcome.reasons
+    assert ranked[0].option is attach
+    assert ranked[0].action_score.tier == main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_l4_attach_boss_requires_boss_available_and_unused_supporter():
+    water = main.BASIC_WATER_ENERGY
+    attach = attach_option(water, None)
+    boss_target = pokemon(999, hp=150, max_hp=150, serial=902)
+    board = FakeBoard(
+        active_id=main.MEGA_YUKIMENOKO_EX,
+        active_energies=[],
+        opp_bench=[boss_target],
+        target_hp=300,
+        prizes_left=3,
+        options=[attach, option(main.OptionType.END)],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    attach.target = board.active
+    board.opp.handCount = 4
+    board._hand_ids = [water]
+
+    no_boss = main.ImmediateOutcomeEvaluator(board).evaluate_attach(attach)
+    assert no_boss.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert not no_boss.reachable_knockout
+    assert "attach_access_via_boss" not in no_boss.reasons
+
+    board._hand_ids = [main.BEFEHL_VON_BOSS, water]
+    board._options = [attach, play_option(main.BEFEHL_VON_BOSS), option(main.OptionType.END)]
+    board.state.supporterPlayed = True
+    used_supporter = main.ImmediateOutcomeEvaluator(board).evaluate_attach(attach)
+    assert used_supporter.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert not used_supporter.reachable_knockout
+    assert "attach_access_via_boss" not in used_supporter.reasons
+    assert action_score_for_option(board, attach).tier != main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_replay_87482904_t11_t13_energy_ledger():
+    path = "参考ログ/v7.3/勝ちログ/87482904.json"
+    for step, actual_target_serial, damage in ((70, 3, 450), (81, 4, 350)):
+        board, next_action = replay_board(path, step)
+        actual = board.select.option[next_action[0]]
+        ranked = main.GameSimulator(board).rank_options()
+        top = ranked[0]
+        outcome = top.outcome
+        target = board.option_target(top.option)
+        froslass = next(pokemon_obj for pokemon_obj in board.bench if board.pid(pokemon_obj) == main.MEGA_YUKIMENOKO_EX)
+        before_active_energy = energy_ids(board.active)
+        before_froslass_energy = energy_ids(froslass)
+
+        assert option_description(board, actual) == ("ATTACH", main.BASIC_WATER_ENERGY, main.HITODEMAN, actual_target_serial)
+        assert top.option.type == main.OptionType.ATTACH
+        assert board.option_card(top.option) == main.BASIC_WATER_ENERGY
+        assert target is froslass
+        assert outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+        assert outcome.reachable_damage == damage
+        assert outcome.reachable_knockout
+        assert outcome.reachable_prizes_taken == 3
+        assert outcome.reachable_wins_game
+        assert outcome.retreat_energy_cost == 0
+        assert outcome.important_energy_loss == 0
+        assert "attach_access_via_retreat" in outcome.reasons
+        assert energy_ids(board.active) == before_active_energy
+        assert energy_ids(froslass) == before_froslass_energy
+
+
+def test_replay_87482904_t15_energy_ledger():
+    board, next_action = replay_board("参考ログ/v7.3/勝ちログ/87482904.json", 92)
+    ranked = main.GameSimulator(board).rank_options()
+    top = ranked[0]
+    target = board.option_target(top.option)
+    before_active_energy = energy_ids(board.active)
+    before_target_energy = energy_ids(target)
+
+    assert option_description(board, board.select.option[next_action[0]]) == (
+        "ATTACH",
+        main.BASIC_WATER_ENERGY,
+        main.MEGA_YUKIMENOKO_EX,
+        12,
+    )
+    assert top.option is board.select.option[next_action[0]]
+    assert top.outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert top.outcome.reachable_damage == 350
+    assert top.outcome.reachable_knockout
+    assert top.outcome.reachable_prizes_taken == 3
+    assert top.outcome.reachable_wins_game
+    assert top.outcome.retreat_energy_cost == 0
+    assert top.outcome.important_energy_loss == 0
+    assert energy_ids(board.active) == before_active_energy
+    assert energy_ids(target) == before_target_energy
+
+
+def test_replay_87491060_t9_retreat_ready_attacker_energy_ledger():
+    board, next_action = replay_board("参考ログ/v7.3/勝ちログ/87491060.json", 78)
+    actual = board.select.option[next_action[0]]
+    ranked = main.GameSimulator(board).rank_options()
+    top = ranked[0]
+    ready_froslass = next(
+        pokemon_obj
+        for pokemon_obj in board.bench
+        if board.pid(pokemon_obj) == main.MEGA_YUKIMENOKO_EX and energy_ids(pokemon_obj) == [main.BASIC_WATER_ENERGY]
+    )
+    before_active_energy = energy_ids(board.active)
+    before_ready_energy = energy_ids(ready_froslass)
+
+    assert option_description(board, actual) == ("ATTACK", 997, None, None)
+    assert top.option.type == main.OptionType.RETREAT
+    assert top.outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert top.outcome.reachable_damage == 600
+    assert top.outcome.reachable_knockout
+    assert top.outcome.reachable_prizes_taken == 1
+    assert top.outcome.retreat_energy_cost == 0
+    assert top.outcome.important_energy_loss == 0
+    assert energy_ids(board.active) == before_active_energy
+    assert energy_ids(ready_froslass) == before_ready_energy
+
+
+def test_replay_87488357_t19_energy_switch_ledger():
+    board, next_action = replay_board("参考ログ/v7.3/負けログ/87488357.json", 127)
+    actual = board.select.option[next_action[0]]
+    source = board.bench[0]
+    before_active_energy = energy_ids(board.active)
+    before_source_energy = energy_ids(source)
+
+    assert option_description(board, actual) == ("PLAY", main.ENERGY_SWITCH, None, None)
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_energy_switch_play(actual)
+    ranked = main.GameSimulator(board).rank_options()
+
+    assert ranked[0].option is actual
+    assert outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert outcome.reachable_damage == 350
+    assert outcome.reachable_knockout
+    assert outcome.reachable_prizes_taken == 1
+    assert not outcome.reachable_wins_game
+    assert energy_ids(board.active) == before_active_energy
+    assert energy_ids(source) == before_source_energy
+
+
+def test_replay_87482904_t11_t13_l2_attach_retreat_attack_rank():
+    path = "参考ログ/v7.3/勝ちログ/87482904.json"
+    for step in (70, 81):
+        board, next_action = replay_board(path, step)
+        actual = board.select.option[next_action[0]]
+        ranked = main.GameSimulator(board).rank_options()
+        top = ranked[0]
+
+        assert option_description(board, actual)[0] == "ATTACH"
+        assert option_description(board, actual)[2] == main.HITODEMAN
+        assert top.option.type == main.OptionType.ATTACH
+        assert board.pid(board.option_target(top.option)) == main.MEGA_YUKIMENOKO_EX
+        assert top.option is not actual
+        assert top.action_score.tier == main.TIER_PRESERVE_WIN_OR_KO_PREP
+        assert top.outcome.reachable_knockout
+        assert top.outcome.reachable_prizes_taken == 3
+        assert top.outcome.reachable_wins_game
+        assert option_description(board, ranked[-1].option)[0] in {"END", "PLAY", "ATTACH", "RETREAT", "ATTACK"}
+
+
+def test_replay_87482904_t15_l2_three_prize_rank():
+    board, next_action = replay_board("参考ログ/v7.3/勝ちログ/87482904.json", 92)
+    actual = board.select.option[next_action[0]]
+    ranked = main.GameSimulator(board).rank_options()
+    top = ranked[0]
+
+    assert top.option is actual
+    assert board.pid(board.option_target(top.option)) == main.MEGA_YUKIMENOKO_EX
+    assert top.action_score.tier == main.TIER_PRESERVE_WIN_OR_KO_PREP
+    assert top.outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert top.outcome.reachable_damage == 350
+    assert top.outcome.reachable_knockout
+    assert top.outcome.reachable_prizes_taken == 3
+    assert top.outcome.reachable_wins_game
+
+
+def test_replay_87491060_t9_l3_retreat_ready_attacker_rank():
+    board, next_action = replay_board("参考ログ/v7.3/勝ちログ/87491060.json", 78)
+    actual = board.select.option[next_action[0]]
+    ranked = main.GameSimulator(board).rank_options()
+    top = ranked[0]
+
+    assert option_description(board, actual) == ("ATTACK", 997, None, None)
+    assert top.option.type == main.OptionType.RETREAT
+    assert top.option is not actual
+    assert top.action_score.tier == main.TIER_PRESERVE_WIN_OR_KO_PREP
+    assert top.outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert top.outcome.reachable_damage == 600
+    assert top.outcome.reachable_knockout
+    assert top.outcome.reachable_prizes_taken == 1
+
+
+def test_replay_87637402_t13_l4_attach_boss_prize_rank():
+    board, next_action = replay_board("参考ログ/v7.4/負け試合/87637402.json", 85)
+    actual = board.select.option[next_action[0]]
+    ranked = main.GameSimulator(board).rank_options()
+    top = ranked[0]
+
+    assert option_description(board, actual) == ("ATTACH", main.BASIC_WATER_ENERGY, main.MEGA_STARMIE_EX, 6)
+    assert top.option is actual
+    assert top.action_score.tier == main.TIER_PRESERVE_WIN_OR_KO_PREP
+    assert top.outcome.reachable_attack_id == main.JETTING_BLOW
+    assert top.outcome.reachable_damage == 120
+    assert top.outcome.reachable_knockout
+    assert top.outcome.reachable_prizes_taken == 1
+    assert not top.outcome.reachable_wins_game
+    assert "attach_access_via_boss" in top.outcome.reasons
+
+
+def test_replay_87488357_t19_l5_energy_switch_prize_rank():
+    board, next_action = replay_board("参考ログ/v7.3/負けログ/87488357.json", 127)
+    actual = board.select.option[next_action[0]]
+    ranked = main.GameSimulator(board).rank_options()
+    top = ranked[0]
+
+    assert option_description(board, actual) == ("PLAY", main.ENERGY_SWITCH, None, None)
+    assert top.option is actual
+    assert top.action_score.tier == main.TIER_PRESERVE_WIN_OR_KO_PREP
+    assert top.outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert top.outcome.reachable_damage == 350
+    assert top.outcome.reachable_knockout
+    assert top.outcome.reachable_prizes_taken == 1
+
+
+def test_l6_zero_damage_attack_loses_to_confirmed_chain_but_is_not_forbidden():
+    board, bench_attach, zero_attack, _bench = p1_bench_attach_surfing_board()
+    ranked = main.GameSimulator(board).rank_options()
+    zero_result = next(result for result in ranked if result.option is zero_attack)
+
+    assert main.ImmediateOutcomeEvaluator(board).evaluate_attack(zero_attack).damage == 0
+    assert ranked[0].option is bench_attach
+    assert ranked[0].action_score.tier == main.TIER_PRESERVE_WIN_OR_KO_PREP
+    assert zero_result.action_score.tier == main.TIER_NON_KO_ATTACK
+    assert zero_result.outcome.supported
+    assert not zero_result.outcome.knockout
+    assert not zero_result.outcome.wins_game
+
+
+def test_l7_rank_contract_direct_ko_before_reachable_chain():
+    water = main.BASIC_WATER_ENERGY
+    dark = main.BASIC_DARK_ENERGY
+    bench = pokemon(main.MEGA_STARMIE_EX, hp=280, max_hp=280, serial=910, energies=[dark, dark])
+    direct_ko = option(main.OptionType.ATTACK, main.JETTING_BLOW)
+    chain_attach = attach_option(water, bench)
+    end = option(main.OptionType.END)
+    board = FakeBoard(
+        active_id=main.MEGA_STARMIE_EX,
+        active_energies=[water],
+        bench=[bench],
+        target_hp=50,
+        prizes_left=3,
+        options=[chain_attach, play_option(main.SURFING_BEACH), direct_ko, end],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+
+    ranked = main.GameSimulator(board).rank_options()
+
+    assert ranked[0].option is direct_ko
+    assert ranked[0].action_score.tier == main.TIER_KO
+    assert action_score_for_option(board, chain_attach).tier == main.TIER_PRESERVE_WIN_OR_KO_PREP
+    assert ranked[-1].option is end
+
+
+def test_l8_public_same_board_same_rank_and_common_guards():
+    water = main.BASIC_WATER_ENERGY
+    bench = pokemon(main.MEGA_YUKIMENOKO_EX, hp=310, max_hp=310, serial=920, energies=[])
+    attach = attach_option(water, bench)
+    zero_attack = option(main.OptionType.ATTACK, main.RESENTFUL_REFRAIN)
+    end = option(main.OptionType.END)
+    board_a = FakeBoard(
+        active_id=main.YVELTAL,
+        bench=[bench],
+        target_hp=150,
+        prizes_left=3,
+        options=[attach, option(main.OptionType.RETREAT), zero_attack, end],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    board_a.opp.handCount = 4
+    board_b = FakeBoard(
+        active_id=main.YVELTAL,
+        bench=[pokemon(main.MEGA_YUKIMENOKO_EX, hp=310, max_hp=310, serial=920, energies=[])],
+        target_hp=150,
+        prizes_left=3,
+        options=[attach_option(water, None), option(main.OptionType.RETREAT), zero_attack, end],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    board_b._options[0].target = board_b.bench[0]
+    board_b.opp.handCount = 4
+    board_b.opp.hand = [energy_card(main.BASIC_WATER_ENERGY, 990), energy_card(main.BASIC_DARK_ENERGY, 991)]
+
+    ranked_a = [result.action_score for result in main.GameSimulator(board_a).rank_options()]
+    ranked_b = [result.action_score for result in main.GameSimulator(board_b).rank_options()]
+
+    assert ranked_a == ranked_b
+    assert main.ImmediateOutcomeEvaluator(board_a).evaluate_attach(attach).reachable_knockout
+    assert main.ImmediateOutcomeEvaluator(board_a).evaluate_attack(zero_attack).damage == main.ImmediateOutcomeEvaluator(board_b).evaluate_attack(zero_attack).damage
+
+
+def pokegear_salvatore_chain_board(options=None, deck_count=42, hand_ids=None, supporter_played=False, target_hp=290, target_id=678, deck_ids=None):
+    chilly = option(main.OptionType.ATTACK, main.CHILLY)
+    play_pokegear = play_option(main.POKEGEAR)
+    play_salvatore = play_option(main.SALVATORE)
+    end = option(main.OptionType.END)
+    board = FakeBoard(
+        active_id=main.YUKIWARASHI,
+        active_energies=(main.BASIC_WATER_ENERGY, main.BASIC_WATER_ENERGY, main.BASIC_WATER_ENERGY),
+        target_id=target_id,
+        target_hp=target_hp,
+        prizes_left=6,
+        options=options or [play_pokegear, play_salvatore, chilly, end],
+        turn=4,
+        first_player=0,
+        your_index=1,
+        deck_count=deck_count,
+        deck_ids=deck_ids,
+    )
+    board.opp.handCount = 9
+    board.state.supporterPlayed = supporter_played
+    board._hand_ids = hand_ids or [
+        main.BASIC_DARK_ENERGY,
+        main.POKEGEAR,
+        main.WALLY_COMPASSION,
+        main.SURFING_BEACH,
+        main.BASIC_WATER_ENERGY,
+        main.TANKER,
+    ]
+    return board, play_pokegear, play_salvatore, chilly, end
+
+
+def public_salvatore_deck():
+    return [main.SALVATORE, main.SALVATORE, main.MEGA_YUKIMENOKO_EX] + [main.BASIC_WATER_ENERGY] * 39
+
+
+def test_pokegear_salvatore_chain_replay_88272517_t4_rank():
+    board, next_action = replay_board("参考ログ/v7.5/ポケギア使ってセイジ出せよ.json", 37, 1)
+
+    assert next_action == [5]
+    assert board.state.turn == 4
+    assert board.state.firstPlayer == 0
+    assert board.state.yourIndex == 1
+    assert board.pid(board.active) == main.YUKIWARASHI
+    assert getattr(board.active, "serial", None) == 78
+    assert energy_ids(board.active) == [main.BASIC_WATER_ENERGY] * 3
+    assert board.pid(board.opp_active) == 678
+    assert main.hp_left(board.opp_active) == 290
+    assert board.opp.handCount == 9
+    assert board.my_prizes_left() == 6
+    assert not board.state.supporterPlayed
+
+    replay_attack = board.select.option[5]
+    assert replay_attack.attackId == main.CHILLY
+    attack_outcome = main.ImmediateOutcomeEvaluator(board).evaluate_attack(replay_attack)
+    assert attack_outcome.damage == 10
+    assert not attack_outcome.knockout
+
+    ranked = main.GameSimulator(board).rank_options()
+    pokegear_result = next(result for result in ranked if option_description(board, result.option) == ("PLAY", main.POKEGEAR, None, None))
+    attack_result = next(result for result in ranked if result.option is replay_attack)
+
+    assert ranked[0].option is pokegear_result.option
+    assert pokegear_result.action_score.tier == main.TIER_HIGH_VALUE_PREP
+    assert pokegear_result.outcome.expected_reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert math.isclose(pokegear_result.outcome.expected_hit_probability, 0.2692722787542399, rel_tol=1e-12, abs_tol=1e-12)
+    assert math.isclose(pokegear_result.outcome.expected_reachable_damage, 121.17252543940796, rel_tol=1e-12, abs_tol=1e-12)
+    assert pokegear_result.outcome.expected_reachable_knockout
+    assert math.isclose(pokegear_result.outcome.expected_reachable_prizes_taken, 0.8078168362627198, rel_tol=1e-12, abs_tol=1e-12)
+    assert attack_result.action_score.tier == main.TIER_NON_KO_ATTACK
+    assert attack_outcome.damage == 10
+    assert not attack_outcome.knockout
+
+
+def test_pokegear_salvatore_candidate_chain_is_definite_after_search():
+    salvatore = card_choice(main.SALVATORE)
+    lillie = card_choice(main.LILLIE_DETERMINATION)
+    crispin = card_choice(main.CRISPIN)
+    board, _pokegear, _salvatore_play, _chilly, _end = pokegear_salvatore_chain_board(options=[crispin, salvatore, lillie], deck_ids=public_salvatore_deck())
+    board.select.context = main.SelectContext.TO_HAND
+    board.select.effect = SimpleNamespace(id=main.POKEGEAR)
+
+    ranked = main.GameSimulator(board).rank_options()
+    salvatore_result = next(result for result in ranked if result.option is salvatore)
+
+    assert ranked[0].option is salvatore
+    assert salvatore_result.action_score.tier == main.TIER_PRESERVE_WIN_OR_KO_PREP
+    assert salvatore_result.outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert salvatore_result.outcome.reachable_damage == 450
+    assert salvatore_result.outcome.reachable_knockout
+    assert salvatore_result.outcome.reachable_prizes_taken == 3
+
+
+def test_salvatore_play_chain_reaches_froslass_attack_ko():
+    board, _pokegear, salvatore_play, chilly, end = pokegear_salvatore_chain_board(options=None, deck_ids=public_salvatore_deck())
+    board._options = [salvatore_play, chilly, end]
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_salvatore_play(salvatore_play)
+    ranked = main.GameSimulator(board).rank_options()
+
+    assert outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert outcome.reachable_damage == 450
+    assert outcome.reachable_knockout
+    assert outcome.reachable_prizes_taken == 3
+    assert ranked[0].option is salvatore_play
+    assert ranked[0].action_score.tier == main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_salvatore_target_chain_uses_existing_evolution_attack_facts():
+    board, _pokegear, _salvatore_play, _chilly, _end = pokegear_salvatore_chain_board(deck_ids=public_salvatore_deck())
+    target_option = switch_target_option(board.active)
+    board._options = [target_option]
+    board.select.context = main.SelectContext.TO_FIELD
+    board.select.effect = SimpleNamespace(id=main.SALVATORE)
+
+    facts = board.active_evolution_attack_facts(evolve_option(main.MEGA_YUKIMENOKO_EX, board.active))
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_salvatore_target(board.active)
+    ranked = main.GameSimulator(board).rank_options()
+
+    assert any(fact.attack_id == main.RESENTFUL_REFRAIN and fact.damage == 450 and fact.knockout and fact.prizes_taken == 3 for fact in facts)
+    assert outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert outcome.reachable_damage == 450
+    assert outcome.reachable_knockout
+    assert outcome.reachable_prizes_taken == 3
+    assert ranked[0].option is target_option
+    assert ranked[0].action_score.tier == main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_pokegear_salvatore_chain_negative_guards():
+    used_pokegear = play_option(main.POKEGEAR)
+    used_supporter, _pokegear, _play_salvatore, chilly, _end = pokegear_salvatore_chain_board(
+        options=[used_pokegear, option(main.OptionType.ATTACK, main.CHILLY)],
+        supporter_played=True,
+    )
+    assert not main.ImmediateOutcomeEvaluator(used_supporter).evaluate_pokegear_play(used_pokegear).expected_reachable_knockout
+    used_supporter.select.context = main.SelectContext.TO_HAND
+    used_supporter.select.effect = SimpleNamespace(id=main.POKEGEAR)
+    used_supporter_candidate = card_choice(main.SALVATORE)
+    used_supporter._options = [used_supporter_candidate]
+    used_supporter_candidate_outcome = main.ImmediateOutcomeEvaluator(used_supporter).evaluate_pokegear_candidate(used_supporter_candidate)
+    assert used_supporter_candidate_outcome.reachable_attack_id is None
+    assert not used_supporter_candidate_outcome.reachable_knockout
+    assert used_supporter_candidate_outcome.expected_reachable_attack_id is None
+    assert not used_supporter_candidate_outcome.expected_reachable_knockout
+    assert used_supporter_candidate_outcome.expected_reachable_damage == 0
+    assert used_supporter_candidate_outcome.expected_reachable_prizes_taken == 0
+    assert action_score_for_option(used_supporter, used_supporter_candidate).tier != main.TIER_HIGH_VALUE_PREP
+
+    no_evolution_pokegear = play_option(main.POKEGEAR)
+    no_evolution, _pokegear, _play_salvatore, _chilly, _end = pokegear_salvatore_chain_board(
+        options=[no_evolution_pokegear, option(main.OptionType.ATTACK, main.CHILLY)],
+        hand_ids=[main.POKEGEAR],
+    )
+    no_evolution.discard_ids = [main.MEGA_YUKIMENOKO_EX, main.MEGA_YUKIMENOKO_EX]
+    assert not main.ImmediateOutcomeEvaluator(no_evolution).evaluate_pokegear_play(no_evolution_pokegear).expected_reachable_knockout
+
+    no_energy_pokegear = play_option(main.POKEGEAR)
+    no_energy, _pokegear, _play_salvatore, _chilly, _end = pokegear_salvatore_chain_board(options=[no_energy_pokegear, chilly])
+    no_energy.active.energyCards = []
+    assert not main.ImmediateOutcomeEvaluator(no_energy).evaluate_pokegear_play(no_energy_pokegear).expected_reachable_knockout
+
+    wall_pokegear = play_option(main.POKEGEAR)
+    wall, _pokegear, _play_salvatore, _chilly, _end = pokegear_salvatore_chain_board(options=[wall_pokegear, chilly], target_hp=290)
+    wall.opp_active.id = 330
+    assert not main.ImmediateOutcomeEvaluator(wall).evaluate_pokegear_play(wall_pokegear).expected_reachable_knockout
+
+    no_salvatore, _pokegear, _play_salvatore, _chilly, _end = pokegear_salvatore_chain_board(
+        options=[card_choice(main.LILLIE_DETERMINATION), card_choice(main.CRISPIN)]
+    )
+    no_salvatore.select.context = main.SelectContext.TO_HAND
+    no_salvatore.select.effect = SimpleNamespace(id=main.POKEGEAR)
+    assert all(board_option.cardId != main.SALVATORE for _, board_option in no_salvatore.iter_options())
+
+
+def test_deck_counts_after_judge_suguri_update():
+    deck_csv_ids = [
+        int(line.strip().rstrip(","))
+        for line in (Path(__file__).resolve().parent / "deck.csv").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+
+    for deck in (main.DEFAULT_DECK, main.DECK, deck_csv_ids):
+        assert len(deck) == 60
+        assert deck.count(main.YVELTAL) == 0
+        assert deck.count(main.BASIC_DARK_ENERGY) == 0
+        assert deck.count(main.CRISPIN) == 0
+        assert deck.count(main.SUGURI) == 2
+        assert deck.count(main.JUDGE) == 2
+        assert deck.count(main.BASIC_WATER_ENERGY) == 9
+
+
+def test_judge_play_rank_rules():
+    judge = play_option(main.JUDGE)
+    non_ko_attack = option(main.OptionType.ATTACK, main.JETTING_BLOW)
+    prep = play_option(main.POFIN)
+    high_hand_board = FakeBoard(
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_hp=120,
+        options=[judge, non_ko_attack, prep],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    high_hand_board.opp.handCount = 8
+    high_hand_ranked = main.GameSimulator(high_hand_board).rank_options()
+    assert high_hand_ranked[0].option is judge
+    assert action_score_for_option(high_hand_board, judge).tier == main.TIER_HIGH_VALUE_PREP
+    assert [result.option for result in high_hand_ranked].index(judge) < [result.option for result in high_hand_ranked].index(non_ko_attack)
+    assert [result.option for result in high_hand_ranked].index(judge) < [result.option for result in high_hand_ranked].index(prep)
+    high_hand_board.select.context = main.SelectContext.TO_HAND
+    high_hand_board.select.effect = SimpleNamespace(id=main.POKEGEAR)
+    judge_candidate = card_choice(main.JUDGE)
+    assert policy_for(high_hand_board).score_card_selection(judge_candidate) == policy_for(high_hand_board).score_play(judge)
+
+    direct_ko = option(main.OptionType.ATTACK, main.JETTING_BLOW)
+    direct_ko_board = FakeBoard(
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_hp=40,
+        options=[judge, direct_ko],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    direct_ko_board.opp.handCount = 8
+    direct_ko_ranked = main.GameSimulator(direct_ko_board).rank_options()
+    assert direct_ko_ranked[0].option is direct_ko
+    assert action_score_for_option(direct_ko_board, direct_ko).tier == main.TIER_KO
+    assert [result.option for result in direct_ko_ranked].index(direct_ko) < [result.option for result in direct_ko_ranked].index(judge)
+
+    froslass_attack = option(main.OptionType.ATTACK, main.RESENTFUL_REFRAIN)
+    low_hand_board = FakeBoard(
+        active_id=main.MEGA_YUKIMENOKO_EX,
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_hp=400,
+        options=[judge, froslass_attack],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    low_hand_board.opp.handCount = 7
+    low_hand_ranked = main.GameSimulator(low_hand_board).rank_options()
+    assert low_hand_ranked[0].option is froslass_attack
+    assert action_score_for_option(low_hand_board, judge).tier != main.TIER_HIGH_VALUE_PREP
+
+    alakazam_board = FakeBoard(
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_id=741,
+        target_hp=120,
+        options=[judge, non_ko_attack, prep],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    alakazam_board.opp.handCount = 4
+    alakazam_ranked = main.GameSimulator(alakazam_board).rank_options()
+    assert alakazam_ranked[0].option is judge
+    assert action_score_for_option(alakazam_board, judge).tier == main.TIER_HIGH_VALUE_PREP
+    assert [result.option for result in alakazam_ranked].index(judge) < [result.option for result in alakazam_ranked].index(prep)
+
+
+def test_suguri_play_rank_rules():
+    suguri = play_option(main.SUGURI)
+    attack_option = option(main.OptionType.ATTACK, main.JETTING_BLOW)
+
+    basic_board = FakeBoard(
+        active_id=main.HITODEMAN,
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_id=main.MEGA_STARMIE_EX,
+        target_hp=70,
+        options=[suguri, option(main.OptionType.ATTACK, main.WATER_GUN)],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    assert action_score_for_option(basic_board, suguri).tier != main.TIER_HIGH_VALUE_PREP
+
+    non_ex_board = FakeBoard(
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_id=999,
+        target_hp=70,
+        options=[suguri, attack_option],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    assert action_score_for_option(non_ex_board, suguri).tier != main.TIER_HIGH_VALUE_PREP
+
+    low_damage_board = FakeBoard(
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_id=main.MEGA_STARMIE_EX,
+        target_hp=100,
+        options=[suguri, attack_option],
+        attacks={main.JETTING_BLOW: attack(main.JETTING_BLOW, 10, [main.EnergyType.WATER])},
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    assert action_score_for_option(low_damage_board, suguri).tier != main.TIER_HIGH_VALUE_PREP
+
+    already_ko_board = FakeBoard(
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_id=main.MEGA_STARMIE_EX,
+        target_hp=40,
+        options=[suguri, attack_option],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    already_ko_ranked = main.GameSimulator(already_ko_board).rank_options()
+    assert already_ko_ranked[0].option is attack_option
+    assert action_score_for_option(already_ko_board, attack_option).tier == main.TIER_KO
+    assert [result.option for result in already_ko_ranked].index(attack_option) < [result.option for result in already_ko_ranked].index(suguri)
+
+    boost_ko_board = FakeBoard(
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_id=main.MEGA_STARMIE_EX,
+        target_hp=70,
+        prizes_left=3,
+        options=[suguri, attack_option, play_option(main.POFIN)],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    boost_ko_ranked = main.GameSimulator(boost_ko_board).rank_options()
+    assert boost_ko_ranked[0].option is suguri
+    assert action_score_for_option(boost_ko_board, suguri).tier == main.TIER_HIGH_VALUE_PREP
+    assert action_score_for_option(boost_ko_board, suguri).tier < main.TIER_KO
+    assert [result.option for result in boost_ko_ranked].index(suguri) < [result.option for result in boost_ko_ranked].index(attack_option)
+    boost_ko_board.select.context = main.SelectContext.TO_HAND
+    boost_ko_board.select.effect = SimpleNamespace(id=main.POKEGEAR)
+    suguri_candidate = card_choice(main.SUGURI)
+    assert policy_for(boost_ko_board).score_card_selection(suguri_candidate) == policy_for(boost_ko_board).score_play(suguri)
+
+    plus_30_mode = option(main.OptionType.NO)
+    switch_mode = option(main.OptionType.YES)
+    mode_switch_target = pokemon(main.MEGA_YUKIMENOKO_EX, hp=310, max_hp=310, serial=830, energies=[main.BASIC_WATER_ENERGY])
+    mode_boost_board = FakeBoard(
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_id=main.MEGA_STARMIE_EX,
+        target_hp=70,
+        prizes_left=3,
+        bench=[mode_switch_target],
+        options=[switch_mode, plus_30_mode],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    mode_boost_board.select.context = main.SelectContext.FIRST_EFFECT
+    mode_boost_board.select.contextCard = SimpleNamespace(id=main.SUGURI)
+    mode_boost_ranked = main.GameSimulator(mode_boost_board).rank_options()
+    mode_boost_direct = main.ImmediateOutcomeEvaluator(mode_boost_board).evaluate_attack(attack_option)
+    assert mode_boost_direct.damage == 50
+    assert not mode_boost_direct.knockout
+    assert mode_boost_direct.prizes_taken == 0
+    assert not mode_boost_direct.wins_game
+    assert policy_for(mode_boost_board).score(1, plus_30_mode) == 94000
+    assert policy_for(mode_boost_board).score(0, switch_mode) == 88000
+    assert mode_boost_ranked[0].option is plus_30_mode
+    assert policy_for(mode_boost_board).score(1, plus_30_mode) > policy_for(mode_boost_board).score(0, switch_mode)
+    assert [result.option for result in mode_boost_ranked].index(plus_30_mode) < [result.option for result in mode_boost_ranked].index(switch_mode)
+
+    non_ex_mode_board = FakeBoard(
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_id=999,
+        target_hp=70,
+        bench=[mode_switch_target],
+        options=[switch_mode, plus_30_mode],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    non_ex_mode_board.select.context = main.SelectContext.FIRST_EFFECT
+    non_ex_mode_board.select.contextCard = SimpleNamespace(id=main.SUGURI)
+    assert policy_for(non_ex_mode_board).score(1, plus_30_mode) < 50000
+
+    low_damage_mode_board = FakeBoard(
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_id=main.MEGA_STARMIE_EX,
+        target_hp=100,
+        options=[switch_mode, plus_30_mode],
+        attacks={main.JETTING_BLOW: attack(main.JETTING_BLOW, 10, [main.EnergyType.WATER])},
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    low_damage_mode_board.select.context = main.SelectContext.FIRST_EFFECT
+    low_damage_mode_board.select.contextCard = SimpleNamespace(id=main.SUGURI)
+    low_damage_direct = main.ImmediateOutcomeEvaluator(low_damage_mode_board).evaluate_attack(attack_option)
+    assert low_damage_direct.damage == 10
+    assert not low_damage_direct.knockout
+    assert low_damage_direct.prizes_taken == 0
+    assert not low_damage_direct.wins_game
+    assert policy_for(low_damage_mode_board).score(1, plus_30_mode) < 50000
+
+    ready_froslass = pokemon(main.MEGA_YUKIMENOKO_EX, hp=310, max_hp=310, serial=831, energies=[main.BASIC_WATER_ENERGY])
+    mode_switch_board = FakeBoard(
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_id=999,
+        target_hp=150,
+        bench=[ready_froslass],
+        options=[switch_mode, plus_30_mode],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    mode_switch_board.me.asleep = True
+    mode_switch_board.opp.handCount = 4
+    mode_switch_board.select.context = main.SelectContext.FIRST_EFFECT
+    mode_switch_board.select.contextCard = SimpleNamespace(id=main.SUGURI)
+    mode_switch_ranked = main.GameSimulator(mode_switch_board).rank_options()
+    assert mode_switch_ranked[0].option is switch_mode
+    assert policy_for(mode_switch_board).score(0, switch_mode) == 88000
+    assert policy_for(mode_switch_board).score(0, switch_mode) > policy_for(mode_switch_board).score(1, plus_30_mode)
+    assert policy_for(mode_switch_board).score(1, plus_30_mode) < 50000
+    assert [result.option for result in mode_switch_ranked].index(switch_mode) < [result.option for result in mode_switch_ranked].index(plus_30_mode)
+
+    basic_board.select.context = main.SelectContext.FIRST_EFFECT
+    basic_board.select.contextCard = SimpleNamespace(id=main.SUGURI)
+    assert policy_for(basic_board).score(0, switch_mode) < 50000
+    assert policy_for(basic_board).score(1, plus_30_mode) < 50000
+
+    basic_ready_froslass = pokemon(main.MEGA_YUKIMENOKO_EX, hp=310, max_hp=310, serial=832, energies=[main.BASIC_WATER_ENERGY])
+    basic_switch_board = FakeBoard(
+        active_id=main.HITODEMAN,
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_id=999,
+        target_hp=150,
+        bench=[basic_ready_froslass],
+        options=[switch_mode, plus_30_mode],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    basic_switch_board.me.asleep = True
+    basic_switch_board.opp.handCount = 4
+    basic_switch_board.select.context = main.SelectContext.FIRST_EFFECT
+    basic_switch_board.select.contextCard = SimpleNamespace(id=main.SUGURI)
+    assert policy_for(basic_switch_board).score(0, switch_mode) == 1000
+    assert policy_for(basic_switch_board).score(1, plus_30_mode) == 1000
+
+    direct_ko_ready_froslass = pokemon(main.MEGA_YUKIMENOKO_EX, hp=310, max_hp=310, serial=833, energies=[main.BASIC_WATER_ENERGY])
+    direct_ko_switch_board = FakeBoard(
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_id=999,
+        target_hp=40,
+        bench=[direct_ko_ready_froslass],
+        options=[attack_option, switch_mode, plus_30_mode],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    direct_ko_switch_board.opp.handCount = 4
+    direct_ko_switch_board.select.context = main.SelectContext.FIRST_EFFECT
+    direct_ko_switch_board.select.contextCard = SimpleNamespace(id=main.SUGURI)
+    direct_ko_mode_ranked = main.GameSimulator(direct_ko_switch_board).rank_options()
+    assert direct_ko_mode_ranked[0].option is attack_option
+    assert action_score_for_option(direct_ko_switch_board, attack_option).tier == main.TIER_KO
+    direct_ko_outcome = main.ImmediateOutcomeEvaluator(direct_ko_switch_board).evaluate_attack(attack_option)
+    assert direct_ko_outcome.knockout
+    assert not direct_ko_outcome.wins_game
+    assert policy_for(direct_ko_switch_board).score(1, switch_mode) == 1000
+    assert policy_for(direct_ko_switch_board).score(2, plus_30_mode) == 1000
+
+    direct_win_switch_board = FakeBoard(
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_id=main.MEGA_STARMIE_EX,
+        target_hp=40,
+        prizes_left=2,
+        bench=[direct_ko_ready_froslass],
+        options=[attack_option, switch_mode, plus_30_mode],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    direct_win_switch_board.opp.handCount = 4
+    direct_win_switch_board.select.context = main.SelectContext.FIRST_EFFECT
+    direct_win_switch_board.select.contextCard = SimpleNamespace(id=main.SUGURI)
+    direct_win_outcome = main.ImmediateOutcomeEvaluator(direct_win_switch_board).evaluate_attack(attack_option)
+    assert direct_win_outcome.knockout
+    assert direct_win_outcome.wins_game
+    direct_win_mode_ranked = main.GameSimulator(direct_win_switch_board).rank_options()
+    assert direct_win_mode_ranked[0].option is attack_option
+    assert policy_for(direct_win_switch_board).score(1, switch_mode) == 1000
+    assert policy_for(direct_win_switch_board).score(2, plus_30_mode) == 1000
+
+
+def test_suguri_switch_target_rank_rules():
+    ready_froslass = pokemon(main.MEGA_YUKIMENOKO_EX, hp=310, max_hp=310, serial=810, energies=[main.BASIC_WATER_ENERGY])
+    no_energy_starmie = pokemon(main.MEGA_STARMIE_EX, hp=280, max_hp=280, serial=811, energies=[])
+    ready_target = switch_target_option(ready_froslass)
+    invalid_target = switch_target_option(no_energy_starmie)
+    status_board = FakeBoard(
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_hp=150,
+        bench=[ready_froslass, no_energy_starmie],
+        options=[ready_target, invalid_target],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    status_board.me.asleep = True
+    status_board.opp.handCount = 4
+    status_board.select.context = main.SelectContext.SWITCH
+    status_board.select.effect = SimpleNamespace(id=main.SUGURI)
+
+    ranked = main.GameSimulator(status_board).rank_options()
+    ready_outcome = main.ImmediateOutcomeEvaluator(status_board).evaluate_switch_target(ready_froslass, "suguri")
+    invalid_outcome = main.ImmediateOutcomeEvaluator(status_board).evaluate_switch_target(no_energy_starmie, "suguri")
+
+    assert ranked[0].option is ready_target
+    assert ready_outcome.enables_attack
+    assert "suguri_switch" in ready_outcome.reasons
+    assert not invalid_outcome.enables_attack
+    assert [result.option for result in ranked].index(ready_target) < [result.option for result in ranked].index(invalid_target)
+
+    weak_target = pokemon(main.SHAYMIN, hp=80, max_hp=80, serial=812, energies=[])
+    weak_option = switch_target_option(weak_target)
+    no_improvement_board = FakeBoard(
+        active_energies=[main.BASIC_WATER_ENERGY],
+        target_hp=120,
+        bench=[weak_target],
+        options=[weak_option],
+        turn=3,
+        first_player=0,
+        your_index=0,
+    )
+    no_improvement_board.select.context = main.SelectContext.SWITCH
+    no_improvement_board.select.effect = SimpleNamespace(id=main.SUGURI)
+    assert policy_for(no_improvement_board).score_target_or_card(weak_option) <= 0
+
+
+def test_pokegear_salvatore_chain_direct_ko_and_low_probability_guards():
+    pokegear = play_option(main.POKEGEAR)
+    direct_ko = option(main.OptionType.ATTACK, main.RESENTFUL_REFRAIN)
+    board = FakeBoard(
+        active_id=main.MEGA_YUKIMENOKO_EX,
+        active_energies=(main.BASIC_WATER_ENERGY,),
+        target_id=678,
+        target_hp=290,
+        prizes_left=6,
+        options=[pokegear, direct_ko],
+        turn=4,
+        first_player=0,
+        your_index=1,
+        deck_count=42,
+    )
+    board.opp.handCount = 9
+    board._hand_ids = [main.POKEGEAR]
+
+    ranked = main.GameSimulator(board).rank_options()
+    assert ranked[0].option is direct_ko
+    assert ranked[0].action_score.tier == main.TIER_KO
+
+    low_pokegear = play_option(main.POKEGEAR)
+    low_probability, _pokegear, _play_salvatore, chilly, _end = pokegear_salvatore_chain_board(
+        options=[low_pokegear, option(main.OptionType.ATTACK, main.CHILLY)],
+        deck_count=60,
+    )
+    low_probability.discard_ids = [main.SALVATORE]
+    outcome = main.ImmediateOutcomeEvaluator(low_probability).evaluate_pokegear_play(low_pokegear)
+    action_score = action_score_for_option(low_probability, low_pokegear)
+    assert outcome.expected_hit_probability < 0.25
+    assert outcome.expected_reachable_knockout
+    assert action_score.tier != main.TIER_HIGH_VALUE_PREP
+
+
+def test_salvatore_effect_resolution_keeps_chain_after_supporter_played():
+    board, _pokegear, _salvatore_play, _chilly, _end = pokegear_salvatore_chain_board(deck_ids=public_salvatore_deck())
+    target_option = switch_target_option(board.active)
+    board._options = [target_option, play_option(main.LILLIE_DETERMINATION)]
+    board.select.context = main.SelectContext.TO_FIELD
+    board.select.effect = SimpleNamespace(id=main.SALVATORE)
+    board.state.supporterPlayed = True
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_salvatore_target(board.active)
+
+    assert outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert outcome.reachable_damage == 450
+    assert outcome.reachable_knockout
+    assert main.Policy(board).score_play(board._options[1]) == main.SCORE_FORBIDDEN
+
+
+def test_salvatore_requires_evolution_card_in_deck_not_only_hand():
+    board, _pokegear, salvatore_play, _chilly, _end = pokegear_salvatore_chain_board(
+        hand_ids=[main.SALVATORE, main.MEGA_YUKIMENOKO_EX],
+        deck_ids=[main.SALVATORE, main.BASIC_WATER_ENERGY, main.HITODEMAN],
+    )
+    board._options = [salvatore_play, option(main.OptionType.END)]
+
+    assert board.salvatore_target_evolution(board.active) == main.MEGA_YUKIMENOKO_EX
+    assert board.salvatore_deck_target_evolution(board.active) is None
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_salvatore_play(salvatore_play)
+    assert outcome.reachable_attack_id is None
+    assert action_score_for_option(board, salvatore_play).tier != main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_pokegear_probability_accounts_for_unknown_prizes():
+    board, pokegear, _salvatore_play, _chilly, _end = pokegear_salvatore_chain_board(
+        options=[play_option(main.POKEGEAR), option(main.OptionType.ATTACK, main.CHILLY)],
+        deck_count=42,
+    )
+
+    probability = board.pokegear_hit_probability(main.SALVATORE)
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_pokegear_play(pokegear)
+
+    assert 0.25 < probability < 0.308943
+    assert outcome.expected_hit_probability < probability
+    assert outcome.expected_reachable_knockout
+
+
+def test_salvatore_text_allows_this_turn_pokemon_target_chain():
+    board, _pokegear, salvatore_play, _chilly, _end = pokegear_salvatore_chain_board(deck_ids=public_salvatore_deck())
+    board.active.appearThisTurn = True
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_salvatore_play(salvatore_play)
+
+    assert "put into play this turn" in main.CARD_TABLE[main.SALVATORE].skills[0].text
+    assert board.salvatore_can_evolve_from_deck_this_turn(board.active, main.MEGA_YUKIMENOKO_EX)
+    assert outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert outcome.reachable_knockout
+
+
+def test_salvatore_first_player_first_turn_does_not_claim_same_turn_attack():
+    salvatore_play = play_option(main.SALVATORE)
+    board, _pokegear, _salvatore_play, _chilly, _end = pokegear_salvatore_chain_board(
+        options=[salvatore_play, option(main.OptionType.END)],
+    )
+    board.state.turn = 1
+    board.state.firstPlayer = 1
+    board.state.yourIndex = 1
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_salvatore_play(board._options[0])
+
+    assert board.salvatore_live()
+    assert outcome.reachable_attack_id is None
+    assert action_score_for_option(board, board._options[0]).tier != main.TIER_PRESERVE_WIN_OR_KO_PREP
+
+
+def test_salvatore_evolution_candidate_reaches_attack_outcome():
+    froslass = card_choice(main.MEGA_YUKIMENOKO_EX)
+    starmie = card_choice(main.MEGA_STARMIE_EX)
+    board, _pokegear, _salvatore_play, _chilly, _end = pokegear_salvatore_chain_board(options=[starmie, froslass])
+    board.select.context = main.SelectContext.EVOLVES_TO
+    board.select.effect = SimpleNamespace(id=main.SALVATORE)
+    board.state.supporterPlayed = True
+
+    ranked = main.GameSimulator(board).rank_options()
+    froslass_result = next(result for result in ranked if result.option is froslass)
+
+    assert ranked[0].option is froslass
+    assert froslass_result.outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert froslass_result.outcome.reachable_damage == 450
+    assert froslass_result.outcome.reachable_knockout
+    assert froslass_result.outcome.reachable_prizes_taken == 3
+
+
+def test_pokegear_expected_chain_competes_with_strong_non_ko_attack():
+    weak_attack = option(main.OptionType.ATTACK, main.CHILLY)
+    weak_board, pokegear, _salvatore_play, _chilly, _end = pokegear_salvatore_chain_board(
+        options=[play_option(main.POKEGEAR), weak_attack],
+        target_id=999,
+        target_hp=290,
+        deck_ids=public_salvatore_deck(),
+    )
+    weak_ranked = main.GameSimulator(weak_board).rank_options()
+    assert weak_ranked[0].option is weak_board._options[0]
+
+    strong_pokegear = play_option(main.POKEGEAR)
+    strong_attack = option(main.OptionType.ATTACK, main.CHILLY)
+    strong_board, _pokegear, _salvatore_play, _chilly, _end = pokegear_salvatore_chain_board(
+        options=[strong_pokegear, strong_attack],
+        target_id=999,
+        target_hp=290,
+    )
+    strong_board._attacks[main.CHILLY] = attack(main.CHILLY, 220, [main.EnergyType.WATER])
+    strong_ranked = main.GameSimulator(strong_board).rank_options()
+    strong_pokegear_result = next(result for result in strong_ranked if result.option is strong_pokegear)
+    assert strong_ranked[0].option is strong_attack
+    assert strong_pokegear_result.action_score.tier != main.TIER_HIGH_VALUE_PREP
+
+    direct_ko_pokegear = play_option(main.POKEGEAR)
+    direct_ko = option(main.OptionType.ATTACK, main.CHILLY)
+    direct_board, _pokegear, _salvatore_play, _chilly, _end = pokegear_salvatore_chain_board(
+        options=[direct_ko_pokegear, direct_ko],
+        target_id=999,
+        target_hp=10,
+    )
+    direct_ranked = main.GameSimulator(direct_board).rank_options()
+    assert direct_ranked[0].option is direct_ko
+    assert direct_ranked[0].action_score.tier == main.TIER_KO
+
+
+def test_pokegear_salvatore_chain_additional_failure_guards():
+    no_salvatore_pokegear = play_option(main.POKEGEAR)
+    no_salvatore, _pokegear, _salvatore_play, chilly, _end = pokegear_salvatore_chain_board(
+        options=[no_salvatore_pokegear, option(main.OptionType.ATTACK, main.CHILLY)],
+    )
+    no_salvatore.discard_ids = [main.SALVATORE, main.SALVATORE]
+    assert not main.ImmediateOutcomeEvaluator(no_salvatore).evaluate_pokegear_play(no_salvatore_pokegear).expected_reachable_knockout
+
+    no_candidate, _pokegear, _salvatore_play, _chilly, _end = pokegear_salvatore_chain_board(
+        options=[card_choice(main.LILLIE_DETERMINATION), card_choice(main.CRISPIN)]
+    )
+    no_candidate.select.context = main.SelectContext.TO_HAND
+    no_candidate.select.effect = SimpleNamespace(id=main.POKEGEAR)
+    ranked = main.GameSimulator(no_candidate).rank_options()
+    assert all(result.option.cardId != main.SALVATORE for result in ranked)
+
+
+def test_pokegear_chain_probability_fixed_literal_value():
+    board = FakeBoard(active_id=main.YUKIWARASHI, deck_count=42, prizes_left=6)
+
+    probability = board.pokegear_chain_hit_probability(main.SALVATORE, main.MEGA_STARMIE_EX)
+
+    assert math.isclose(probability, 0.2692722787542399, rel_tol=1e-12, abs_tol=1e-12)
+
+
+def test_pokegear_chain_probability_matches_small_bruteforce():
+    board = FakeBoard(active_id=main.YUKIWARASHI)
+
+    total = 0
+    success = 0
+    hidden_positions = range(6)
+    deck_positions = set(range(4))
+    look_positions = set(range(2))
+    for supporter_position in hidden_positions:
+        for evolution_position in hidden_positions:
+            if evolution_position == supporter_position:
+                continue
+            total += 1
+            if supporter_position in look_positions and evolution_position in deck_positions:
+                success += 1
+
+    expected = success / total
+    actual = board.pokegear_chain_hit_probability_from_counts(
+        hidden_count=6,
+        deck_count=4,
+        look_count=2,
+        supporter_count=1,
+        evolution_count=1,
+    )
+
+    assert math.isclose(expected, 0.2, rel_tol=1e-12, abs_tol=1e-12)
+    assert math.isclose(actual, expected, rel_tol=1e-12, abs_tol=1e-12)
+
+
+def test_pokegear_expected_chain_values_are_multiplied_once():
+    board, _next_action = replay_board("参考ログ/v7.5/ポケギア使ってセイジ出せよ.json", 37, 1)
+    pokegear = next(option for option in board.select.option if option_description(board, option) == ("PLAY", main.POKEGEAR, None, None))
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_pokegear_play(pokegear)
+
+    probability = 0.2692722787542399
+    assert math.isclose(outcome.expected_hit_probability, probability, rel_tol=1e-12, abs_tol=1e-12)
+    assert math.isclose(outcome.expected_reachable_damage, 450 * probability, rel_tol=1e-12, abs_tol=1e-12)
+    assert math.isclose(outcome.expected_reachable_prizes_taken, 3 * probability, rel_tol=1e-12, abs_tol=1e-12)
+    assert not math.isclose(outcome.expected_reachable_damage, 450 * probability * probability, rel_tol=1e-12, abs_tol=1e-12)
+
+
+def test_remaining_possible_ignores_opponent_cards_for_own_deck():
+    board = FakeBoard(
+        active_id=main.YUKIWARASHI,
+        opp_bench=[pokemon(main.MEGA_STARMIE_EX, hp=280, max_hp=280, serial=501)],
+        deck_count=42,
+    )
+    board.discard_ids = [main.MEGA_STARMIE_EX]
+
+    assert main.DECK.count(main.MEGA_STARMIE_EX) >= 2
+    assert board.remaining_possible_count(main.MEGA_STARMIE_EX) == main.DECK.count(main.MEGA_STARMIE_EX) - 1
+    assert board.remaining_possible(main.MEGA_STARMIE_EX)
+
+
+def test_salvatore_public_deck_without_evolution_has_no_certain_chain():
+    salvatore = play_option(main.SALVATORE)
+    pokegear = play_option(main.POKEGEAR)
+    target = switch_target_option(None)
+    candidate = card_choice(main.SALVATORE)
+    board, _pokegear, _salvatore_play, _chilly, _end = pokegear_salvatore_chain_board(
+        options=[pokegear, salvatore],
+        hand_ids=[main.SALVATORE, main.MEGA_YUKIMENOKO_EX],
+        deck_ids=[main.SALVATORE, main.BASIC_WATER_ENERGY, main.HITODEMAN],
+    )
+    target.target = board.active
+
+    play_outcome = main.ImmediateOutcomeEvaluator(board).evaluate_salvatore_play(salvatore)
+    target_outcome = main.ImmediateOutcomeEvaluator(board).evaluate_salvatore_target(board.active)
+    board.select.context = main.SelectContext.TO_HAND
+    board.select.effect = SimpleNamespace(id=main.POKEGEAR)
+    candidate_outcome = main.ImmediateOutcomeEvaluator(board).evaluate_pokegear_candidate(candidate)
+    pokegear_outcome = main.ImmediateOutcomeEvaluator(board).evaluate_pokegear_play(pokegear)
+
+    for outcome in (play_outcome, target_outcome, candidate_outcome, pokegear_outcome):
+        assert outcome.reachable_attack_id is None
+        assert not outcome.reachable_knockout
+        assert outcome.expected_reachable_attack_id is None
+        assert not outcome.expected_reachable_knockout
+
+
+def test_salvatore_public_deck_with_evolution_has_certain_chain():
+    salvatore_candidate = card_choice(main.SALVATORE)
+    board, pokegear, salvatore, _chilly, _end = pokegear_salvatore_chain_board(deck_ids=public_salvatore_deck())
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_salvatore_play(salvatore)
+    target_outcome = main.ImmediateOutcomeEvaluator(board).evaluate_salvatore_target(board.active)
+    board.select.context = main.SelectContext.TO_HAND
+    board.select.effect = SimpleNamespace(id=main.POKEGEAR)
+    candidate_outcome = main.ImmediateOutcomeEvaluator(board).evaluate_pokegear_candidate(salvatore_candidate)
+    pokegear_outcome = main.ImmediateOutcomeEvaluator(board).evaluate_pokegear_play(pokegear)
+
+    for certain_outcome in (outcome, target_outcome, candidate_outcome):
+        assert certain_outcome.reachable_attack_id == main.RESENTFUL_REFRAIN
+        assert certain_outcome.reachable_damage == 450
+        assert certain_outcome.reachable_knockout
+        assert certain_outcome.reachable_prizes_taken == 3
+        assert certain_outcome.expected_reachable_attack_id is None
+    assert pokegear_outcome.reachable_attack_id is None
+    assert pokegear_outcome.expected_reachable_attack_id == main.RESENTFUL_REFRAIN
+    assert pokegear_outcome.expected_hit_probability > 0
+    assert pokegear_outcome.expected_reachable_damage > 0
+
+
+def test_salvatore_nonpublic_evolution_one_copy_returns_expected_not_certain():
+    salvatore_candidate = card_choice(main.SALVATORE)
+    board, _pokegear, salvatore, _chilly, _end = pokegear_salvatore_chain_board(deck_count=42)
+    board.discard_ids = [main.MEGA_YUKIMENOKO_EX]
+
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_salvatore_play(salvatore)
+    target_outcome = main.ImmediateOutcomeEvaluator(board).evaluate_salvatore_target(board.active)
+    board.select.context = main.SelectContext.TO_HAND
+    board.select.effect = SimpleNamespace(id=main.POKEGEAR)
+    candidate_outcome = main.ImmediateOutcomeEvaluator(board).evaluate_pokegear_candidate(salvatore_candidate)
+
+    for expected_outcome in (outcome, target_outcome, candidate_outcome):
+        assert expected_outcome.reachable_attack_id is None
+        assert not expected_outcome.reachable_knockout
+        assert expected_outcome.expected_reachable_attack_id == main.RESENTFUL_REFRAIN
+        assert expected_outcome.expected_hit_probability == 42 / 48
+        assert expected_outcome.expected_reachable_damage == 450 * 42 / 48
+        assert expected_outcome.expected_reachable_prizes_taken == 3 * 42 / 48
+        assert expected_outcome.expected_reachable_knockout
+
+
+def test_salvatore_chain_contexts_do_not_claim_energy_insufficient_or_wall():
+    salvatore_candidate = card_choice(main.SALVATORE)
+
+    no_energy, pokegear, salvatore, _chilly, _end = pokegear_salvatore_chain_board(deck_ids=public_salvatore_deck())
+    no_energy.active.energyCards = []
+    no_energy.select.context = main.SelectContext.TO_HAND
+    no_energy.select.effect = SimpleNamespace(id=main.POKEGEAR)
+    no_energy_outcomes = (
+        main.ImmediateOutcomeEvaluator(no_energy).evaluate_salvatore_play(salvatore),
+        main.ImmediateOutcomeEvaluator(no_energy).evaluate_salvatore_target(no_energy.active),
+        main.ImmediateOutcomeEvaluator(no_energy).evaluate_pokegear_candidate(salvatore_candidate),
+        main.ImmediateOutcomeEvaluator(no_energy).evaluate_pokegear_play(pokegear),
+    )
+
+    wall, pokegear, salvatore, _chilly, _end = pokegear_salvatore_chain_board(deck_ids=public_salvatore_deck())
+    wall.opp_active.id = 330
+    wall.select.context = main.SelectContext.TO_HAND
+    wall.select.effect = SimpleNamespace(id=main.POKEGEAR)
+    wall_outcomes = (
+        main.ImmediateOutcomeEvaluator(wall).evaluate_salvatore_play(salvatore),
+        main.ImmediateOutcomeEvaluator(wall).evaluate_salvatore_target(wall.active),
+        main.ImmediateOutcomeEvaluator(wall).evaluate_pokegear_candidate(salvatore_candidate),
+        main.ImmediateOutcomeEvaluator(wall).evaluate_pokegear_play(pokegear),
+    )
+
+    for outcome in no_energy_outcomes + wall_outcomes:
+        assert outcome.reachable_attack_id is None
+        assert not outcome.reachable_knockout
+        assert outcome.expected_reachable_attack_id is None
+        assert not outcome.expected_reachable_knockout
+
+
+def test_pokegear_uses_chain_probability_below_salvatore_hit_only():
+    board, pokegear, _salvatore, _chilly, _end = pokegear_salvatore_chain_board(
+        options=[play_option(main.POKEGEAR), option(main.OptionType.ATTACK, main.CHILLY)],
+        deck_count=42,
+    )
+    board.discard_ids = [main.MEGA_YUKIMENOKO_EX]
+
+    salvatore_only = board.pokegear_hit_probability(main.SALVATORE)
+    chain_probability = board.pokegear_chain_hit_probability(main.SALVATORE, main.MEGA_YUKIMENOKO_EX)
+    outcome = main.ImmediateOutcomeEvaluator(board).evaluate_pokegear_play(pokegear)
+
+    assert salvatore_only > 0.25
+    assert chain_probability < 0.25
+    assert outcome.expected_hit_probability == chain_probability
+    assert outcome.expected_hit_probability < salvatore_only
+
+
+def test_pokegear_chain_probability_boundary_does_not_raise_tier40():
+    pokegear = play_option(main.POKEGEAR)
+    attack_option = option(main.OptionType.ATTACK, main.CHILLY)
+    board, _pokegear, _salvatore, _chilly, _end = pokegear_salvatore_chain_board(
+        options=[pokegear, attack_option],
+        deck_count=42,
+    )
+    board.discard_ids = [main.MEGA_YUKIMENOKO_EX]
+
+    ranked = main.GameSimulator(board).rank_options()
+    pokegear_result = next(result for result in ranked if result.option is pokegear)
+
+    assert board.pokegear_hit_probability(main.SALVATORE) > 0.25
+    assert pokegear_result.outcome.expected_hit_probability < 0.25
+    assert pokegear_result.action_score.tier != main.TIER_HIGH_VALUE_PREP
+
+
 if __name__ == "__main__":
     test_energy_payment_rules()
     test_attack_outcomes_and_policy_guards()
@@ -2572,4 +4699,77 @@ if __name__ == "__main__":
     test_play_fact_connected_scoring_issue3b()
     test_crispin_fact_required_energy_issue3b1()
     test_role_facts_issue3c()
+    test_active_attach_reachable_attack_p0_statusless_win()
+    test_active_attach_reachable_attack_p0_asleep_blocks_reachable()
+    test_active_attach_reachable_attack_p0_paralyzed_blocks_reachable()
+    test_active_attach_reachable_attack_p0_first_player_turn_one_blocks_reachable()
+    test_active_attach_reachable_attack_p0_second_player_first_turn_reachable()
+    test_active_attach_reachable_attack_p0_first_player_later_turn_reachable()
+    test_active_attach_reachable_attack_p0_already_legal_guard()
+    test_active_attack_declare_turn_rule_call_sites_p0()
+    test_active_attack_declare_turn_rule_policy_regressions_p0()
+    test_active_attach_reachable_attack_p0_blocked_guard()
+    test_active_attach_reachable_attack_p0_bench_guard()
+    test_active_attach_reachable_attack_p0_multiple_attack_best_choice()
+    test_active_attach_reachable_attack_p0_other_card_guard()
+    test_bench_attach_same_turn_access_p1_surfing_beach_ko()
+    test_bench_attach_same_turn_access_p1_surfing_beach_win()
+    test_bench_attach_same_turn_access_p1_missing_access_guard()
+    test_bench_attach_same_turn_access_p1_blocked_guard()
+    test_bench_attach_same_turn_access_p1_direct_ko_guard()
+    test_retreat_ready_attacker_same_turn_access_p1()
+    test_rework_bench_attach_access_does_not_inherit_other_bench_ko()
+    test_rework_active_attach_first_retreat_access_still_reaches_ready_bench_ko()
+    test_rework_attach_boss_attack_declare_guard()
+    test_rework_attach_boss_existing_availability_guards()
+    test_rework_status_blocks_normal_retreat_access()
+    test_rework_surfing_beach_status_allows_legal_switch_target_attack()
+    test_rework_attach_surfing_status_requires_surfing_option()
+    test_l1_paid_retreat_energy_ledger_allows_reachable_after_attach()
+    test_l1_paid_retreat_energy_ledger_blocks_unpayable_retreat_chain()
+    test_l1_free_retreat_and_surfing_beach_have_no_energy_loss()
+    test_l1_energy_switch_moves_energy_to_active_without_board_mutation()
+    test_l1_energy_switch_no_source_energy_no_promotion()
+    test_l4_attach_boss_prize_attack_reachable()
+    test_l4_attach_boss_requires_boss_available_and_unused_supporter()
+    test_replay_87482904_t11_t13_energy_ledger()
+    test_replay_87482904_t15_energy_ledger()
+    test_replay_87491060_t9_retreat_ready_attacker_energy_ledger()
+    test_replay_87488357_t19_energy_switch_ledger()
+    test_replay_87482904_t11_t13_l2_attach_retreat_attack_rank()
+    test_replay_87482904_t15_l2_three_prize_rank()
+    test_replay_87491060_t9_l3_retreat_ready_attacker_rank()
+    test_replay_87637402_t13_l4_attach_boss_prize_rank()
+    test_replay_87488357_t19_l5_energy_switch_prize_rank()
+    test_l6_zero_damage_attack_loses_to_confirmed_chain_but_is_not_forbidden()
+    test_l7_rank_contract_direct_ko_before_reachable_chain()
+    test_l8_public_same_board_same_rank_and_common_guards()
+    test_pokegear_salvatore_chain_replay_88272517_t4_rank()
+    test_pokegear_salvatore_candidate_chain_is_definite_after_search()
+    test_salvatore_play_chain_reaches_froslass_attack_ko()
+    test_salvatore_target_chain_uses_existing_evolution_attack_facts()
+    test_pokegear_salvatore_chain_negative_guards()
+    test_deck_counts_after_judge_suguri_update()
+    test_judge_play_rank_rules()
+    test_suguri_play_rank_rules()
+    test_suguri_switch_target_rank_rules()
+    test_pokegear_salvatore_chain_direct_ko_and_low_probability_guards()
+    test_salvatore_effect_resolution_keeps_chain_after_supporter_played()
+    test_salvatore_requires_evolution_card_in_deck_not_only_hand()
+    test_pokegear_probability_accounts_for_unknown_prizes()
+    test_salvatore_text_allows_this_turn_pokemon_target_chain()
+    test_salvatore_first_player_first_turn_does_not_claim_same_turn_attack()
+    test_salvatore_evolution_candidate_reaches_attack_outcome()
+    test_pokegear_expected_chain_competes_with_strong_non_ko_attack()
+    test_pokegear_salvatore_chain_additional_failure_guards()
+    test_pokegear_chain_probability_fixed_literal_value()
+    test_pokegear_chain_probability_matches_small_bruteforce()
+    test_pokegear_expected_chain_values_are_multiplied_once()
+    test_remaining_possible_ignores_opponent_cards_for_own_deck()
+    test_salvatore_public_deck_without_evolution_has_no_certain_chain()
+    test_salvatore_public_deck_with_evolution_has_certain_chain()
+    test_salvatore_nonpublic_evolution_one_copy_returns_expected_not_certain()
+    test_salvatore_chain_contexts_do_not_claim_energy_insufficient_or_wall()
+    test_pokegear_uses_chain_probability_below_salvatore_hit_only()
+    test_pokegear_chain_probability_boundary_does_not_raise_tier40()
     print("immediate outcome tests OK")
