@@ -10,3 +10,8 @@ __pycache__/
 .agy-explains/
 submission*.tar.gz
 project_overview.html
+
+# 検死用リプレイJSON本体(1提出あたり約150MB)。公開エンドポイントから再取得でき、
+# meta.txt + autopsy_*.py があれば検死は完全に再現できるので追跡しない。
+# ※eps54943911/ は既に追跡済みのため対象外(履歴から消しても軽くならないので放置)。
+replay_analysis/eps*/ep*.json

@@ -66,12 +66,14 @@ python3 ../../../../../verification/bench.py 300 --deck ../../../../../verificat
 我々の操縦者の実力差に比例して勝率を+8〜+62pt過大評価する（steel相手+62pt / 公式Lucario
 相手+41pt / りょーちんagent相手+8pt、実測）。**採否の判定は必ず較正済みの族外ゲージで行う。**
 
-1. **効果量の判定 = 較正済み遭遇加重合成指標（CEW）**（D29、D35改訂）。族外ゲージ4種
-   (Lucario49.0/Archaludon35.3/Dragapult9.8/Abomasnow5.9%)を実ラダー遭遇率で加重した1指標。
-   **基準線41.03%**(D38、4反復×Neyman計3,200戦、プールSE 0.82pt)、
-   **測定はNeyman配分 合計N=3,200 (Lucario1712/Archaludon1024/Dragapult272/Abomasnow192)**、
-   閾値+2pt。この構成の実効=誤採用率4.2%/真+2.5ptへの検出力67%（D38検定力計算。
-   一様800/セルは同戦数で誤採用6.4%に劣る）。CIは `cew_stats.py`。計算は `cew.py` で行う。族内ゲージ（Alakazam/
+1. **効果量の判定 = 較正済み遭遇加重合成指標（CEW）**（D29、D35改訂、2026-07-26 T3再較正）。
+   族外ゲージ4種 (Lucario45.1/Archaludon33.8/Dragapult15.5/Abomasnow5.6%)を実ラダー遭遇率で
+   加重した1指標（3提出プールN=180、data.md「54961048検死」）。
+   **基準線43.13%**(D38セル値を新重みで再合成、反復SE 1.01pt)、閾値+2pt。
+   **測定は新重みNeyman配分 合計N=3,200 (Lucario1562/Archaludon1040/Dragapult426/
+   Abomasnow172、全セル偶数)**（2026-07-27再導出、data.md「★新重みNeyman再導出」。
+   腕SE 0.815pt、頭対頭2腕差SE 1.152pt、MC実効=誤採用2.47%/検出力+2.5ptで58.3%）。
+   CIは `cew_stats.py`。計算は `cew.py` で行う。族内ゲージ（Alakazam/
    Grimmsnarl型・自パイロット操縦）は**スクリーニング用途のみ**で採否の主指標にしない。
    ※CEWの重みは現在の帯の実遭遇分布に紐づく。帯が変われば再計算する（playbook §2/§7 T3）。
 2. **正当性の検査**（効果量ではない、独立に残す）: CRASH=0 / vs random ≥96% / `check.py`。

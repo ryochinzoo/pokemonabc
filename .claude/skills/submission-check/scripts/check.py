@@ -52,7 +52,8 @@ def check_deck(rep: Report, deck_path: str, valid_ids: set[int]) -> None:
     bad = []
     for ln in lines:
         try:
-            ids.append(int(ln.strip()))
+            # トレーリングカンマ許容(りょーちん形式のdeck.csv。M3=D55)
+            ids.append(int(ln.strip().rstrip(",").strip()))
         except ValueError:
             bad.append(ln)
     if bad:

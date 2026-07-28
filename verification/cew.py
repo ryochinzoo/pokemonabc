@@ -15,27 +15,26 @@ import argparse
 import datetime as _dt
 
 # --- 重み表（算出日・N・出典を必ず残す。ここが古びると全判定が狂う） ---
-# 2026-07-22 D35改訂(ゆうじ承認): ①Dragapult第4成分を追加(カバレッジ42.5%へ)
-# ②Archaludon成分の参照エージェントは tomato_archaludon_agent.py を優先
-#   (実ラダー相手の正体=tomato系譜、deck 60/60一致×2。steelは副参照として保持。
-#    較正は三者一致: steel21.4 ≈ tomato22.0 ≈ 実ラダー25.0)
-WEIGHTS_DATE = _dt.date(2026, 7, 22)
-WEIGHTS_SOURCE = "D35 / data.md 2026-07-22 (実ラダー2提出プール N=120)"
-WEIGHTS = {          # 較正済みゲージが存在する42.5%(51/120)の遭遇を再正規化した重み
-    "lucario": 0.490,     # 公式Lucario agent(遭遇25/120)
-    "archaludon": 0.353,  # tomato Archaludon優先・steel副参照(遭遇18/120)
-    "dragapult": 0.098,   # 公式Dragapult agent(遭遇5/120)
-    "abomasnow": 0.059,   # 公式Abomasnow agent(遭遇3/120)
+# 2026-07-26 T3再較正(義務・承認不要、playbook §7 T3。data.md「54961048検死」):
+#   54961048検死N=60でカバー対面構成がD35重みの多項95%CI外
+#   (Dragapult 6/20、正確二項p=0.0102、Bonferroni×4でも有意) → 3提出プールN=180で再計算。
+# 参照エージェントはD35のまま: Archaludonはtomato優先・steel副参照。
+WEIGHTS_DATE = _dt.date(2026, 7, 26)
+WEIGHTS_SOURCE = "T3再較正 2026-07-26 / data.md 54961048検死 (実ラダー3提出プール N=180)"
+WEIGHTS = {          # 較正済みゲージが存在する39.4%(71/180)の遭遇を再正規化した重み
+    "lucario": 0.451,     # 公式Lucario agent(遭遇32/180)
+    "archaludon": 0.338,  # tomato Archaludon優先・steel副参照(遭遇24/180)
+    "dragapult": 0.155,   # 公式Dragapult agent(遭遇11/180)
+    "abomasnow": 0.056,   # 公式Abomasnow agent(遭遇4/180)
 }
-BASELINE = 41.03     # D38 (2026-07-23): 墓場バッチ(i) 4反復×Neyman N=800 の平均(計3,200戦)。
-                     # プールSE 0.82pt。旧41.51(成分N非均一)から実質不変だが測定として上位。
-                     # 成分N: Lucario1712 / tomato1024 / Dragapult272 / Abomasnow192
+BASELINE = 43.13     # D38の4反復セル値を新重みで再合成(2026-07-26、data.md 54961048検死)。
+                     # 反復SD 2.02 → SE 1.01pt(旧0.82から悪化: Dragapult重み1.58倍に対し
+                     # 旧Neyman配分のN=272が過小のため)。旧重みでの検算=41.04≈41.03再現OK。
 ADOPT_THRESHOLD = 2.0  # 基準比 +2.0pt 以上で採用検討。
-                     # D38前提: 測定は Neyman配分 合計N=3,200 (1712/1024/272/192)。
-                     # この構成での実効: 誤採用率4.2% / 真+2.5ptへの検出力67%
-                     # (基準線の系統誤差0.82ptが床。検定力計算=data.md 2026-07-23 D38節)。
-                     # 一様N=800/セルは同じ3,200戦で誤採用6.4%に劣化するので使わない。
-                     # CIの計算は cew_stats.py。
+                     # 新重みNeyman配分(2026-07-27再導出、data.md「★新重みNeyman再導出」):
+                     # 合計N=3,200 = Lucario1562 / Archaludon1040 / Dragapult426 / Abomasnow172
+                     # (全セル偶数)。腕あたり合成SE 0.815pt。頭対頭2腕差のSE 1.152pt、
+                     # MC4万試行: 誤採用2.47% / 検出力+2.5ptで58.3%。CIの計算は cew_stats.py。
 STALE_DAYS = 7       # この日数を超えたら再検死の警告
 
 
