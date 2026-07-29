@@ -14,6 +14,7 @@ import os
 import sys
 from collections import Counter
 from dataclasses import dataclass, replace
+from itertools import combinations
 from math import comb
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple
@@ -327,6 +328,97 @@ def can_pay_attack_with_tokens(attack: Any, energy_tokens: Sequence[Any]) -> boo
     return remaining_units >= colorless_need
 
 
+def active_status_blocks_attack_for_board(board: Any) -> bool:
+    player = getattr(board, "me", None)
+    return bool(getattr(player, "asleep", False) or getattr(player, "paralyzed", False))
+
+
+def active_can_declare_attack_this_turn_for_board(board: Any) -> bool:
+    if active_status_blocks_attack_for_board(board):
+        return False
+    state = getattr(board, "state", None)
+    turn = getattr(state, "turn", None)
+    first_player = getattr(state, "firstPlayer", None)
+    your_index = getattr(state, "yourIndex", getattr(board, "my_index", None))
+    if turn == 1 and first_player is not None and your_index is not None and int(first_player) == int(your_index):
+        return False
+    return True
+
+
+def _normalized_attack_text(attack: Any) -> str:
+    text = str(getattr(attack, "text", "") or "")
+    if not text:
+        real_attack = ATTACK_TABLE.get(int(getattr(attack, "attackId", -1)))
+        text = str(getattr(real_attack, "text", "") or "")
+    return text.replace("\u2019", "'").replace("\xa0", " ").replace("Pok\u00e9mon", "Pokemon").lower()
+
+
+def _can_pay_after_losing_energy(
+    attack: Any,
+    energy_tokens: Sequence[Any],
+    loss_count: int,
+    required_type: Optional[Any] = None,
+) -> bool:
+    tokens = tuple(energy_tokens)
+    if loss_count <= 0:
+        return can_pay_attack_with_tokens(attack, tokens)
+    candidate_indexes = [
+        index
+        for index, token in enumerate(tokens)
+        if required_type is None or token == required_type
+    ]
+    if len(candidate_indexes) < loss_count:
+        return False
+    for lost_indexes in combinations(candidate_indexes, loss_count):
+        lost = set(lost_indexes)
+        remaining = tuple(token for index, token in enumerate(tokens) if index not in lost)
+        if can_pay_attack_with_tokens(attack, remaining):
+            return True
+    return False
+
+
+def can_continue_attack_after_use_with_tokens(attack: Any, energy_tokens: Sequence[Any]) -> bool:
+    if not can_pay_attack_with_tokens(attack, energy_tokens):
+        return False
+    text = _normalized_attack_text(attack)
+    if not text or "opponent's active pokemon" in text:
+        return True
+    if "you may discard" in text or "discard up to" in text or "you may put all energy" in text:
+        return True
+    tokens = tuple(energy_tokens)
+    if "discard all energy from this pokemon" in text or "discard all energy attached to this pokemon" in text:
+        return can_pay_attack_with_tokens(attack, ())
+    if "shuffle all energy attached to this pokemon into your deck" in text:
+        return can_pay_attack_with_tokens(attack, ())
+    symbol_types = {
+        "{w}": EnergyType.WATER,
+        "{d}": EnergyType.DARKNESS,
+        "{c}": EnergyType.COLORLESS,
+        "{g}": EnergyType.GRASS,
+        "{r}": EnergyType.FIRE,
+        "{l}": EnergyType.LIGHTNING,
+        "{p}": EnergyType.PSYCHIC,
+        "{f}": EnergyType.FIGHTING,
+        "{m}": EnergyType.METAL,
+    }
+    for symbol, energy_type in symbol_types.items():
+        if f"discard all {symbol} energy from this pokemon" in text:
+            remaining = tuple(token for token in tokens if token != energy_type)
+            return can_pay_attack_with_tokens(attack, remaining)
+        if f"discard a {symbol} energy from this pokemon" in text:
+            return _can_pay_after_losing_energy(attack, tokens, 1, energy_type)
+    loss_count = 0
+    for count in range(9, 1, -1):
+        if f"discard {count} energy from this pokemon" in text or f"move {count} energy from this pokemon" in text:
+            loss_count = count
+            break
+    if loss_count == 0 and ("discard an energy from this pokemon" in text or "move an energy from this pokemon" in text):
+        loss_count = 1
+    if loss_count == 0:
+        return True
+    return _can_pay_after_losing_energy(attack, tokens, loss_count)
+
+
 def attack_can_damage_opponent_bench(attack: Optional[Any]) -> bool:
     if attack is None:
         return False
@@ -388,20 +480,58 @@ class ImmediateOutcome:
     reachable_knockout: bool = False
     reachable_prizes_taken: int = 0
     reachable_wins_game: bool = False
+    reachable_can_continue_attack: bool = False
     expected_reachable_attack_id: Optional[int] = None
     expected_reachable_damage: float = 0.0
     expected_reachable_knockout: bool = False
     expected_reachable_prizes_taken: float = 0.0
     expected_reachable_wins_game: bool = False
     expected_hit_probability: float = 0.0
+    additional_card_consumed: bool = False
+    equivalent_normal_attach_available: bool = False
     retreat_energy_cost: int = 0
     important_energy_loss: int = 0
     improves_damage: bool = False
+    healed_damage: int = 0
+    recovered_energy_count: int = 0
+    board_energy_removed: int = 0
+    next_knockout_avoided: bool = False
+    avoids_prize_loss: bool = False
+    prizes_preserved: int = 0
+    avoids_board_out: bool = False
+    preserves_primary_pokemon: bool = False
+    equivalent_evolution_available: bool = False
+    completes_next_attacker: bool = False
+    development_value: float = 0.0
+    development_probability: float = 0.0
     target_id: Optional[int] = None
     target_serial: Optional[int] = None
     recommended_target_id: Optional[int] = None
     recommended_target_serial: Optional[int] = None
     reasons: Tuple[str, ...] = ()
+
+
+def wally_preservation_fact_is_high_value(outcome: ImmediateOutcome) -> bool:
+    return (
+        outcome.avoids_board_out
+        or outcome.avoids_prize_loss
+        or (
+            outcome.preserves_primary_pokemon
+            and outcome.healed_damage >= 100
+            and outcome.recovered_energy_count >= 2
+        )
+    )
+
+
+def wally_effect_fact_key(outcome: ImmediateOutcome) -> Tuple[Any, ...]:
+    return (
+        wally_preservation_fact_is_high_value(outcome),
+        outcome.prizes_preserved,
+        outcome.avoids_board_out,
+        outcome.healed_damage,
+        outcome.recovered_energy_count,
+        -outcome.board_energy_removed,
+    )
 
 
 @dataclass(frozen=True)
@@ -451,6 +581,22 @@ class AttackEnergyGap:
     ready: bool
     missing_units: int
     missing_types: Tuple[Any, ...]
+
+
+@dataclass(frozen=True)
+class NightStretcherCandidateFacts:
+    target_id: int
+    target_serial: Optional[int]
+    same_turn_usable: bool
+    same_turn_attach_available: bool
+    same_turn_attack_gap_reduced: bool
+    same_turn_attack_enabled: bool
+    same_turn_retreat_enabled: bool
+    next_attacker_gap_reduced: bool
+    next_attacker_completed: bool
+    board_out_avoided: bool
+    next_turn_evolution_supported: bool
+    returns_to_hand_only: bool
 
 
 @dataclass(frozen=True)
@@ -604,6 +750,38 @@ class BoardView:
     def iter_options(self) -> Iterable[Tuple[int, Any]]:
         for index, option in enumerate(self.select.option or []):
             yield index, option
+
+    def current_turn_attached_energy_ids(self) -> Tuple[Tuple[int, int, int], ...]:
+        logs = getattr(getattr(self, "obs", None), "logs", None)
+        if logs is None:
+            logs = getattr(self, "logs", [])
+        attached = []
+        for log in logs or []:
+            if getattr(log, "type", None) != LogType.ATTACH or getattr(log, "playerIndex", None) != self.my_index:
+                continue
+            card_id = getattr(log, "cardId", None)
+            serial = getattr(log, "serial", None)
+            target_serial = getattr(log, "serialTarget", None)
+            if card_id is not None and serial is not None and target_serial is not None:
+                attached.append((int(card_id), int(serial), int(target_serial)))
+        return tuple(attached)
+
+    def energy_switch_has_equivalent_normal_attach_result(self) -> bool:
+        current_turn_attached = self.current_turn_attached_energy_ids()
+        if not current_turn_attached:
+            return False
+        for energy_id, energy_serial, source_serial in current_turn_attached:
+            source = next((pokemon for pokemon in self.all_my_pokemon if getattr(pokemon, "serial", None) == source_serial), None)
+            if source is None:
+                continue
+            if not any(getattr(card, "serial", None) == energy_serial for card in getattr(source, "energyCards", []) or []):
+                continue
+            for target in self.all_my_pokemon:
+                if target is source:
+                    continue
+                if energy_tokens_for_attach(energy_id, target) is not None:
+                    return True
+        return False
 
     def count_in_play(self, cid: int) -> int:
         return sum(1 for pokemon in self.all_my_pokemon if self.pid(pokemon) == cid)
@@ -969,8 +1147,7 @@ class BoardView:
             return ()
         if not self.evolves_from(evolution_id, target):
             return ()
-        player = getattr(self, "me", None)
-        if getattr(player, "asleep", False) or getattr(player, "paralyzed", False):
+        if not active_can_declare_attack_this_turn_for_board(self):
             return ()
         data = self.data(evolution_id)
         if data is None:
@@ -1177,10 +1354,18 @@ class BoardView:
     def wally_live(self) -> bool:
         if self.state.supporterPlayed:
             return False
+        evaluator = ImmediateOutcomeEvaluator(self)
         for pokemon in self.all_my_pokemon:
-            if self.pid(pokemon) in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX} and damage_on(pokemon) >= 100:
-                if pokemon is self.active or hp_left(pokemon) <= self.opp_max_damage() + 40:
-                    return True
+            outcome = evaluator._wally_target_outcome(pokemon)
+            if (
+                outcome.supported
+                and outcome.healed_damage >= 100
+                and (
+                    outcome.preserves_primary_pokemon
+                    or hp_left(pokemon) <= self.opp_max_damage() + 40
+                )
+            ):
+                return True
         return False
 
     def salvatore_live(self) -> bool:
@@ -1197,6 +1382,30 @@ class BoardView:
 
     def has_tool_scrapper_target(self) -> bool:
         return any(getattr(pokemon, "tools", []) for pokemon in self.all_my_pokemon + self.all_opp_pokemon)
+
+    def hero_cape_target_roi(self, pokemon: Optional[Pokemon]) -> str:
+        if (
+            pokemon is None
+            or self.pid(pokemon) not in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX}
+            or getattr(pokemon, "tools", [])
+        ):
+            return "invalid"
+        if pokemon is self.active:
+            incoming_damage = self.best_damage(self.opp_active)
+            current_hp = hp_left(pokemon)
+            if incoming_damage <= 0:
+                return "no_current_damage"
+            hits_before = (current_hp + incoming_damage - 1) // incoming_damage
+            hits_after = (current_hp + 100 + incoming_damage - 1) // incoming_damage
+            if hits_before == 1 and hits_after > 1:
+                return "prevents_active_knockout"
+            if hits_after > hits_before:
+                return "extends_active_survival"
+            return "no_clear_benefit"
+        role = self.role_facts(pokemon)
+        if role.attack_ready or role.energy_count > 0:
+            return "invested_without_clear_survival"
+        return "no_clear_benefit"
 
     def hand_card_activity(self, cid: int, occurrence: int = 1, total_count: int = 1) -> str:
         if cid == CINDERACE:
@@ -1243,7 +1452,12 @@ class BoardView:
         if cid == HYPERBALL:
             return HAND_ACTIVITY_LIVE_NOW if len(self.hand_ids) >= 3 and (self.needs_basic() or self.needs_mega_starmie() or self.needs_mega_yuki()) else HAND_ACTIVITY_KEEP
         if cid == TANKER:
-            return HAND_ACTIVITY_LIVE_NOW if any(card_id in MAIN_LINE for card_id in self.discard_ids) else HAND_ACTIVITY_LOW
+            facts = self.night_stretcher_recovery_facts()
+            return (
+                HAND_ACTIVITY_LIVE_NOW
+                if any(not candidate.returns_to_hand_only for candidate in facts)
+                else HAND_ACTIVITY_LOW
+            )
         if cid == ENERGY_SWITCH:
             return HAND_ACTIVITY_KEEP if self.starmie_needs_energy() else HAND_ACTIVITY_LOW
         if cid == BEFEHL_VON_BOSS:
@@ -1251,7 +1465,28 @@ class BoardView:
         if cid == TOOL_SCRAPPER:
             return HAND_ACTIVITY_LIVE_NOW if self.has_tool_scrapper_target() else HAND_ACTIVITY_LOW
         if cid == HERO_CAPE:
-            return HAND_ACTIVITY_LIVE_NOW if any(self.pid(pokemon) in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX} and not getattr(pokemon, "tools", []) for pokemon in self.all_my_pokemon) else HAND_ACTIVITY_LOW
+            target_facts = [
+                (pokemon, self.hero_cape_target_roi(pokemon))
+                for pokemon in self.all_my_pokemon
+            ]
+            if any(
+                roi in {"prevents_active_knockout", "extends_active_survival"}
+                for _, roi in target_facts
+            ):
+                return HAND_ACTIVITY_LIVE_NOW
+            if any(
+                roi == "invested_without_clear_survival"
+                or (
+                    roi in {"no_current_damage", "no_clear_benefit"}
+                    and (
+                        self.role_facts(pokemon).attack_ready
+                        or self.role_facts(pokemon).energy_count > 0
+                    )
+                )
+                for pokemon, roi in target_facts
+            ):
+                return HAND_ACTIVITY_KEEP
+            return HAND_ACTIVITY_LOW
         if cid == SURFING_BEACH:
             return HAND_ACTIVITY_LIVE_NOW if self.has_foreign_stadium() else HAND_ACTIVITY_KEEP
         if cid == MEGA_SIGNAL:
@@ -1307,6 +1542,267 @@ class BoardView:
             missing_units=len(missing),
             missing_types=tuple(missing),
         )
+
+    def night_stretcher_recovery_facts(self) -> Tuple[NightStretcherCandidateFacts, ...]:
+        effect = None
+        if self.select.effect is not None:
+            effect = self.select.effect.id
+        elif self.select.contextCard is not None:
+            effect = self.select.contextCard.id
+
+        cards: List[Any] = []
+        if effect == TANKER:
+            seen: set[Tuple[int, Optional[int]]] = set()
+            for _, option in self.iter_options():
+                cid = self.option_card(option)
+                if cid is None:
+                    continue
+                source_cards = self.cards_in_area(option.area, option.playerIndex)
+                card = None
+                if source_cards is not None and option.index is not None and 0 <= option.index < len(source_cards):
+                    card = source_cards[option.index]
+                serial = getattr(card, "serial", getattr(option, "serial", None))
+                key = (int(cid), serial)
+                if key in seen:
+                    continue
+                seen.add(key)
+                cards.append(card if card is not None else SimpleNamespace(id=cid, serial=serial))
+        else:
+            cards = [
+                card
+                for card in self.discard
+                if self.is_pokemon(card.id)
+                or (
+                    self.is_energy(card.id)
+                    and getattr(self.data(card.id), "cardType", None) == CardType.BASIC_ENERGY
+                )
+            ]
+
+        return tuple(self.night_stretcher_candidate_facts(card) for card in cards)
+
+    def night_stretcher_candidate_facts(self, card: Any) -> NightStretcherCandidateFacts:
+        cid = int(card.id)
+        serial = getattr(card, "serial", None)
+        data = self.data(cid)
+        is_pokemon = self.is_pokemon(cid)
+        is_basic_energy = (
+            self.is_energy(cid)
+            and data is not None
+            and data.cardType == CardType.BASIC_ENERGY
+        )
+        duplicate_in_hand = cid in self.hand_ids
+
+        same_turn_attach_available = False
+        same_turn_attack_gap_reduced = False
+        same_turn_attack_enabled = False
+        same_turn_retreat_enabled = False
+        next_attacker_gap_reduced = False
+        next_attacker_completed = False
+        board_out_avoided = False
+        next_turn_evolution_supported = False
+        same_turn_usable = False
+
+        if is_basic_energy and not duplicate_in_hand:
+            attach_available = not bool(getattr(self.state, "energyAttached", False))
+            attach_tokens_by_target = {
+                getattr(target, "serial", index): energy_tokens_for_attach(cid, target)
+                for index, target in enumerate(self.all_my_pokemon)
+            }
+            attach_available = attach_available and any(tokens is not None for tokens in attach_tokens_by_target.values())
+            same_turn_attach_available = attach_available
+
+            if attach_available and self.active is not None:
+                added = energy_tokens_for_attach(cid, self.active)
+                if added is not None:
+                    before_tokens = tuple(self.energy_tokens(self.active))
+                    after_tokens = before_tokens + tuple(added)
+                    active_data = self.data(self.pid(self.active))
+                    attacks = [
+                        self.attack(attack_id)
+                        for attack_id in (getattr(active_data, "attacks", []) if active_data is not None else [])
+                    ]
+                    attacks = [attack for attack in attacks if attack is not None]
+                    if attacks:
+                        important = max(
+                            attacks,
+                            key=lambda attack: (
+                                self.attack_damage_for_card(self.pid(self.active), attack),
+                                len(getattr(attack, "energies", []) or []),
+                            ),
+                        )
+                        before_gap = self.attack_energy_gap(important, before_tokens)
+                        after_gap = self.attack_energy_gap(important, after_tokens)
+                        same_turn_attack_gap_reduced = after_gap.missing_units < before_gap.missing_units
+                        newly_ready = any(
+                            not self.attack_energy_gap(attack, before_tokens).ready
+                            and self.attack_energy_gap(attack, after_tokens).ready
+                            for attack in attacks
+                        )
+                        if newly_ready:
+                            same_turn_attack_enabled = ImmediateOutcomeEvaluator(
+                                self
+                            ).active_can_declare_attack_this_turn()
+
+                    retreat_cost = ImmediateOutcomeEvaluator(self)._effective_retreat_cost(self.active)
+                    current_energy = self.energy_count(self.active)
+                    if (
+                        retreat_cost > current_energy
+                        and retreat_cost <= current_energy + len(added)
+                        and not bool(getattr(self.me, "asleep", False))
+                        and not bool(getattr(self.me, "paralyzed", False))
+                        and ImmediateOutcomeEvaluator(self).active_can_declare_attack_this_turn()
+                    ):
+                        same_turn_retreat_enabled = any(
+                            self.can_pay_attack(target, self.attack(attack_id))
+                            and not self.attack_blocked_by_ex_wall_for_card(
+                                self.pid(target),
+                                self.opp_active,
+                                self.attack(attack_id),
+                            )
+                            for target in self.bench
+                            for attack_id in getattr(self.data(self.pid(target)), "attacks", [])
+                        )
+
+            if attach_available:
+                for target in self.bench:
+                    added = energy_tokens_for_attach(cid, target)
+                    if added is None:
+                        continue
+                    target_data = self.data(self.pid(target))
+                    attacks = [
+                        self.attack(attack_id)
+                        for attack_id in (getattr(target_data, "attacks", []) if target_data is not None else [])
+                    ]
+                    attacks = [attack for attack in attacks if attack is not None]
+                    if not attacks:
+                        continue
+                    important = max(
+                        attacks,
+                        key=lambda attack: (
+                            self.attack_damage_for_card(self.pid(target), attack),
+                            len(getattr(attack, "energies", []) or []),
+                        ),
+                    )
+                    before = self.attack_energy_gap(important, self.energy_tokens(target))
+                    after = self.attack_energy_gap(
+                        important,
+                        tuple(self.energy_tokens(target)) + tuple(added),
+                    )
+                    if after.missing_units < before.missing_units:
+                        next_attacker_gap_reduced = True
+                    if not before.ready and after.ready:
+                        next_attacker_completed = True
+
+            if not attach_available and not self._night_stretcher_ready_evolved_attacker():
+                for target in self.all_my_pokemon:
+                    evolution_ids = [
+                        evolution_id
+                        for evolution_id in DECK
+                        if self.card_evolves_from_card(evolution_id, self.pid(target))
+                    ]
+                    for evolution_id in evolution_ids:
+                        evolution_data = self.data(evolution_id)
+                        attacks = [
+                            self.attack(attack_id)
+                            for attack_id in (
+                                getattr(evolution_data, "attacks", [])
+                                if evolution_data is not None
+                                else []
+                            )
+                        ]
+                        attacks = [attack for attack in attacks if attack is not None]
+                        if not attacks:
+                            continue
+                        important = max(
+                            attacks,
+                            key=lambda attack: (
+                                self.attack_damage_for_card(evolution_id, attack),
+                                len(getattr(attack, "energies", []) or []),
+                            ),
+                        )
+                        before = self.attack_energy_gap(important, self.energy_tokens_as(target, evolution_id))
+                        added = energy_tokens_for_attach(cid, target)
+                        if added is None:
+                            continue
+                        after = self.attack_energy_gap(
+                            important,
+                            tuple(self.energy_tokens_as(target, evolution_id)) + tuple(added),
+                        )
+                        if after.missing_units < before.missing_units:
+                            next_attacker_gap_reduced = True
+                        if not before.ready and after.ready:
+                            next_attacker_completed = True
+
+            same_turn_usable = any(
+                (
+                    same_turn_attack_gap_reduced,
+                    same_turn_attack_enabled,
+                    same_turn_retreat_enabled,
+                    next_attacker_gap_reduced and attach_available,
+                    next_attacker_completed and attach_available,
+                )
+            )
+
+        elif is_pokemon and not duplicate_in_hand:
+            is_basic = bool(getattr(data, "basic", False)) if data is not None else False
+            if is_basic and self.bench_space > 0:
+                same_turn_usable = True
+                board_out_avoided = len(self.all_my_pokemon) == 1
+                next_turn_evolution_supported = any(
+                    evolution_id in self.hand_ids
+                    and self.card_evolves_from_card(evolution_id, cid)
+                    for evolution_id in DECK
+                )
+            elif not is_basic:
+                evolution_targets = [
+                    target
+                    for target in self.all_my_pokemon
+                    if self.card_evolves_from_card(cid, self.pid(target))
+                ]
+                next_turn_evolution_supported = bool(evolution_targets)
+                same_turn_usable = any(
+                    not bool(getattr(target, "appearThisTurn", False))
+                    for target in evolution_targets
+                )
+
+        returns_to_hand_only = not any(
+            (
+                same_turn_usable,
+                same_turn_attack_gap_reduced,
+                same_turn_attack_enabled,
+                same_turn_retreat_enabled,
+                next_attacker_gap_reduced,
+                next_attacker_completed,
+                board_out_avoided,
+                next_turn_evolution_supported,
+            )
+        )
+        return NightStretcherCandidateFacts(
+            target_id=cid,
+            target_serial=serial,
+            same_turn_usable=same_turn_usable,
+            same_turn_attach_available=same_turn_attach_available,
+            same_turn_attack_gap_reduced=same_turn_attack_gap_reduced,
+            same_turn_attack_enabled=same_turn_attack_enabled,
+            same_turn_retreat_enabled=same_turn_retreat_enabled,
+            next_attacker_gap_reduced=next_attacker_gap_reduced,
+            next_attacker_completed=next_attacker_completed,
+            board_out_avoided=board_out_avoided,
+            next_turn_evolution_supported=next_turn_evolution_supported,
+            returns_to_hand_only=returns_to_hand_only,
+        )
+
+    def _night_stretcher_ready_evolved_attacker(self) -> bool:
+        for target in self.all_my_pokemon:
+            data = self.data(self.pid(target))
+            if data is None or getattr(data, "basic", False):
+                continue
+            if any(
+                self.can_pay_attack(target, self.attack(attack_id))
+                for attack_id in getattr(data, "attacks", [])
+            ):
+                return True
+        return False
 
     def active_energy_facts(self) -> ActiveEnergyFacts:
         active_id = self.pid(self.active)
@@ -1390,12 +1886,81 @@ class BoardView:
         )
 
     def has_foreign_stadium(self) -> bool:
-        return bool(self.state.stadium) and (not self.state.stadium or self.state.stadium[0].id != SURFING_BEACH)
+        stadium = getattr(self.state, "stadium", None) or ()
+        if not stadium:
+            return False
+        current = stadium[0]
+        owner = getattr(current, "playerIndex", None)
+        return (
+            card_id(current) != SURFING_BEACH
+            and owner is not None
+            and int(owner) != int(self.my_index)
+        )
 
 
 class ImmediateOutcomeEvaluator:
     def __init__(self, board: BoardView):
         self.b = board
+
+    def is_surfing_beach_ability(self, option: Any) -> bool:
+        if option.type != OptionType.ABILITY or option.area != AreaType.STADIUM:
+            return False
+        index = getattr(option, "index", None)
+        stadium = getattr(getattr(self.b, "state", None), "stadium", None) or ()
+        if index is None or not 0 <= int(index) < len(stadium):
+            return False
+        return card_id(stadium[int(index)]) == SURFING_BEACH
+
+    def is_surfing_beach_play_ability_available(self, option: Any) -> bool:
+        if option.type != OptionType.PLAY or self.b.option_card(option) != SURFING_BEACH:
+            return False
+        state = getattr(self.b, "state", None)
+        if getattr(state, "stadiumPlayed", False):
+            return False
+        stadium = getattr(state, "stadium", None) or ()
+        if stadium and card_id(stadium[0]) == SURFING_BEACH:
+            return False
+        return any(candidate is option for _, candidate in self.b.iter_options())
+
+    def evaluate_surfing_beach_ability(
+        self,
+        option: Any,
+        after_stadium_play: bool = False,
+    ) -> ImmediateOutcome:
+        available = (
+            self.is_surfing_beach_play_ability_available(option)
+            if after_stadium_play
+            else self.is_surfing_beach_ability(option)
+        )
+        if not available:
+            return ImmediateOutcome(supported=False, reasons=("unsupported_surfing_beach_ability",))
+        candidates = [
+            self.evaluate_switch_target(target, "surfing_beach")
+            for target in self.b.bench
+        ]
+        candidates = [candidate for candidate in candidates if candidate.supported]
+        if not candidates:
+            return ImmediateOutcome(supported=False, reasons=("surfing_beach_ability_no_target",))
+        best = max(
+            candidates,
+            key=lambda outcome: (
+                outcome.reachable_wins_game,
+                outcome.reachable_knockout,
+                outcome.reachable_prizes_taken,
+                outcome.reachable_damage,
+                outcome.reachable_attack_id is not None,
+            ),
+        )
+        return ImmediateOutcome(
+            reachable_attack_id=best.reachable_attack_id,
+            reachable_damage=best.reachable_damage,
+            reachable_knockout=best.reachable_knockout,
+            reachable_prizes_taken=best.reachable_prizes_taken,
+            reachable_wins_game=best.reachable_wins_game,
+            recommended_target_id=best.target_id,
+            recommended_target_serial=best.target_serial,
+            reasons=("surfing_beach_ability",) + best.reasons,
+        )
 
     def evaluate_attack(self, option: Any) -> ImmediateOutcome:
         attack = self.b.attack(option.attackId)
@@ -1504,6 +2069,7 @@ class ImmediateOutcomeEvaluator:
             reachable_knockout=bool(reachable_outcome and reachable_outcome.knockout),
             reachable_prizes_taken=reachable_outcome.prizes_taken if reachable_outcome is not None else 0,
             reachable_wins_game=bool(reachable_outcome and reachable_outcome.wins_game),
+            reachable_can_continue_attack=bool(reachable_outcome and reachable_outcome.reachable_can_continue_attack),
             retreat_energy_cost=reachable_outcome.retreat_energy_cost if reachable_outcome is not None else 0,
             important_energy_loss=reachable_outcome.important_energy_loss if reachable_outcome is not None else 0,
             target_id=self.b.pid(target),
@@ -1523,7 +2089,12 @@ class ImmediateOutcomeEvaluator:
         effective_outcomes = [outcome for outcome in outcomes if outcome.supported and not outcome.blocked]
         if not effective_outcomes:
             return None
-        return self._best_reachable_attack_outcome(effective_outcomes)
+        outcome = self._best_reachable_attack_outcome(effective_outcomes)
+        attack = self.b.attack(outcome.reachable_attack_id)
+        return replace(
+            outcome,
+            reachable_can_continue_attack=bool(attack and can_continue_attack_after_use_with_tokens(attack, after_tokens)),
+        )
 
     def _best_attach_access_attack_outcome(
         self,
@@ -1648,14 +2219,20 @@ class ImmediateOutcomeEvaluator:
     def evaluate_energy_switch_play(self, option: Any) -> ImmediateOutcome:
         if option.type != OptionType.PLAY or self.b.option_card(option) != ENERGY_SWITCH:
             return ImmediateOutcome(supported=False, reasons=("unsupported_energy_switch_option",))
+        equivalent_attach = self.b.energy_switch_has_equivalent_normal_attach_result()
         if not self.active_can_declare_attack_this_turn():
-            return ImmediateOutcome(supported=False, reasons=("energy_switch_attack_not_declarable",))
+            return ImmediateOutcome(
+                supported=False,
+                additional_card_consumed=True,
+                equivalent_normal_attach_available=equivalent_attach,
+                reasons=("energy_switch_attack_not_declarable",),
+            )
         active = self.b.active
         if active is None:
-            return ImmediateOutcome(supported=False, reasons=("missing_energy_switch_state",))
+            return ImmediateOutcome(supported=False, additional_card_consumed=True, equivalent_normal_attach_available=equivalent_attach, reasons=("missing_energy_switch_state",))
         data = self.b.data(self.b.pid(active))
         if data is None:
-            return ImmediateOutcome(supported=False, reasons=("missing_energy_switch_state",))
+            return ImmediateOutcome(supported=False, additional_card_consumed=True, equivalent_normal_attach_available=equivalent_attach, reasons=("missing_energy_switch_state",))
         before_tokens = tuple(self.b.energy_tokens(active))
         before_ids = self._energy_payable_attack_ids(data.attacks, before_tokens)
         outcomes: List[ImmediateOutcome] = []
@@ -1674,7 +2251,12 @@ class ImmediateOutcomeEvaluator:
                     if outcome.supported and not outcome.blocked:
                         outcomes.append(outcome)
         if not outcomes:
-            return ImmediateOutcome(supported=True, reasons=("energy_switch_no_reachable_attack",))
+            return ImmediateOutcome(
+                supported=True,
+                additional_card_consumed=True,
+                equivalent_normal_attach_available=equivalent_attach,
+                reasons=("energy_switch_no_reachable_attack",),
+            )
         best = self._best_reachable_attack_outcome(outcomes)
         reasons = ["energy_switch"]
         if best.knockout:
@@ -1689,6 +2271,8 @@ class ImmediateOutcomeEvaluator:
             reachable_knockout=best.knockout,
             reachable_prizes_taken=best.prizes_taken,
             reachable_wins_game=best.wins_game,
+            additional_card_consumed=True,
+            equivalent_normal_attach_available=equivalent_attach,
             target_id=self.b.pid(active),
             target_serial=getattr(active, "serial", None),
             reasons=tuple(reasons),
@@ -1789,7 +2373,7 @@ class ImmediateOutcomeEvaluator:
             ),
         )
 
-    def _salvatore_fact_to_reachable_outcome(self, target: Pokemon, fact: ActiveEvolutionAttackFact, reason: str) -> ImmediateOutcome:
+    def _active_evolution_fact_to_reachable_outcome(self, target: Pokemon, fact: ActiveEvolutionAttackFact, reason: str) -> ImmediateOutcome:
         reasons = [reason]
         if fact.blocked:
             reasons.append("blocked_ex_wall")
@@ -1809,6 +2393,34 @@ class ImmediateOutcomeEvaluator:
             target_serial=getattr(target, "serial", None),
             reasons=tuple(reasons),
         )
+
+    def evaluate_active_evolution(self, option: Any) -> ImmediateOutcome:
+        if option.type != OptionType.EVOLVE:
+            return ImmediateOutcome(supported=False, reasons=("unsupported_active_evolution_option",))
+        target = self.b.option_target(option)
+        if target is None or target is not self.b.active:
+            return ImmediateOutcome(supported=False, reasons=("active_evolution_not_active_target",))
+        if not self.active_can_declare_attack_this_turn():
+            return ImmediateOutcome(
+                supported=False,
+                target_id=self.b.pid(target),
+                target_serial=getattr(target, "serial", None),
+                reasons=("active_evolution_attack_not_declarable",),
+            )
+        facts = [fact for fact in self.b.active_evolution_attack_facts(option) if fact.supported]
+        if not facts:
+            return ImmediateOutcome(supported=False, target_id=self.b.pid(target), target_serial=getattr(target, "serial", None), reasons=("active_evolution_no_same_turn_attack_chain",))
+        best = max(
+            facts,
+            key=lambda fact: (
+                not fact.blocked,
+                fact.wins_game,
+                fact.knockout,
+                fact.prizes_taken,
+                fact.damage,
+            ),
+        )
+        return self._active_evolution_fact_to_reachable_outcome(target, best, "active_evolution_reachable_attack")
 
     def _salvatore_fact_to_expected_outcome(
         self,
@@ -1866,7 +2478,7 @@ class ImmediateOutcomeEvaluator:
             if fact.blocked:
                 continue
             if confirmed_evolution_candidate or (self.b.deck_view and candidate_evolution_id in self.b.deck_ids):
-                outcomes.append(self._salvatore_fact_to_reachable_outcome(pokemon, fact, reason))
+                outcomes.append(self._active_evolution_fact_to_reachable_outcome(pokemon, fact, reason))
             else:
                 probability = self.b.deck_presence_probability(candidate_evolution_id)
                 if probability > 0:
@@ -1879,9 +2491,154 @@ class ImmediateOutcomeEvaluator:
         if self.b.state.supporterPlayed:
             return ImmediateOutcome(supported=True, reasons=("salvatore_supporter_already_used",))
         outcome = self._best_salvatore_active_evolve_attack_outcome(reason="salvatore_play_reachable_attack")
+        development = self._best_salvatore_development_outcome()
         if outcome is None:
-            return ImmediateOutcome(supported=True, reasons=("salvatore_no_same_turn_attack_chain",))
-        return outcome
+            if development is None:
+                return ImmediateOutcome(supported=True, reasons=("salvatore_no_same_turn_attack_chain",))
+            return replace(
+                development,
+                reasons=development.reasons + ("salvatore_no_same_turn_attack_chain",),
+            )
+        if development is None:
+            return outcome
+        direct_damage = self._best_unblocked_damage_from(self.b.active)
+        reachable_damage = outcome.reachable_damage
+        if reachable_damage <= 0 and outcome.expected_hit_probability > 0:
+            reachable_damage = outcome.expected_reachable_damage / outcome.expected_hit_probability
+        return replace(
+            outcome,
+            improves_damage=reachable_damage > direct_damage,
+            equivalent_evolution_available=development.equivalent_evolution_available,
+            completes_next_attacker=development.completes_next_attacker,
+            development_value=development.development_value,
+            development_probability=development.development_probability,
+        )
+
+    def _best_salvatore_development_outcome(self) -> Optional[ImmediateOutcome]:
+        candidates: List[ImmediateOutcome] = []
+        for target in self.b.all_my_pokemon:
+            evolution_id = self.b.salvatore_deck_target_evolution(target)
+            if evolution_id is None:
+                continue
+            data = self.b.data(evolution_id)
+            if data is None:
+                continue
+            probability = self.b.deck_presence_probability(evolution_id)
+            if probability <= 0:
+                continue
+            tokens = tuple(self.b.energy_tokens_as(target, evolution_id))
+            best_damage = 0
+            for attack_id in getattr(data, "attacks", ()):
+                attack = self.b.attack(attack_id)
+                if attack is None or not can_pay_attack_with_tokens(attack, tokens):
+                    continue
+                if self.b.attack_blocked_by_ex_wall_for_card(evolution_id, self.b.opp_active, attack):
+                    continue
+                best_damage = max(best_damage, self.b.attack_damage_for_card(evolution_id, attack))
+            equivalent = any(
+                option.type == OptionType.EVOLVE
+                and self.b.option_card(option) == evolution_id
+                and self.b.option_target(option) is target
+                for _, option in self.b.iter_options()
+            )
+            opp_damage = self.b.opp_max_damage()
+            evolution_hp = safe_int(getattr(data, "hp", 0))
+            avoids_board_out = (
+                target is self.b.active
+                and len(self.b.all_my_pokemon) == 1
+                and opp_damage > 0
+                and hp_left(target) <= opp_damage
+                and evolution_hp - damage_on(target) > opp_damage
+            )
+            candidates.append(
+                ImmediateOutcome(
+                    supported=True,
+                    avoids_board_out=avoids_board_out,
+                    equivalent_evolution_available=equivalent,
+                    completes_next_attacker=best_damage > 0,
+                    development_value=best_damage * probability,
+                    development_probability=probability,
+                    target_id=self.b.pid(target),
+                    target_serial=getattr(target, "serial", None),
+                    reasons=("salvatore_development_fact",),
+                )
+            )
+        if not candidates:
+            return None
+        return max(
+            candidates,
+            key=lambda fact: (
+                fact.avoids_board_out,
+                fact.completes_next_attacker,
+                not fact.equivalent_evolution_available,
+                fact.development_value,
+            ),
+        )
+
+    def _wally_target_outcome(self, target: Optional[Pokemon]) -> ImmediateOutcome:
+        if target is None or target not in self.b.all_my_pokemon:
+            return ImmediateOutcome(supported=False, reasons=("wally_missing_target",))
+        if self.b.pid(target) not in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX}:
+            return ImmediateOutcome(supported=False, reasons=("wally_invalid_target",))
+        healed_damage = damage_on(target)
+        if healed_damage <= 0:
+            return ImmediateOutcome(supported=False, target_id=self.b.pid(target), target_serial=getattr(target, "serial", None), reasons=("wally_no_damage",))
+        energy_count = self.b.energy_count(target)
+        opp_damage = self.b.opp_max_damage()
+        avoids_next_knockout = (
+            target is self.b.active
+            and opp_damage > 0
+            and hp_left(target) <= opp_damage
+            and safe_int(getattr(target, "maxHp", 0)) > opp_damage
+        )
+        avoids_board_out = avoids_next_knockout and len(self.b.all_my_pokemon) == 1
+        reasons = ["wally_heals_damage"]
+        if energy_count > 0:
+            reasons.append("wally_recovers_energy")
+        if avoids_next_knockout:
+            reasons.extend(("wally_avoids_next_knockout", "wally_avoids_prize_loss"))
+        if avoids_board_out:
+            reasons.append("wally_avoids_board_out")
+        return ImmediateOutcome(
+            supported=True,
+            healed_damage=healed_damage,
+            recovered_energy_count=energy_count,
+            board_energy_removed=energy_count,
+            next_knockout_avoided=avoids_next_knockout,
+            avoids_prize_loss=avoids_next_knockout,
+            prizes_preserved=self.b.prize_value(target) if avoids_next_knockout else 0,
+            avoids_board_out=avoids_board_out,
+            preserves_primary_pokemon=target is self.b.active,
+            target_id=self.b.pid(target),
+            target_serial=getattr(target, "serial", None),
+            reasons=tuple(reasons),
+        )
+
+    def evaluate_wally_play(self, option: Any) -> ImmediateOutcome:
+        if option.type != OptionType.PLAY or self.b.option_card(option) != WALLY_COMPASSION:
+            return ImmediateOutcome(supported=False, reasons=("unsupported_wally_play",))
+        if self.b.state.supporterPlayed:
+            return ImmediateOutcome(supported=False, reasons=("wally_supporter_already_used",))
+        outcomes = [
+            self._wally_target_outcome(target)
+            for target in self.b.all_my_pokemon
+        ]
+        outcomes = [outcome for outcome in outcomes if outcome.supported]
+        if not outcomes:
+            return ImmediateOutcome(supported=False, reasons=("wally_no_effective_target",))
+        best = max(outcomes, key=wally_effect_fact_key)
+        return replace(
+            best,
+            recommended_target_id=best.target_id,
+            recommended_target_serial=best.target_serial,
+            reasons=("wally_play",) + best.reasons,
+        )
+
+    def evaluate_wally_target(self, target: Optional[Pokemon]) -> ImmediateOutcome:
+        outcome = self._wally_target_outcome(target)
+        if not outcome.supported:
+            return outcome
+        return replace(outcome, reasons=("wally_target",) + outcome.reasons)
 
     def evaluate_salvatore_target(self, target: Optional[Pokemon]) -> ImmediateOutcome:
         if target is None:
@@ -1951,19 +2708,10 @@ class ImmediateOutcomeEvaluator:
         )
 
     def active_status_blocks_attack(self) -> bool:
-        player = getattr(self.b, "me", None)
-        return bool(getattr(player, "asleep", False) or getattr(player, "paralyzed", False))
+        return active_status_blocks_attack_for_board(self.b)
 
     def active_can_declare_attack_this_turn(self) -> bool:
-        if self.active_status_blocks_attack():
-            return False
-        state = getattr(self.b, "state", None)
-        turn = getattr(state, "turn", None)
-        first_player = getattr(state, "firstPlayer", None)
-        your_index = getattr(state, "yourIndex", getattr(self.b, "my_index", None))
-        if turn == 1 and first_player is not None and your_index is not None and int(first_player) == int(your_index):
-            return False
-        return True
+        return active_can_declare_attack_this_turn_for_board(self.b)
 
     def _attack_outcome_with_tokens(
         self,
@@ -2016,6 +2764,8 @@ class ImmediateOutcomeEvaluator:
         data = self.b.data(self.b.pid(attacker))
         if data is None:
             return ImmediateOutcome(supported=False, reasons=("missing_boss_state",))
+        if not self.active_can_declare_attack_this_turn():
+            return self._boss_no_effective_attack(target)
 
         attack_ids = self._energy_payable_attack_ids(data.attacks, self.b.energy_tokens(attacker))
         outcomes = [self._boss_attack_outcome(attacker, target, attack_id) for attack_id in attack_ids]
@@ -2067,6 +2817,53 @@ class ImmediateOutcomeEvaluator:
             breaks_engine=breaks_engine,
             target_id=target_id,
             target_serial=getattr(target, "serial", None),
+            reasons=tuple(reasons),
+        )
+
+    def evaluate_boss_play(self, option: Any) -> ImmediateOutcome:
+        if option.type != OptionType.PLAY or self.b.option_card(option) != BEFEHL_VON_BOSS:
+            return ImmediateOutcome(supported=False, reasons=("unsupported_boss_play",))
+        if not any(candidate is option for _, candidate in self.b.iter_options()):
+            return ImmediateOutcome(supported=True, reasons=("boss_play_option_not_legal",))
+        if self.b.state.supporterPlayed:
+            return ImmediateOutcome(supported=True, reasons=("boss_play_supporter_already_used",))
+        if self.b.active is None or not self.b.opp_bench:
+            return ImmediateOutcome(supported=True, reasons=("boss_play_missing_state",))
+        if not self.active_can_declare_attack_this_turn():
+            return ImmediateOutcome(supported=False, reasons=("boss_play_attack_not_declarable",))
+
+        candidates = []
+        for target in self.b.opp_bench:
+            outcome = self.evaluate_boss_target(target)
+            if outcome.supported and not outcome.blocked and (outcome.wins_game or (outcome.knockout and outcome.prizes_taken > 0)):
+                candidates.append(outcome)
+        if not candidates:
+            return ImmediateOutcome(supported=True, reasons=("boss_play_no_reachable_prize_attack",))
+
+        best = max(
+            candidates,
+            key=lambda outcome: (
+                outcome.wins_game,
+                outcome.knockout,
+                outcome.prizes_taken,
+                outcome.damage,
+            ),
+        )
+        reasons = ["boss_play_reachable_attack"]
+        if best.wins_game:
+            reasons.append("boss_play_reachable_win")
+        if best.knockout:
+            reasons.append("boss_play_reachable_knockout")
+        if best.prizes_taken:
+            reasons.append("boss_play_takes_prizes")
+        return ImmediateOutcome(
+            supported=True,
+            reachable_damage=best.damage,
+            reachable_knockout=best.knockout,
+            reachable_prizes_taken=best.prizes_taken,
+            reachable_wins_game=best.wins_game,
+            target_id=best.target_id,
+            target_serial=best.target_serial,
             reasons=tuple(reasons),
         )
 
@@ -2591,6 +3388,70 @@ class Policy:
             return ActionScore(TIER_FORBIDDEN, legacy=legacy_score)
         if option.type == OptionType.ATTACK or option.attackId is not None:
             return self.attack_action_score(option, legacy_score, outcome)
+        cid = self.b.option_card(option)
+        if (
+            option.type == OptionType.PLAY
+            and cid == TANKER
+        ) or (
+            self.effect_id() == TANKER
+            and cid is not None
+        ):
+            candidate = self.night_stretcher_candidate_for_option(option)
+            if candidate is None:
+                return ActionScore(TIER_BLOCKED_OR_BAD_ACTION)
+            development = self.night_stretcher_development_value(candidate)
+            if candidate.returns_to_hand_only:
+                return ActionScore(
+                    TIER_BLOCKED_OR_BAD_ACTION,
+                    resource=1,
+                    legacy=self.night_stretcher_identity_tiebreak(candidate),
+                )
+            if self.night_stretcher_is_deferred_until_evolution(candidate):
+                return ActionScore(
+                    TIER_LOW_VALUE_ACTION,
+                    resource=1,
+                    legacy=self.night_stretcher_identity_tiebreak(candidate),
+                )
+            return ActionScore(
+                TIER_HIGH_VALUE_PREP if self.night_stretcher_is_concrete_same_turn(candidate) else TIER_LOW_VALUE_ACTION,
+                development=development,
+                legacy=self.night_stretcher_identity_tiebreak(candidate),
+            )
+        is_wally_action = (
+            option.type == OptionType.PLAY and cid == WALLY_COMPASSION
+        ) or (
+            self.effect_id() == WALLY_COMPASSION
+            and self.b.option_target(option) is not None
+        )
+        if is_wally_action and outcome.supported:
+            if self.wally_preservation_is_high_value(outcome):
+                return ActionScore(
+                    TIER_HIGH_VALUE_PREP,
+                    immediate=outcome.prizes_preserved,
+                    pressure=int(outcome.avoids_board_out),
+                    development=outcome.healed_damage,
+                    resource=outcome.recovered_energy_count,
+                    risk=outcome.board_energy_removed,
+                    legacy=legacy_score,
+                )
+            return ActionScore(
+                TIER_LOW_VALUE_ACTION,
+                legacy=legacy_score,
+            )
+        if option.type == OptionType.PLAY and cid == SALVATORE and not (
+            outcome.reachable_attack_id is not None
+            or outcome.expected_reachable_attack_id is not None
+            or outcome.avoids_board_out
+        ):
+            return ActionScore(
+                TIER_LOW_VALUE_ACTION,
+                development=0 if outcome.equivalent_evolution_available else outcome.development_value,
+                resource=0,
+                legacy=legacy_score,
+            )
+        handoff_pressure_score = self.cinderace_handoff_pressure_score(outcome, legacy_score)
+        if handoff_pressure_score is not None:
+            return handoff_pressure_score
         if outcome.supported and outcome.wins_game:
             return ActionScore(TIER_WIN, immediate=outcome.prizes_taken, legacy=legacy_score)
         if outcome.supported and outcome.knockout:
@@ -2614,8 +3475,35 @@ class Policy:
                 legacy=legacy_score,
             )
         if (
+            option.type == OptionType.PLAY
+            and cid == SALVATORE
+            and outcome.supported
+            and (
+                outcome.avoids_board_out
+                or (
+                    outcome.reachable_attack_id is not None
+                    and outcome.improves_damage
+                )
+            )
+        ):
+            return ActionScore(
+                TIER_HIGH_VALUE_PREP,
+                pressure=outcome.reachable_damage,
+                development=outcome.development_value,
+                legacy=legacy_score,
+            )
+        if (
             outcome.supported
-            and (outcome.expected_reachable_wins_game or outcome.expected_reachable_knockout)
+            and outcome.expected_reachable_attack_id is not None
+            and (
+                outcome.expected_reachable_wins_game
+                or outcome.expected_reachable_knockout
+                or (
+                    option.type == OptionType.PLAY
+                    and cid == SALVATORE
+                    and outcome.improves_damage
+                )
+            )
             and self.expected_search_chain_is_high_value(outcome)
         ):
             return ActionScore(
@@ -2625,6 +3513,9 @@ class Policy:
                 resource=max(0, min(legacy_score, 200000)),
                 legacy=legacy_score,
             )
+        attach_pressure_score = self.active_attach_reachable_pressure_score(option, legacy_score, outcome)
+        if attach_pressure_score is not None:
+            return attach_pressure_score
         if self.active_evolution_has_clear_attack_improvement(option):
             return ActionScore(
                 TIER_HIGH_VALUE_PREP,
@@ -2643,6 +3534,124 @@ class Policy:
             return ActionScore(TIER_BLOCKED_OR_BAD_ACTION, risk=legacy_score, legacy=legacy_score)
         return ActionScore(TIER_LOW_VALUE_ACTION, resource=max(0, legacy_score), legacy=legacy_score)
 
+    def night_stretcher_candidate_key(self, facts: NightStretcherCandidateFacts) -> Tuple[Any, ...]:
+        return (
+            not facts.returns_to_hand_only,
+            facts.same_turn_attack_enabled,
+            facts.same_turn_retreat_enabled,
+            facts.board_out_avoided,
+            facts.next_attacker_completed,
+            facts.same_turn_attack_gap_reduced,
+            facts.next_attacker_gap_reduced and facts.same_turn_attach_available,
+            facts.same_turn_usable,
+            facts.next_attacker_gap_reduced,
+            facts.next_turn_evolution_supported,
+            -(facts.target_serial if facts.target_serial is not None else 10**9),
+        )
+
+    def recommended_night_stretcher_candidate(self) -> Optional[NightStretcherCandidateFacts]:
+        facts = self.b.night_stretcher_recovery_facts()
+        if not facts:
+            return None
+        return max(facts, key=self.night_stretcher_candidate_key)
+
+    def night_stretcher_candidate_for_option(self, option: Any) -> Optional[NightStretcherCandidateFacts]:
+        if option.type == OptionType.PLAY and self.b.option_card(option) == TANKER:
+            return self.recommended_night_stretcher_candidate()
+        if self.effect_id() != TANKER:
+            return None
+        cid = self.b.option_card(option)
+        source_cards = self.b.cards_in_area(option.area, option.playerIndex)
+        card = None
+        if source_cards is not None and option.index is not None and 0 <= option.index < len(source_cards):
+            card = source_cards[option.index]
+        serial = getattr(card, "serial", getattr(option, "serial", None))
+        if cid is None:
+            return None
+        return self.b.night_stretcher_candidate_facts(
+            card if card is not None else SimpleNamespace(id=cid, serial=serial)
+        )
+
+    def night_stretcher_development_value(self, facts: NightStretcherCandidateFacts) -> int:
+        if facts.returns_to_hand_only:
+            return 0
+        if facts.same_turn_attack_enabled or facts.same_turn_retreat_enabled:
+            return 7
+        if facts.board_out_avoided:
+            return 6
+        if facts.next_attacker_completed:
+            return 5
+        if facts.same_turn_attack_gap_reduced:
+            return 4
+        if facts.next_attacker_gap_reduced and facts.same_turn_attach_available:
+            return 3
+        if facts.next_turn_evolution_supported and facts.same_turn_usable:
+            return 2
+        if facts.same_turn_usable:
+            return 1
+        if facts.next_attacker_gap_reduced or facts.next_turn_evolution_supported:
+            return 1
+        return 0
+
+    def night_stretcher_identity_tiebreak(self, facts: NightStretcherCandidateFacts) -> int:
+        return -(facts.target_serial if facts.target_serial is not None else 10**9)
+
+    def night_stretcher_is_concrete_same_turn(self, facts: NightStretcherCandidateFacts) -> bool:
+        return any(
+            (
+                facts.same_turn_attack_gap_reduced,
+                facts.same_turn_attack_enabled,
+                facts.same_turn_retreat_enabled,
+                facts.next_attacker_completed and facts.same_turn_attach_available,
+                facts.board_out_avoided,
+            )
+        )
+
+    def night_stretcher_is_deferred_until_evolution(
+        self,
+        facts: NightStretcherCandidateFacts,
+    ) -> bool:
+        if not (
+            facts.same_turn_attack_enabled
+            or facts.same_turn_attack_gap_reduced
+        ):
+            return False
+        active_data = self.b.data(self.b.pid(self.b.active))
+        if active_data is None or not getattr(active_data, "basic", False):
+            return False
+        return any(
+            option.type == OptionType.EVOLVE
+            for _, option in self.b.iter_options()
+        )
+
+    def night_stretcher_policy_value(self, facts: Optional[NightStretcherCandidateFacts]) -> float:
+        if facts is None:
+            return -8000
+        if facts.returns_to_hand_only:
+            return -1000
+        if facts.same_turn_attack_enabled:
+            return 90000
+        if facts.same_turn_retreat_enabled:
+            return 88000
+        if facts.board_out_avoided:
+            return 84000
+        if facts.next_attacker_completed:
+            return 82000
+        if facts.same_turn_attack_gap_reduced:
+            return 74000
+        if facts.next_attacker_gap_reduced and facts.same_turn_attach_available:
+            return 70000
+        if facts.same_turn_usable:
+            return 52000
+        if facts.next_attacker_gap_reduced:
+            return 32000
+        if facts.next_turn_evolution_supported:
+            return 26000
+        return -1000
+
+    def wally_preservation_is_high_value(self, outcome: ImmediateOutcome) -> bool:
+        return wally_preservation_fact_is_high_value(outcome)
+
     def best_current_attack_outcome(self) -> Optional[ImmediateOutcome]:
         outcomes: List[ImmediateOutcome] = []
         for _, candidate in self.b.iter_options():
@@ -2654,6 +3663,64 @@ class Policy:
         if not outcomes:
             return None
         return max(outcomes, key=lambda outcome: (outcome.wins_game, outcome.knockout, outcome.prizes_taken, outcome.damage))
+
+    def cinderace_handoff_improves_current_turn(self, outcome: ImmediateOutcome) -> bool:
+        if not (
+            self.b.pid(self.b.active) == CINDERACE
+            and self.b.cinderace_can_accelerate()
+            and self.b.has_bench_energy_receiver()
+            and "role_handoff" in outcome.reasons
+        ):
+            return False
+        current = self.best_current_attack_outcome()
+        if current is not None and current.wins_game:
+            return False
+        if outcome.reachable_wins_game:
+            return True
+        current_prizes = current.prizes_taken if current is not None else 0
+        if outcome.reachable_prizes_taken > current_prizes:
+            return True
+        current_knockout = bool(current and current.knockout)
+        if outcome.reachable_knockout and not current_knockout:
+            return True
+        return bool(
+            not current_knockout
+            and not outcome.reachable_knockout
+            and outcome.reachable_attack_id is not None
+            and outcome.improves_damage
+        )
+
+    def cinderace_handoff_pressure_score(
+        self,
+        outcome: ImmediateOutcome,
+        legacy_score: float,
+    ) -> Optional[ActionScore]:
+        if not self.cinderace_handoff_improves_current_turn(outcome):
+            return None
+        risk = outcome.retreat_energy_cost * 18000 + outcome.important_energy_loss * 70000
+        if outcome.reachable_wins_game:
+            return ActionScore(
+                TIER_WIN,
+                immediate=outcome.reachable_prizes_taken,
+                pressure=outcome.reachable_damage,
+                risk=risk,
+                legacy=legacy_score,
+            )
+        if outcome.reachable_knockout:
+            return ActionScore(
+                TIER_KO,
+                immediate=outcome.reachable_prizes_taken,
+                pressure=outcome.reachable_damage,
+                risk=risk,
+                legacy=legacy_score,
+            )
+        return ActionScore(
+            TIER_NON_KO_ATTACK,
+            pressure=self.reachable_attack_pressure_value(outcome),
+            resource=max(0, min(legacy_score, 200000)),
+            risk=risk,
+            legacy=legacy_score,
+        )
 
     def expected_search_chain_is_high_value(self, outcome: ImmediateOutcome) -> bool:
         if outcome.expected_hit_probability < 0.25:
@@ -2685,6 +3752,14 @@ class Policy:
 
     def attack_pressure_value(self, option: Any, outcome: ImmediateOutcome) -> float:
         attack = self.b.attack(option.attackId)
+        return self.attack_pressure_value_for_attack(attack, outcome, self.can_continue_same_attack(attack))
+
+    def attack_pressure_value_for_attack(
+        self,
+        attack: Any,
+        outcome: ImmediateOutcome,
+        can_continue_attack: bool,
+    ) -> float:
         target = self.b.opp_active
         if attack is None or target is None or outcome.damage <= 0:
             return 0
@@ -2693,9 +3768,9 @@ class Policy:
         active_pressure += (outcome.damage / active_hp) * 45000
         if active_hp - outcome.damage <= 100:
             active_pressure += 18000
-        if self.can_continue_same_attack(attack) and outcome.damage * 2 >= active_hp:
+        if can_continue_attack and outcome.damage * 2 >= active_hp:
             active_pressure += (25000 + self.b.prize_value(target) * 8000) * NEXT_TURN_PRESSURE_DISCOUNT
-        bench_pressure = self.bench_attack_pressure_value(attack)
+        bench_pressure = self.bench_attack_pressure_value(attack, can_continue_attack)
         return active_pressure + bench_pressure
 
     def can_continue_same_attack(self, attack: Any) -> bool:
@@ -2705,10 +3780,12 @@ class Policy:
     def attack_bench_damage_amount(self, attack: Any) -> int:
         return attack_bench_damage_amount(attack)
 
-    def bench_attack_pressure_value(self, attack: Any) -> float:
+    def bench_attack_pressure_value(self, attack: Any, can_continue_attack: Optional[bool] = None) -> float:
         bench_damage = self.attack_bench_damage_amount(attack)
         if bench_damage <= 0:
             return 0
+        if can_continue_attack is None:
+            can_continue_attack = self.can_continue_same_attack(attack)
         best = 0.0
         for target in self.b.opp_bench:
             target_id = self.b.pid(target)
@@ -2727,11 +3804,70 @@ class Policy:
             value += (bench_damage / target_hp) * (45000 if important else 8000)
             if bench_damage >= target_hp:
                 value += 60000 + self.b.prize_value(target) * 12000
-            if self.can_continue_same_attack(attack) and bench_damage * 2 >= target_hp:
+            if can_continue_attack and bench_damage * 2 >= target_hp:
                 value += (50000 + self.b.prize_value(target) * 12000) * NEXT_TURN_PRESSURE_DISCOUNT
             if important:
                 value += 12000
             best = max(best, value)
+        return best
+
+    def active_attach_reachable_pressure_score(
+        self,
+        option: Any,
+        legacy_score: float,
+        outcome: ImmediateOutcome,
+    ) -> Optional[ActionScore]:
+        if option.type != OptionType.ATTACH or self.b.option_target(option) is not self.b.active:
+            return None
+        if not outcome.supported or outcome.reachable_attack_id is None:
+            return None
+        if outcome.reachable_attack_id not in outcome.enabled_attack_ids:
+            return None
+        if outcome.reachable_wins_game or outcome.reachable_knockout or outcome.reachable_prizes_taken > 0:
+            return None
+        reachable_pressure = self.reachable_attack_pressure_value(outcome)
+        current_pressure = self.best_current_non_ko_attack_pressure()
+        if current_pressure is None or reachable_pressure <= current_pressure:
+            return None
+        return ActionScore(
+            TIER_NON_KO_ATTACK,
+            pressure=reachable_pressure,
+            resource=max(0, min(legacy_score, 200000)),
+            legacy=legacy_score,
+        )
+
+    def reachable_attack_pressure_value(self, outcome: ImmediateOutcome) -> float:
+        attack = self.b.attack(outcome.reachable_attack_id)
+        if attack is None:
+            return 0
+        pressure_outcome = ImmediateOutcome(
+            supported=outcome.supported,
+            blocked=outcome.blocked,
+            damage=outcome.reachable_damage,
+            knockout=outcome.reachable_knockout,
+            prizes_taken=outcome.reachable_prizes_taken,
+            wins_game=outcome.reachable_wins_game,
+            target_id=outcome.target_id,
+            target_serial=outcome.target_serial,
+            reasons=outcome.reasons,
+        )
+        return self.attack_pressure_value_for_attack(
+            attack,
+            pressure_outcome,
+            outcome.reachable_can_continue_attack,
+        )
+
+    def best_current_non_ko_attack_pressure(self) -> Optional[float]:
+        best: Optional[float] = None
+        for _, option in self.b.iter_options():
+            attack_id = getattr(option, "attackId", None)
+            if getattr(option, "type", None) != OptionType.ATTACK or attack_id is None:
+                continue
+            outcome = self.outcome.evaluate_attack(option)
+            if not outcome.supported or outcome.blocked or outcome.knockout or outcome.wins_game:
+                return None
+            value = self.attack_pressure_value(option, outcome)
+            best = value if best is None else max(best, value)
         return best
 
     def has_current_non_ko_attack_option(self) -> bool:
@@ -2792,7 +3928,7 @@ class Policy:
             return False
         if option.type == OptionType.PLAY:
             cid = self.b.option_card(option)
-            if cid in {BEFEHL_VON_BOSS, SURFING_BEACH, WALLY_COMPASSION}:
+            if cid in {BEFEHL_VON_BOSS, SURFING_BEACH, WALLY_COMPASSION, SALVATORE}:
                 return False
             return legacy_score >= 50000
         if option.type == OptionType.EVOLVE:
@@ -2946,7 +4082,12 @@ class Policy:
         score = -8000
         if "retreat_no_target" in outcome.reasons:
             return SCORE_FORBIDDEN
-        if self.b.pid(self.b.active) == CINDERACE and self.b.cinderace_can_accelerate() and self.b.has_bench_energy_receiver():
+        if (
+            self.b.pid(self.b.active) == CINDERACE
+            and self.b.cinderace_can_accelerate()
+            and self.b.has_bench_energy_receiver()
+            and not self.cinderace_handoff_improves_current_turn(outcome)
+        ):
             return SCORE_FORBIDDEN
         if outcome.retreat_energy_cost > 0 and not (
             "switch_enables_win" in outcome.reasons
@@ -3087,32 +4228,99 @@ class Policy:
                     return 82000 if facts.key_attack_missing_units <= 1 else 62000
             return 9000
         if cid == TANKER:
-            if BASIC_WATER_ENERGY in self.b.discard_ids and self.b.starmie_needs_energy():
-                return 74000
-            if HITODEMAN in self.b.discard_ids and self.b.count_in_play(HITODEMAN) == 0:
-                return 68000
-            return 8000
+            return self.night_stretcher_policy_value(
+                self.recommended_night_stretcher_candidate()
+            )
         if cid == WALLY_COMPASSION:
-            return 88000 if self.b.wally_live() else -16000
+            outcome = self.outcome.evaluate_wally_play(option)
+            if outcome.supported and (
+                self.b.wally_live()
+                or self.wally_preservation_is_high_value(outcome)
+            ):
+                return self.wally_effect_legacy_value(outcome)
+            return -16000
         if cid == BEFEHL_VON_BOSS:
             return self.score_boss()
         if cid == SURFING_BEACH:
-            if self.b.has_foreign_stadium():
-                return 42000
-            if self.b.active_in_danger() and self.b.active is not None and self.b.pid(self.b.active) in WATER_POKEMON:
-                return 28000
-            return 4000
+            return self.score_surfing_beach_play(option)
         if cid == HERO_CAPE:
-            return 54000 if any(self.b.pid(p) in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX} and not p.tools for p in self.b.all_my_pokemon) else -12000
+            return max(
+                (self.score_hero_cape_target(target) for target in self.b.all_my_pokemon),
+                default=SCORE_FORBIDDEN,
+            )
         if cid == TOOL_SCRAPPER:
             return self.score_tool_scrapper_outcome(self.outcome.evaluate_tool_scrapper_play(option))
         if cid == ENERGY_SWITCH:
+            outcome = self.outcome.evaluate_energy_switch_play(option)
+            if (
+                outcome.additional_card_consumed
+                and not outcome.reachable_wins_game
+                and not outcome.reachable_knockout
+                and outcome.reachable_attack_id is None
+            ):
+                return -1000 if outcome.equivalent_normal_attach_available else 3000
             return 36000 if self.b.starmie_needs_energy() else 3000
         if self.b.is_pokemon(cid):
             return self.score_pokemon_play(cid)
         if cid in self.b.plan_setup_cards():
             return 15000
         return 0
+
+    def score_hero_cape_target(self, target: Optional[Pokemon]) -> float:
+        roi = self.b.hero_cape_target_roi(target)
+        if roi == "invalid":
+            return SCORE_FORBIDDEN
+        if roi == "prevents_active_knockout":
+            return 90000 + self.b.prize_value(target) * 20000 + self.b.energy_count(target) * 10000
+        if roi == "extends_active_survival":
+            return 28000 + self.b.prize_value(target) * 4000 + min(2, self.b.energy_count(target)) * 3000
+        if roi == "invested_without_clear_survival":
+            return -4000
+        return -12000
+
+    def best_surfing_beach_play_outcome(self, option: Any) -> Optional[ImmediateOutcome]:
+        outcome = self.outcome.evaluate_surfing_beach_ability(
+            option,
+            after_stadium_play=True,
+        )
+        if not outcome.supported:
+            return None
+        return outcome
+
+    def score_surfing_beach_play(self, option: Any) -> float:
+        stadium = getattr(getattr(self.b, "state", None), "stadium", None) or ()
+        current = stadium[0] if stadium else None
+        if current is not None and card_id(current) == SURFING_BEACH:
+            return -12000
+
+        outcome = self.best_surfing_beach_play_outcome(option)
+        scores = []
+        immediate_switch_value = bool(
+            outcome
+            and (
+                "retreat_enables_attack" in outcome.reasons
+                or "retreat_improves_damage" in outcome.reasons
+                or (
+                    self.b.public_lethal_next_turn()
+                    and "survival_retreat" in outcome.reasons
+                )
+            )
+        )
+        if immediate_switch_value:
+            if outcome is not None and outcome.reachable_wins_game:
+                scores.append(52000)
+            elif outcome is not None and outcome.reachable_knockout:
+                scores.append(48000)
+            else:
+                scores.append(36000)
+
+        if current is not None:
+            owner = getattr(current, "playerIndex", None)
+            my_index = getattr(self.b, "my_index", getattr(self.b.state, "yourIndex", None))
+            if owner is not None and my_index is not None and int(owner) != int(my_index):
+                scores.append(42000)
+
+        return max(scores, default=-12000)
 
     def score_boss(self) -> float:
         if not self.b.opp_bench:
@@ -3183,9 +4391,7 @@ class Policy:
             return SCORE_FORBIDDEN
         target_id = self.b.pid(target)
         if cid == HERO_CAPE:
-            if target_id in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX} and not target.tools:
-                return 90000 + damage_on(target) * 400
-            return SCORE_FORBIDDEN
+            return self.score_hero_cape_target(target)
         attach_outcome = self.outcome.evaluate_attach(option)
         if cid in {BASIC_WATER_ENERGY, BASIC_DARK_ENERGY, IGNITION_ENERGY} and not attach_outcome.supported:
             return SCORE_FORBIDDEN
@@ -3384,20 +4590,12 @@ class Policy:
         if target is self.b.active:
             if same_line_has_more_energy:
                 return score
-            player = getattr(self.b, "me", None)
-            if getattr(player, "asleep", False) or getattr(player, "paralyzed", False):
-                return score
-            tokens = self.b.energy_tokens(target)
-            usable_attacks = []
-            for attack_id in getattr(evo_data, "attacks", ()):
-                attack = self.b.attack(attack_id)
-                if attack is None or not can_pay_attack_with_tokens(attack, tokens):
-                    continue
-                if self.b.opp_active is not None and self.b.pid(self.b.opp_active) in EX_ATTACK_WALLS:
-                    if attack.attackId != NEBULA_BEAM:
-                        continue
-                usable_attacks.append(attack.attackId)
-            if not usable_attacks:
+            usable_facts = tuple(
+                fact
+                for fact in self.b.active_evolution_attack_facts(option)
+                if fact.supported and not fact.blocked
+            )
+            if not usable_facts:
                 return score
             hp_gain_score = min(160000, max(0, evo_hp - before_hp) * 600)
             score += hp_gain_score
@@ -3405,7 +4603,7 @@ class Policy:
             score += 140000
             score += energy_count * 60000
             score += 260000
-            if any(attack_id in usable_attacks for attack_id in {NEBULA_BEAM, ABSOLUTE_SNOW}):
+            if any(fact.attack_id in {NEBULA_BEAM, ABSOLUTE_SNOW} for fact in usable_facts):
                 score += 70000
             return score
 
@@ -3539,15 +4737,12 @@ class Policy:
         if effect == POKEGEAR:
             return self.score_pokegear_candidate(cid)
         if effect == TANKER:
-            if cid == BASIC_WATER_ENERGY and self.b.starmie_needs_energy():
-                return 140000
-            if cid == HITODEMAN and self.b.count_in_play(HITODEMAN) == 0:
-                return 120000
-            if cid == MEGA_STARMIE_EX and self.b.count_in_play(HITODEMAN):
-                return 110000
-            if self.b.is_pokemon(cid) or self.b.is_energy(cid):
-                return 1000
-            return SCORE_FORBIDDEN
+            candidate = self.night_stretcher_candidate_for_option(option)
+            return (
+                self.night_stretcher_policy_value(candidate)
+                if candidate is not None
+                else SCORE_FORBIDDEN
+            )
         if effect == HILDA:
             if cid == MEGA_STARMIE_EX:
                 return 150000
@@ -3644,9 +4839,10 @@ class Policy:
                     score -= 90000
                 return score
             if effect == WALLY_COMPASSION:
-                return damage_on(target) * 1000 if self.b.pid(target) in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX} else SCORE_FORBIDDEN
+                outcome = self.outcome.evaluate_wally_target(target)
+                return self.wally_effect_legacy_value(outcome) if outcome.supported else SCORE_FORBIDDEN
             if effect == HERO_CAPE:
-                return 100000 if self.b.pid(target) in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX} and not target.tools else SCORE_FORBIDDEN
+                return self.score_hero_cape_target(target)
             if effect == TOOL_SCRAPPER:
                 return self.score_tool_scrapper_outcome(self.outcome.evaluate_tool_scrapper_target(target, option.toolIndex))
             if effect == BEFEHL_VON_BOSS:
@@ -3695,7 +4891,12 @@ class Policy:
             return SCORE_FORCED // 2 + 180000
         if outcome.target_id == SHAYMIN and self.b.needs_shaymin_bench_guard() and "survival_retreat" not in outcome.reasons:
             return SCORE_FORBIDDEN
-        if self.b.pid(self.b.active) == CINDERACE and self.b.cinderace_can_accelerate() and self.b.has_bench_energy_receiver():
+        if (
+            self.b.pid(self.b.active) == CINDERACE
+            and self.b.cinderace_can_accelerate()
+            and self.b.has_bench_energy_receiver()
+            and not self.cinderace_handoff_improves_current_turn(outcome)
+        ):
             return SCORE_FORBIDDEN
         if "zero_energy_mega_wall" in outcome.reasons and "survival_retreat" not in outcome.reasons:
             return SCORE_FORBIDDEN
@@ -3754,9 +4955,17 @@ class Policy:
         target = self.b.option_target(option)
         if target is None or target not in self.b.all_my_pokemon:
             return SCORE_FORBIDDEN
+        if self.effect_id() == WALLY_COMPASSION:
+            outcome = self.outcome.evaluate_wally_target(target)
+            return self.wally_effect_legacy_value(outcome) if outcome.supported else SCORE_FORBIDDEN
         if self.b.pid(target) in {MEGA_STARMIE_EX, MEGA_YUKIMENOKO_EX}:
             return damage_on(target) * 1000 + self.b.energy_count(target) * 20000
         return damage_on(target) * 100
+
+    def wally_effect_legacy_value(self, outcome: ImmediateOutcome) -> float:
+        if not outcome.supported:
+            return 0
+        return outcome.healed_damage * 1000 + outcome.recovered_energy_count * 20000
 
     def score_energy_selection(self, option: Any) -> float:
         cid = self.b.option_card(option)
@@ -3894,7 +5103,8 @@ class GameSimulator:
             self.evaluate_candidate(index, option)
             for index, option in self.b.iter_options()
         ]
-        return sorted(results, key=self._result_key, reverse=True)
+        end_result = next((result for result in results if result.option.type == OptionType.END), None)
+        return sorted(results, key=lambda result: self._rank_result_key(result, end_result), reverse=True)
 
     def evaluate_candidate(self, index: int, option: Any) -> SimulationResult:
         score = self.policy.score(index, option)
@@ -3915,24 +5125,34 @@ class GameSimulator:
     def _outcome_for(self, option: Any) -> ImmediateOutcome:
         if option.type == OptionType.ATTACK or option.attackId is not None:
             return self.outcome.evaluate_attack(option)
+        if option.type == OptionType.ABILITY and self.outcome.is_surfing_beach_ability(option):
+            return self.outcome.evaluate_surfing_beach_ability(option)
         if option.type == OptionType.ATTACH:
             return self.outcome.evaluate_attach(option)
         if option.type == OptionType.RETREAT:
             return self.outcome.evaluate_retreat(option)
+        if option.type == OptionType.EVOLVE:
+            return self.outcome.evaluate_active_evolution(option)
         if option.type == OptionType.PLAY and self.b.option_card(option) == ENERGY_SWITCH:
             return self.outcome.evaluate_energy_switch_play(option)
         if option.type == OptionType.PLAY and self.b.option_card(option) == TOOL_SCRAPPER:
             return self.outcome.evaluate_tool_scrapper_play(option)
         if option.type == OptionType.PLAY and self.b.option_card(option) == SALVATORE:
             return self.outcome.evaluate_salvatore_play(option)
+        if option.type == OptionType.PLAY and self.b.option_card(option) == WALLY_COMPASSION:
+            return self.outcome.evaluate_wally_play(option)
         if option.type == OptionType.PLAY and self.b.option_card(option) == POKEGEAR:
             return self.outcome.evaluate_pokegear_play(option)
+        if option.type == OptionType.PLAY and self.b.option_card(option) == BEFEHL_VON_BOSS:
+            return self.outcome.evaluate_boss_play(option)
 
         target = self.b.option_target(option)
         if target is not None:
             effect = self.policy.effect_id()
             if effect == SALVATORE:
                 return self.outcome.evaluate_salvatore_target(target)
+            if effect == WALLY_COMPASSION:
+                return self.outcome.evaluate_wally_target(target)
             if effect == TOOL_SCRAPPER:
                 return self.outcome.evaluate_tool_scrapper_target(target, option.toolIndex)
             if effect == BEFEHL_VON_BOSS:
@@ -3970,6 +5190,89 @@ class GameSimulator:
         if score <= SCORE_LAST_RESORT:
             return TIER_BLOCKED_OR_BAD_ACTION
         return TIER_LOW_VALUE_ACTION
+
+    def _rank_result_key(self, result: SimulationResult, end_result: Optional[SimulationResult]) -> Tuple[Any, ...]:
+        if self._retreat_supported_only_loses_to_end(result, end_result):
+            outcome = result.outcome
+            action = result.action_score
+            return (
+                action.tier,
+                action.immediate,
+                action.pressure,
+                action.development,
+                action.resource,
+                -action.risk,
+                False,
+                outcome.wins_game,
+                outcome.knockout,
+                outcome.prizes_taken,
+                not outcome.blocked,
+                outcome.enables_knockout,
+                outcome.enables_attack,
+                outcome.improves_damage,
+                outcome.damage,
+                -outcome.important_energy_loss,
+                -outcome.retreat_energy_cost,
+                action.legacy,
+                -result.index,
+            )
+        return self._result_key(result)
+
+    def _retreat_supported_only_loses_to_end(
+        self,
+        result: SimulationResult,
+        end_result: Optional[SimulationResult],
+    ) -> bool:
+        if end_result is None or result.option.type != OptionType.RETREAT:
+            return False
+        action = result.action_score
+        end_action = end_result.action_score
+        if (
+            action.tier,
+            action.immediate,
+            action.pressure,
+            action.development,
+            action.resource,
+            -action.risk,
+        ) != (
+            end_action.tier,
+            end_action.immediate,
+            end_action.pressure,
+            end_action.development,
+            end_action.resource,
+            -end_action.risk,
+        ):
+            return False
+        if result.policy_score >= end_result.policy_score:
+            return False
+        return not self._retreat_has_clear_immediate_benefit(result.outcome)
+
+    def _retreat_has_clear_immediate_benefit(self, outcome: ImmediateOutcome) -> bool:
+        if (
+            outcome.reachable_wins_game
+            or outcome.reachable_knockout
+            or outcome.reachable_prizes_taken > 0
+            or outcome.reachable_attack_id is not None
+            or outcome.enables_knockout
+            or outcome.enables_attack
+            or outcome.improves_damage
+            or outcome.damage > 0
+            or outcome.wins_game
+            or outcome.knockout
+            or outcome.prizes_taken > 0
+        ):
+            return True
+        benefit_reasons = {
+            "status_clear",
+            "retreat_clears_status",
+            "retreat_enables_attack",
+            "retreat_improves_damage",
+            "switch_enables_knockout",
+            "switch_enables_win",
+            "bypasses_ex_wall",
+            "avoids_wall",
+        }
+        return any(reason in benefit_reasons for reason in outcome.reasons)
 
     def _result_key(self, result: SimulationResult) -> Tuple[Any, ...]:
         outcome = result.outcome
