@@ -12,6 +12,8 @@
 > ④到着レートを訂正後の**打ち切り機構**へ差し替え(台帳#28) ⑤図参照を5点に(Fig.1-5)
 > ⑥誤り2件を訂正(前向き検証n=3→4 / 「較正の法則がn=4」は族内バイアス法則n=3との混同)。
 > **語数=1,909語**(空白区切り。上限2,000に対し余裕91語)。
+> **v4の変更(2026-07-30)**: §4のキーカード段落を訂正 — 実測では210打点は攻撃の24%・打点の29%で、
+> 主役は同じポケモンの1エネ攻撃(120+ベンチ50)だった(data.md「Alakazam対面の記述解析」)。
 
 ---
 
@@ -131,14 +133,13 @@ Our list is a Mega Starmie ex aggro build whose defining property is what we rem
 removal forced by measurement rather than theory.
 
 **Human orthodoxy did not transfer, three times.** (1) The Dusknoir engine — six slots that
-cannot attack — is standard in human lists; the version without it beat the version with it
-**64.7% head-to-head (N=150, CI 57–72)** [#4]. (2) Cinderace energy acceleration, present in
-winning human lists, fired **0.12 times per game** in our hands and moved nothing [#8].
-(3) We increased Basic count to reduce mulligans from 60.1% to 25.9% and the agent got
-*monotonically worse* (composite 34.5 / 33.0 / 31.2 for 4 / 8 / 10 Basics) — replay analysis
-showed the engine implements no mulligan penalty at all [#9]. The lesson generalises: a card's
-value is a property of the deck **and the pilot together**, and a list validated by human play
-is validated on a different pilot.
+cannot attack — is standard in human lists; the version without it won **64.7% head-to-head
+(N=150, CI 57–72)** [#4]. (2) Cinderace energy acceleration, present in winning human lists,
+fired **0.12 times per game** and moved nothing [#8]. (3) Raising Basic count cut mulligans from
+60.1% to 25.9% and made the agent *monotonically worse* (34.5 / 33.0 / 31.2 for 4 / 8 / 10
+Basics) — the engine implements no mulligan penalty at all [#9]. A card's value is a property of
+the deck **and the pilot together**; a list validated by human play was validated on a different
+pilot.
 
 Three further interventions each died at a different stage, which is why we present them
 together. Swapping our ACE SPEC for Maximum Belt is mechanically real — we logged the +50
@@ -149,9 +150,11 @@ occur in play and still netted **−0.01pt (CI [−2.28, +2.26])** [#24]. A thir
 same resource [#25]. Mechanism true, occurrence zero; occurrence real, effect zero; effect real,
 legitimacy absent.
 
-What survived is built around one enabling card: Ignition Energy is the fastest route to the
-210-damage attack, and it became a key card only once the targeting rule of §2 taught the pilot
-to aim it — in this format a card is "key" only relative to the pilot holding it.
+Replay analysis then corrected our own account of the list. We had described it as a deck built
+to reach a 210-damage attack; across 55 ladder games that attack is **24% of our attacks and 29%
+of our damage**. The workhorse is the same Pokémon's one-energy attack — 120, plus 50 to a bench
+target — and the big one is a finisher. A deck's plan on paper and its plan in play are different
+objects, and only the replays told us which one we had.
 
 ### 5. Results
 
