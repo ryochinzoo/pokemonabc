@@ -268,9 +268,146 @@ def fig_calibration_gap():
     open(f"{OUT}/fig_calibration_gap.svg", "w").write("\n".join(s))
 
 
+# ---------------------------------------------------------------------------
+# 図5: 探索・上書き層のON/OFF対照実験 (台帳#26 / data.md E4-rev1 2026-07-25, D52)
+#      CEW-lite(Lucario+Archaludon 再正規化57.14:42.86)、各腕N=3,200、全6,400戦CRASH=0
+# 図6: 提出の打ち切り機構 (台帳#28 / data.md「★★到着レートの機構を訂正」, D57)
+#      各提出の「最終対戦」と「latest-2から押し出される時刻」。10/10が押出の0-3h前に停止
+# 配色: dataviz skill の検証済みカテゴリカル slot1/slot2。
+#   light #2a78d6 / #eb6834、dark #3987e5 / #d95926 — validate_palette.js 全項目PASS
+#   (light: CVD ΔE 24.7 / normal 33.6、dark: 26.8 / 31.8、いずれも contrast >=3:1)
+# ---------------------------------------------------------------------------
+
+# SVG内に埋める配色定義(ライト/ダーク両対応。閲覧側のテーマで切替わる)
+_THEME_CSS = """<style>
+  .s1{fill:#2a78d6} .s1s{stroke:#2a78d6} .s2{fill:#eb6834} .s2s{stroke:#eb6834}
+  .ink{fill:#0b0b0b} .ink2{fill:#52514e} .grid{stroke:#dcdcd8} .axis{stroke:#b8b8b2}
+  .surf{fill:#fcfcfb} .surfs{stroke:#fcfcfb}
+  @media (prefers-color-scheme: dark){
+    .s1{fill:#3987e5} .s1s{stroke:#3987e5} .s2{fill:#d95926} .s2s{stroke:#d95926}
+    .ink{fill:#ffffff} .ink2{fill:#c3c2b7} .grid{stroke:#33332f} .axis{stroke:#55554f}
+    .surf{fill:#1a1a19} .surfs{stroke:#1a1a19}
+  }
+</style>"""
+
+
+def fig_search_ablation():
+    """単一系列(同一指標の2条件)なので凡例なし・直接ラベル。見出しは差分。"""
+    ARMS = [("search + override layer ON", 38.72), ("layer OFF (V2_NO_SEARCH=1)", 25.09)]
+    DELTA, CI = 13.62, (11.40, 15.84)
+    w, h = 660, 336
+    lx, rx, ty = 250, 610, 78          # 左ラベル幅 / 右端 / プロット上端
+    bar_h, gap = 24, 30                # bar は 24px cap(marks-and-anatomy)
+    xmax = 45.0
+    def X(v): return lx + (rx - lx) * v / xmax
+    s = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" '
+         f'font-family="Helvetica,Arial" font-size="12">', _THEME_CSS,
+         f'<rect width="{w}" height="{h}" class="surf"/>']
+    s.append(f'<text x="24" y="30" font-size="15" font-weight="bold" class="ink">'
+             f'The search layer is worth +13.62pt on the calibrated instrument</text>')
+    s.append(f'<text x="24" y="50" font-size="11" class="ink2">'
+             f'Control experiment, N=3,200 per arm (6,400 games, CRASH=0). '
+             f'Metric: calibrated out-of-family composite (CEW-lite).</text>')
+    # 縦グリッド
+    for gv in range(0, int(xmax) + 1, 10):
+        s.append(f'<line x1="{X(gv)}" y1="{ty - 6}" x2="{X(gv)}" y2="{ty + 2 * (bar_h + gap)}" '
+                 f'class="grid" stroke-width="1"/>')
+        s.append(f'<text x="{X(gv)}" y="{ty + 2 * (bar_h + gap) + 16}" text-anchor="middle" '
+                 f'font-size="10" class="ink2">{gv}%</text>')
+    for i, (name, v) in enumerate(ARMS):
+        y = ty + i * (bar_h + gap)
+        cls = "s1" if i == 0 else "s2"
+        s.append(f'<text x="{lx - 12}" y="{y + bar_h / 2 + 4}" text-anchor="end" '
+                 f'class="ink">{name}</text>')
+        # 4px rounded data-end / square at baseline: 右端だけ丸める
+        bw = X(v) - lx
+        s.append(f'<path d="M{lx},{y} H{lx + bw - 4} a4,4 0 0 1 4,4 V{y + bar_h - 4} '
+                 f'a4,4 0 0 1 -4,4 H{lx} Z" class="{cls}"/>')
+        s.append(f'<text x="{X(v) + 8}" y="{y + bar_h / 2 + 4}" class="ink" '
+                 f'font-weight="bold">{v:.2f}%</text>')
+    # 差分ブラケット + CI
+    by = ty + 2 * (bar_h + gap) + 64   # 軸ラベル(+16)から48px下げて衝突を回避
+    s.append(f'<line x1="{X(ARMS[1][1])}" y1="{by}" x2="{X(ARMS[0][1])}" y2="{by}" '
+             f'class="axis" stroke-width="2"/>')
+    for v in (ARMS[0][1], ARMS[1][1]):
+        s.append(f'<line x1="{X(v)}" y1="{by - 5}" x2="{X(v)}" y2="{by + 5}" '
+                 f'class="axis" stroke-width="2"/>')
+    s.append(f'<text x="{(X(ARMS[0][1]) + X(ARMS[1][1])) / 2}" y="{by - 14}" '
+             f'text-anchor="middle" font-size="13" font-weight="bold" class="ink">'
+             f'+{DELTA:.2f}pt</text>')
+    s.append(f'<text x="{(X(ARMS[0][1]) + X(ARMS[1][1])) / 2}" y="{by + 22}" '
+             f'text-anchor="middle" font-size="11" class="ink2">'
+             f'95% CI [+{CI[0]:.2f}, +{CI[1]:.2f}] &#183; 12.0&#963;</text>')
+    s.append(f'<text x="24" y="{h - 12}" font-size="10" class="ink2">'
+             f'Until month seven this component had never been ablated: its only evidence was '
+             f'one in-family run of N=200. Ledger #26.</text>')
+    s.append("</svg>")
+    open(f"{OUT}/fig_search_ablation.svg", "w").write("\n".join(s))
+
+
+def fig_eviction():
+    """2系列なので凡例あり + 直接ラベル(dumbbell)。順序は提出時刻。"""
+    # (ref, 提出日, 最終対戦h, 押出h, gap)  data.md「★★到着レートの機構を訂正」
+    # gap は ListEpisodes の生値から算出した実測差(表の丸め値の減算ではない)
+    ROWS = [
+        ("54832323", "07-19", 58.7, 59.5, 0.7), ("54858780", "07-20", 43.5, 45.6, 2.1),
+        ("54890989", "07-22", 31.1, 31.8, 0.7), ("54905566", "07-22", 36.0, 38.9, 3.0),
+        ("54924233", "07-23", 35.3, 37.8, 2.5), ("54943911", "07-24", 55.0, 57.6, 2.6),
+        ("54961048", "07-24", 62.5, 64.2, 1.7), ("55004671", "07-26", 47.9, 47.9, 0.0),
+        ("55032182", "07-27", 25.4, 25.6, 0.1), ("55058443", "07-28", 11.9, 11.9, 0.0),
+    ]
+    w = 700
+    lx, rx, ty, row_h = 150, 640, 96, 26
+    h = ty + len(ROWS) * row_h + 74
+    xmax = 70.0
+    def X(v): return lx + (rx - lx) * v / xmax
+    s = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" '
+         f'font-family="Helvetica,Arial" font-size="12">', _THEME_CSS,
+         f'<rect width="{w}" height="{h}" class="surf"/>']
+    s.append(f'<text x="24" y="30" font-size="15" font-weight="bold" class="ink">'
+             f'Submissions do not decay &#8212; they are evicted</text>')
+    s.append(f'<text x="24" y="50" font-size="11" class="ink2">'
+             f'Only a team\'s latest 2 submissions play ladder games. All 10 stopped within '
+             f'0&#8211;3h BEFORE being pushed out of that window,</text>')
+    s.append(f'<text x="24" y="66" font-size="11" class="ink2">'
+             f'even though their lifetimes span 11.9h to 62.5h. What looked like a decay curve '
+             f'was our own submission cadence.</text>')
+    for gv in range(0, int(xmax) + 1, 10):
+        s.append(f'<line x1="{X(gv)}" y1="{ty - 8}" x2="{X(gv)}" y2="{ty + len(ROWS) * row_h - 8}" '
+                 f'class="grid" stroke-width="1"/>')
+        s.append(f'<text x="{X(gv)}" y="{ty + len(ROWS) * row_h + 8}" text-anchor="middle" '
+                 f'font-size="10" class="ink2">{gv}h</text>')
+    for i, (ref, day, last, ev, gapv) in enumerate(ROWS):
+        y = ty + i * row_h
+        s.append(f'<text x="{lx - 12}" y="{y + 4}" text-anchor="end" font-size="11" '
+                 f'class="ink">{ref}</text>')
+        s.append(f'<text x="{lx - 12}" y="{y + 16}" text-anchor="end" font-size="9" '
+                 f'class="ink2">{day}</text>')
+        s.append(f'<line x1="{X(min(last, ev))}" y1="{y}" x2="{X(max(last, ev))}" y2="{y}" '
+                 f'class="axis" stroke-width="2" stroke-linecap="round"/>')
+        # 押出(orange, r6.5)を下、最終対戦(blue, r4)を上に重ねる。
+        # gap≈0 の行でも「オレンジの環に青の芯」として両方見える(gap 0.0 は最強の証拠なので消さない)
+        s.append(f'<circle cx="{X(ev)}" cy="{y}" r="6.5" class="s2 surfs" stroke-width="2"/>')
+        s.append(f'<circle cx="{X(last)}" cy="{y}" r="4" class="s1"/>')
+        s.append(f'<text x="{X(max(last, ev)) + 14}" y="{y + 4}" font-size="10" class="ink2">'
+                 f'gap {gapv:.1f}h</text>')
+    ly = h - 22
+    s.append(f'<circle cx="30" cy="{ly - 4}" r="4" class="s1"/>')
+    s.append(f'<text x="42" y="{ly}" font-size="11" class="ink2">last ladder game</text>')
+    s.append(f'<circle cx="185" cy="{ly - 4}" r="6.5" class="s2"/>')
+    s.append(f'<text x="197" y="{ly}" font-size="11" class="ink2">'
+             f'evicted from the latest-2 window</text>')
+    s.append(f'<text x="{rx - 10}" y="{ly}" text-anchor="end" font-size="10" class="ink2">'
+             f'Ledger #28 &#183; hours since submission</text>')
+    s.append("</svg>")
+    open(f"{OUT}/fig_eviction.svg", "w").write("\n".join(s))
+
+
 if __name__ == "__main__":
     fig_deck_matrix()   # 注意: 族内測定の数値(D30-B1)。単体では使わず較正の物語の対比のみ
     fig_rating_timeline()
     fig_prospective()
     fig_calibration_gap()
-    print("wrote 4 figures to", OUT)
+    fig_search_ablation()
+    fig_eviction()
+    print("wrote 6 figures to", OUT)
