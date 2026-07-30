@@ -37,8 +37,8 @@ methodology: **human deck-building orthodoxy does not survive contact with an AI
 times a combo that is standard in human play proved to be dead weight, and each time only the
 calibrated instrument could show it. Those two threads are this report's two backbones.
 
-Throughout, we treat the leaderboard score as evidence about the world, not as the verdict:
-the same agent varies by **±150–400 rating points** across resubmissions [#20].
+We treat the leaderboard score as evidence, not as the verdict: the same agent varies by
+**±150–400 rating points** across resubmissions [#20].
 
 ### 2. Pilot Design
 
@@ -79,7 +79,8 @@ This is the part of the project we would defend hardest, and it has two halves.
 **Half one: the instrument.** Measuring the same deck piloted by different agents showed the
 in-family error is not random — it scales with the skill gap between the real pilot and ours:
 **+62pt** against a strong public agent, **+41pt** against the host's sample agent, **+8pt**
-against a teammate's (N=300 each) [#1]. That had a concrete consequence: the host's public
+against a teammate's (N=300 each) [#1] — upper bounds: the in-family arm ran with a
+mis-configured opponent, and repairing it moved the largest cell by 0.00pt (95% CI ±6.4). That had a concrete consequence: the host's public
 sample Lucario agent is **not a proxy for our ladder opponents — it is one of them.** Its deck
 matches the list we actually face **60 cards out of 60**, and our win rate against it (44.0%,
 N=300) is consistent with the ladder's (50%, N=14, CI 26–74) [#2, Fig. 1]. We rebuilt the
@@ -114,18 +115,18 @@ threshold is only about 1.09σ**, admitting a 6.5–14% false-adoption rate per 
 Reallocating the same games by Neyman allocation cut the standard error from 1.03 to 0.82pt for
 free, and confidence intervals became mandatory.
 
-The third instalment is the least flattering. A screening gate we wrote for our final
-experiment — *stop if the control cell's misidentification rate rises* — fires **44% of the time
-when the true difference is zero** [#29]: at N=50 per arm, comparing point estimates is a coin
-toss. We found this only after the gate had killed that experiment, then argued from it that the
-kill should be reopened. The review of that argument demanded a log we had not kept; producing it
-disconfirmed our own case and the kill stood. **We had rebuilt, inside a rule we wrote ourselves,
-the defect we had removed two months earlier.**
+The third instalment is the least flattering. A screening gate we wrote for our last experiment
+— *stop if the control cell's misidentification rate rises* — fires **44% of the time when the
+true difference is zero** [#29]: at N=50 per arm, comparing point estimates is a coin toss. We
+found this only after the gate had killed that experiment, then argued from it that the kill be
+reopened. The review of that argument demanded a log we had not kept; producing it disconfirmed
+our own case and the kill stood. **We had rebuilt, inside a rule we wrote ourselves, the defect
+we removed two months earlier.**
 
 The same scepticism applies to the measurement procedure. Our model of when ladder games arrive
-after a submission was wrong in mechanism: submissions do not decay, they are **evicted** the
-moment they fall out of the team's two most recent — every one of ten stopped within three hours
-*before* that eviction, despite lifetimes ranging from 12 to 62 hours [#28, Fig. 3].
+was wrong in mechanism: submissions do not decay, they are **evicted** when they fall out of the
+team's two most recent — all ten stopped within three hours *before* eviction, despite lifetimes
+of 12 to 62 hours [#28, Fig. 3].
 
 ### 4. Deck Construction
 
@@ -182,11 +183,13 @@ Ten-plus registered experiments produced one adopted pilot change and one adopte
 The last one is the sharpest. The search's model of the opponent's deck had gone stale: against
 our two most frequent opponents it reconstructed the right list **0% of the time**, padding the
 unseen deck with placeholder energy instead. Repairing it worked exactly as designed — 100%
-identification — and we killed it anyway, because a control cell showed the repaired version
-misidentifies decks *outside* its dictionary more often (11%→22% pooled). Proving a component is
-broken does not entitle you to the fix.
+identification — and we killed it anyway: a control cell showed the repaired version
+misidentifies decks *outside* its dictionary more often (11%→22% pooled). Separately, corrupting
+the search's model of *our own* deck changed nothing measurable. Proving a component is broken
+does not entitle you to the fix — and this search's value, whatever produces it, does not come
+from the fidelity of its model.
 
-The most useful item, though, is a reversal. Our largest negative result — rejecting a general
+The most useful item is a reversal. Our largest negative result — rejecting a general
 Monte-Carlo rewrite — did **not** survive re-examination on the calibrated instrument:
 **+2.62pt, 95% CI [−0.68, +5.93]**, so the sign now points toward the version we discarded,
 though the interval contains zero [#12]. We report it as an instrument success, not an
