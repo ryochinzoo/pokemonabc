@@ -3799,3 +3799,137 @@ citerne §5.3 の「~10pt未満のローカル改善は検証不能」の帯の�
 `@robustness-guard` を回す」は、この型の欠陥を捕るための規則として機能した。
 
 **修正後の再ゲート**: import OK / vs random **98.0%** [96.1, 99.0] / CRASH=0 / CONFORMANCE=PASS。
+
+---
+
+## 2026-08-03 デッキ設計空間の確定 — カード2,022枚をエンジンで1枚ずつ判定(層S・計器監査)
+
+**契機**: Strategy側 discussion/712435(Juan Ortega)が「**623 Valid / 644 not valid cards
+against the CABT**」を報告したまま **0コメント=公開範囲で未回答**。デッキ転換(ゆうじ承認 2026-08-03)
+の前提として「そもそも使えるカードの集合」が要る。
+
+**方式**(`verification/card_support_scan.py`。conformance.py の「エンジンによるデッキ検証」と同一経路):
+試験デッキ = Staryu×4 + 基本水エネ×52 + 対象カード×4 / 対照 = Staryu×4 + 基本水エネ×56。
+`battle_start(test, control)` の `errorPlayer` が 0 を指したら対象カードが原因。
+対照が受理される(errorPlayer=-1)ことを先に確認済み。
+
+### 結果: **カードプールは全数使える**
+
+| | 枚数 |
+|---|---|
+| 4枚積んで受理 | **1,993** |
+| 4枚積んで不受理 | **29** |
+| 例外 | 0 |
+| 合計 | 2,022 |
+
+**不受理29枚は全部 ACE SPEC(1デッキ1枚制限)**。**1枚で再試験したところ 29/29 が受理**。
+→ **2,022 / 2,022 = 100% が使用可能**。Juan Ortega の「644 not valid」は再現しない
+(彼の測定は別の要因を見ていた可能性が高い)。
+
+受理の種別内訳: Basic Pokémon 958 / Stage 1 618 / Stage 2 229 / Item 64 / Supporter 61 /
+Stadium 24 / Pokémon Tool 22 / Special Energy 9 / Basic Energy 8。
+**→ デッキ設計空間はエンジン側では一切制約されていない。**
+
+### 副産物: エンジンのデッキ検証規則と errorType の対応(初めて数え上げた)
+
+| 試験 | 結果 | errorType |
+|---|---|---|
+| 同一ID 5枚(非ACE SPEC) | **拒否** | 2 |
+| **同名・別ID で計6枚**(Hippopotas ID22×4 + ID1048×2) | **拒否** | 2 |
+| 同名・別ID で計8枚(4+4) | **拒否** | 2 |
+| 基本エネ56枚 | 受理 | — |
+| 特殊エネ(Ignition)56枚 | **拒否** | 2 |
+| たねポケモン0枚 | **拒否** | 3 |
+| ACE SPEC 同一2枚 | 拒否 | 4 |
+| **ACE SPEC 異種1枚ずつ2種** | **拒否** | 4 |
+| 60枚でない | `cg/game.py` が ValueError(エンジンに到達しない) |
+
+### ★訂正: CLAUDE.md の「エンジンは同名4枚制限を強制しない」は**誤り**
+
+CLAUDE.md「**Deck legality is on us**: the engine does NOT enforce the 4-copies-per-name rule
+(verified: it accepts 6 same-name cards)」→ **反証された**。エンジンは
+**カードID横断で同名4枚制限を正しく検査している**(上表2〜3行目)。
+過去の「6枚通った」観測が何を見ていたかは不明(記録に再現手順が無い)。
+
+**実務上の含意は2つ、方向が逆**:
+1. **悪い方**: 違法デッキは `errorPlayer>=0` → 本番 **INVALID = reward -1** で即敗北。
+   「エンジンが見逃してくれる」前提は持てない
+2. **良い方**: `battle_start` の errorType が**無料の合法性検査器**として使える。
+   conformance.py が既にこれを呼んでいる = **デッキを組み替えても検査経路は既にある**
+
+再現: `cd src/input/datasets/decks/starmie-aggro && python3 ../../../../../verification/card_support_scan.py`
+出力: `verification/data/card_support.json`
+
+## 2026-08-03 帯別メタセンサス — レーティング付きの遭遇分布と対面行列(層S)
+
+**なぜ我々にしか作れないか**: SUMI(Sim discussion/729926、74,634戦、3,057チーム)も
+myso1987 も**公式日次データセット**を使うため rating を持たない(SUMI本人が
+「ratings themselves are not in the replay JSONs」と明記)。我々は `ListEpisodes` API 経由なので
+**全試合に相手の `initialScore` が付く**。Oshbocker(37位、discussion/730497)は
+「600-800はLucario/Abomasnowの群れ、800-1000はArchaludon、top100は別階層」と**質的に**証言しているが、
+**帯別の数字を出した人は公開範囲に存在しない**。
+
+材料: 我々の全譜 + 我々が実際に対戦した**505体**のうち上位12体の全譜(新規取得)
+= **3,333エピソード / 6,666側**(重複排除)。`replay_analysis/band_meta_census.py`。
+
+### 計器の検証(2系統の分類器を相互検証 + 外部との独立再現)
+
+- 分類器A(我々のカード名規則、probe_autopsy.py 由来)と B(SUMI公開のカードID署名)を突合:
+  両方が分類した6,399側で **一致 6,205 / 不一致 194(3.0%)**、どちらも不能 111
+- **grimmsnarl vs alakazam = 57.4%**(我々、distinct 146体 vs 53体)
+  ≒ **SUMI の 57%**(N=3,703、別データ源・別標本・別分類器)= **独立再現**
+
+### 帯別アーキタイプ構成(**我々自身の提出は除外**)
+
+| 帯 | 1位 | 2位 | 3位 | 4位 |
+|---|---|---|---|---|
+| 600-699 (n=197) | lucario 18.8 | alakazam 17.8 | crustle 14.7 | grimmsnarl 10.2 |
+| 700-799 (n=328) | alakazam 19.2 | **archaludon 17.4** | lucario 16.2 | grimmsnarl 12.2 |
+| **800-899 (n=1,514)** | **lucario 30.8** | **alakazam 24.4** | grimmsnarl 15.4 | archaludon 13.4 |
+| 900-999 (n=2,350) | alakazam 29.5 | grimmsnarl 21.7 | crustle 16.5 | lucario 13.2 |
+| 1000-1099 (n=1,150) | grimmsnarl 33.5 | alakazam 32.3 | crustle 21.7 | — |
+
+→ Oshbocker の質的証言は概ね裏が取れた。
+
+### ★我々がどこで壊れるか(初めて数字で特定)
+
+| 自スコア帯 | 我々の勝率 |
+|---|---|
+| 500-599 | 54.3% (N=35) |
+| 600-699 | 51.4% (N=105) |
+| **700-799** | **41.5%** (N=53) |
+| **800-899** | **41.0%** (N=61) |
+| 900-999 | 41.7% (N=12) |
+
+**700を超えた瞬間に 52% → 41%。** 内訳: vs archaludon **16.7%**(700-799)/ **16.7%**(800-899)、
+vs grimmsnarl 30.0%(700-799)、vs lucario **0-4**(800-899)、vs starmieミラー 0-3(700-799)。
+
+**我々のCEW 4ゲージは 800-899帯の約46%しか覆っていない。**
+残り **Alakazam 24.4% + Grimmsnarl 15.4% ≈ 40%** は**計器が一度も測っていない対面**。
+= 詰まっている場所を測る道具を持っていなかった。
+
+### ★★ 測定手法の罠を1件摘出(同じ誤りを同日に2回)
+
+初回集計では **1100+帯で crustle 60.8%** と出た。**サンプリングの偽物**だった:
+
+| 1100+帯 | 側(遭遇)で数える | **distinct 提出数**で数える |
+|---|---|---|
+| crustle | 60.8% (415) | **4** |
+| grimmsnarl | 26.9% (184) | **67** |
+
+少数のCrustleエージェントが大量に試合していただけ。**同日午前に myso1987 で指摘した
+「チーム単位 vs 遭遇単位」の誤りを、自分の解析で再現した。**
+
+対面行列にも同じ検査をかけた(行側の distinct 提出数):
+
+| セル | 勝率 | 行の distinct 提出数 | 判定 |
+|---|---|---|---|
+| grimmsnarl vs alakazam | 57.4% | **146** | 清潔(SUMIと一致) |
+| crustle vs alakazam | 53.0% | 41 | 可 |
+| lucario vs alakazam | 55.4% | **11** | **パイロットの話** |
+| archaludon vs lucario | 68.7% | **5** | **パイロットの話** |
+
+→ **Lucario系のセルは全部5〜11体に乗っている**。「Lucarioが我々に66.7%勝つ」は
+**デッキの主張として使えない**(台帳#11 / D9 の deck×pilot 非分離が同じ形で再来)。
+**対策**: `replay_analysis/ladder_scout.py` で幅を60体に拡張中(生リプレイを保存せず
+先頭3MBだけ読んでデッキを抽出。12体で12GBに達したため)。
