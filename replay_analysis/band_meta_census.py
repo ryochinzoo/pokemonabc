@@ -161,8 +161,22 @@ def decks_of_file(path, _probe=(1 << 21)):
 
 
 def collect():
-    """(episode_id, sideA, sideB) を集める。side = dict(sub, score, deck, reward)"""
+    """(episode_id, sideA, sideB) を集める。side = dict(sub, score, deck, reward)
+
+    一次ソースは `ladder_scout/decks.jsonl`(ladder_scout.py が作る抽出済み台帳)。
+    生リプレイは1本20MB超で保存しない方針に変えたため、そこに無いものだけ
+    ディスク上の生ファイルから拾う。
+    """
     games = {}          # ep_id -> record(重複排除)
+    store = HERE / "ladder_scout/decks.jsonl"
+    if store.exists():
+        for line in store.open():
+            try:
+                r = json.loads(line)
+            except Exception:
+                continue
+            games[r["ep"]] = [dict(sub=s["sub"], score=s["sc"], reward=s["rw"],
+                                   deck=s["d"]) for s in r["s"]]
     # --- 1. ladder_scout(_list.json に submissionId とスコアが入っている) ---
     for listf in sorted((HERE / "ladder_scout").glob("sub*/_list.json")):
         data = json.loads(listf.read_text())
@@ -259,8 +273,12 @@ def main():
             print(f"     {a:<14} {100*c/band_n[bd]:5.1f}%  ({c})")
 
     # ---- 対面行列(帯を跨がない試合のみ = 同帯対戦) ----
+    # **distinct 提出数を必ず併記する**。2026-08-03、これを出さずに
+    # 「1100+帯は crustle 60.8%」と読み違えた(実体は crustle 4チーム vs grimmsnarl 67チーム)。
+    # 少数エージェントに乗ったセルは「デッキの勝率」ではなく「そのパイロットの勝率」
+    # (台帳#11 / D9 の deck×pilot 非分離)。
     print("\n## 対面行列(行が列に勝った率。両者が同一100点帯の試合のみ)")
-    mat = defaultdict(lambda: [0, 0])
+    mat = defaultdict(lambda: [0, 0, set(), set()])
     for sides in games.values():
         a, b = sides
         if a["score"] is None or b["score"] is None:
@@ -270,20 +288,26 @@ def main():
         aa, bb = a["arch"], b["arch"]
         if not aa or not bb or aa == bb:
             continue
-        if a["reward"] == 1:
-            mat[(aa, bb)][0] += 1
-            mat[(bb, aa)][1] += 1
-        elif b["reward"] == 1:
-            mat[(bb, aa)][0] += 1
-            mat[(aa, bb)][1] += 1
+        win = a if a["reward"] == 1 else (b if b["reward"] == 1 else None)
+        if win is None:
+            continue
+        lose = b if win is a else a
+        for key, i in (((win["arch"], lose["arch"]), 0), ((lose["arch"], win["arch"]), 1)):
+            mat[key][i] += 1
+            mat[key][2].add(win["sub"] if i == 0 else lose["sub"])
+            mat[key][3].add(lose["sub"] if i == 0 else win["sub"])
     pairs = sorted(mat.items(), key=lambda kv: -(kv[1][0] + kv[1][1]))
-    print(f"  {'行 vs 列':<30}{'W-L':>9}{'勝率':>8}{'95%CI':>16}")
-    for (x, y), (w, l) in pairs[:22]:
+    print(f"  {'行 vs 列':<30}{'W-L':>9}{'勝率':>8}{'95%CI':>15}"
+          f"{'行の提出数':>10}{'列':>5}  判定")
+    for (x, y), (w, l, sx, sy) in pairs[:26]:
         n = w + l
-        if n < 6:
+        if n < 20:
             continue
         lo, hi = wilson(w, n)
-        print(f"  {x+' vs '+y:<30}{f'{w}-{l}':>9}{100*w/n:7.1f}%  [{lo:5.1f},{hi:5.1f}]")
+        thin = min(len(sx), len(sy))
+        tag = "**少数パイロット**" if thin <= 12 else ("やや薄い" if thin <= 25 else "デッキ級")
+        print(f"  {x+' vs '+y:<30}{f'{w}-{l}':>9}{100*w/n:7.1f}%  [{lo:5.1f},{hi:5.1f}]"
+              f"{len(sx):>9}{len(sy):>5}  {tag}")
 
     # ---- 我々の対面別成績(帯つき) ----
     print("\n## 我々(starmie)の対面別成績 — 帯別")
