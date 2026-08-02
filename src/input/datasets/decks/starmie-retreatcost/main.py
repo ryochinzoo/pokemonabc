@@ -441,17 +441,33 @@ def _choose_main(obs: Observation) -> list[int]:
             ac = cards.get(act.id) if act else None
             retreat_cost = (ac.retreatCost or 0) if ac else 0
             act_dmg = _best_attack_damage_of_card(act.id) if act else 0
+            cands = []
             for pk in state.players[me].bench or []:
                 if pk is None:
                     continue
                 need = _max_attack_cost(pk.id)
                 have = len(pk.energies) if pk.energies else 0
-                dmg = _best_attack_damage_of_card(pk.id)
-                if need > 0 and have >= need and dmg > 0:
-                    if retreat_cost >= 2 and dmg <= act_dmg:
-                        continue  # 2エネ払って弱い攻撃役へ乗り換えない
+                if need > 0 and have >= need and _best_attack_damage_of_card(pk.id) > 0:
+                    cands.append(pk)
+            if cands:
+                if retreat_cost < 2:
+                    return [retreat_idx]  # コスト0/1は従来どおり(膠着対策を温存)
+                # 実際に前へ出るのは SWITCH 選択(_pokemon_value_for_active)が選ぶ個体で、
+                # その第一キーは **エネ枚数** である。可否判定を打点だけで行うと
+                # 「強い個体がいるから逃げる → 実際にはエネの多い弱い個体が出る」が起き、
+                # この修正が防ごうとしたパターンが別経路で再発する
+                # (@robustness-guard W1、2026-08-02)。判定を同じ基準に揃える。
+                pick = max(
+                    cands,
+                    key=lambda pk: (
+                        len(pk.energies) if pk.energies else 0,
+                        _best_attack_damage_of_card(pk.id),
+                        pk.hp or 0,
+                    ),
+                )
+                if _best_attack_damage_of_card(pick.id) > act_dmg:
                     return [retreat_idx]
-        except (TypeError, AttributeError):
+        except (TypeError, AttributeError, IndexError):
             pass
 
     # 5.9 打点0でも攻撃が唯一の進展手段なら攻撃する
