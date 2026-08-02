@@ -1,4 +1,16 @@
-# Writeup 全文ドラフト v3 (v1=2026-07-28 / v2=G1・G5・G7反映 / v3=2026-07-30)
+# Writeup 全文ドラフト v5 (v1=2026-07-28 / v2=G1・G5・G7反映 / v3=2026-07-30 / v4=打点構造訂正 / v5=2026-07-31外部レビュー反映)
+
+> **v5の変更(2026-07-31、外部レビューループの成果。数値ゼロ or 台帳済みの編集のみ)**:
+> ①タイトルに第2の背骨(deck orthodoxy)を明示 ②§4のルール断定2件を訂正
+> (マリガンペナルティは実装あり=エンジンソース照合 / Dusknoirは「攻撃できない」でなく
+> 「犠牲特性のための枠」) ③§5「stadium-detection」→「wall-ability」訂正(壁はCrustleの特性)
+> ④§5に加重複合44.39%を明記(台帳#3の行4=H1と同一値)+38%カバレッジを併置(§6から移動)
+> ⑤§5の783を byte-identical 3連の並びに降格 ⑥§7末尾にデッキ×パイロットのエコー1文。
+> **注意: 台帳#9の機構文(「マリガンペナルティ未実装」)は本文と食い違う状態。台帳側の訂正が必要。**
+> 未反映(台帳行が先): §4冒頭のコンセプト文+サイド経済段落 — 末尾「v5保留分」参照。
+> **v5.1(2026-08-01)**: 外部妥当性監査(ablation-validity.md)を受け語数中立で2点 —
+> ①§3の限界文を「絶対水準の錨のみ・A-vs-B比較は未検証」を含む形に置換(26語→25語)
+> ②§5「largest verified」→「largest instrument-verified」(+1語)。計±0語。
 
 > **位置づけ**: これは「逆算」方針(D56、ゆうじ承認)の産物 — 記事を先に書き切って、
 > **どこで論証が詰まるかを計器として使う**ためのドラフト。8/8の実験終了前に書くことで、
@@ -17,7 +29,7 @@
 
 ---
 
-## Measure Before You Believe: Calibrating a Self-Play Agent Against the Real Ladder
+## Measure Before You Believe: Calibration Against the Real Ladder, and Why Human Deck Orthodoxy Fails an AI Pilot
 
 ### 1. Approach Overview
 
@@ -101,8 +113,9 @@ The ladder then arbitrated (Fig. 2):
 In all four the in-family figure fell outside the confidence interval and the calibrated figure
 fell inside; deviations were −2.0 / +2.5 / −12.1 / −11.1pt with no systematic sign [#3]. The
 fourth was also the first forward test of encounter weights we had re-estimated retrospectively,
-and they held (χ²=6.74 against 7.815). We state the limit plainly: with N≈20 covered games the
-interval is roughly ±19pt, so this excludes *gross* miscalibration, not error of ±10pt.
+and they held (χ²=6.74 against 7.815). We state the limit plainly: N≈20 covered games give
+±19pt intervals — absolute-level anchors only, excluding gross miscalibration, never our
+A-versus-B comparisons.
 
 **Half two: the rule.** Our original adoption rule required four independent non-regression
 gates. Its operating characteristic: a change with truly zero effect is flagged as a regression
@@ -123,10 +136,9 @@ reopened. The review of that argument demanded a log we had not kept; producing 
 our own case and the kill stood. **We had rebuilt, inside a rule we wrote ourselves, the defect
 we removed two months earlier.**
 
-The same scepticism applies to the measurement procedure. Our model of when ladder games arrive
-was wrong in mechanism: submissions do not decay, they are **evicted** when they fall out of the
-team's two most recent — all ten stopped within three hours *before* eviction, despite lifetimes
-of 12 to 62 hours [#28, Fig. 3].
+The same scepticism caught our measurement procedure too: submissions do not decay, they are
+**evicted** by the team's next-but-one submission — all ten stopped within three hours *before*
+eviction [#28, Fig. 3].
 
 ### 4. Deck Construction
 
@@ -134,11 +146,12 @@ Our list is a Mega Starmie ex aggro build whose defining property is what we rem
 removal forced by measurement rather than theory.
 
 **Human orthodoxy did not transfer, three times.** (1) The Dusknoir engine — six slots that
-cannot attack — is standard in human lists; the version without it won **64.7% head-to-head
+exist for a sacrifice ability, not for attacking — is standard in human lists; the version without it won **64.7% head-to-head
 (N=150, CI 57–72)** [#4]. (2) Cinderace energy acceleration, present in winning human lists,
 fired **0.12 times per game** and moved nothing [#8]. (3) Raising Basic count cut mulligans from
 60.1% to 25.9% and made the agent *monotonically worse* (34.5 / 33.0 / 31.2 for 4 / 8 / 10
-Basics) — the engine implements no mulligan penalty at all [#9]. A card's value is a property of
+Basics) — the engine does implement the mulligan penalty (the opponent may draw extra cards),
+and it still did not pay for the deck slots [#9]. A card's value is a property of
 the deck **and the pilot together**; a list validated by human play was validated on a different
 pilot.
 
@@ -161,19 +174,21 @@ objects, and only the replays told us which one we had.
 
 "How strong is the agent" is best answered by three calibrated effect sizes, one per component.
 **Deck**: beats its human-orthodox ancestor **64.7% head-to-head** [#4]. **Search-and-override
-layer**: **+13.62pt (CI [+11.40, +15.84], 12.0σ)**, the largest verified number in the project
+layer**: **+13.62pt (CI [+11.40, +15.84], 12.0σ)**, the largest instrument-verified number in the project
 [#26]. **Pilot rule**: **+2.50pt**, independently replicated [#5]. Everything else we tried
 failed its pre-registered gate.
 
-On the ladder the champion reached **783**, with byte-identical resubmissions scoring 765 and
-747 — a spread that is itself our best evidence for treating single scores as noisy [#20].
-Against our four calibrated gauges it scores **47.3 / 26.8 / 80.7 / 26.7%**: we disclose the weak
-matchups rather than average them away, and weight them by measured encounter rate. That
+On the ladder, byte-identical resubmissions of the champion scored **783, 765 and 747** — a
+spread that is itself our best evidence for treating single scores as noisy [#20].
+Against our four calibrated gauges it scores **47.3 / 26.8 / 80.7 / 26.7%**, an
+encounter-weighted composite of **44.39%** — the same figure the instrument staked
+prospectively above. We disclose the weak matchups rather than average them away, and note
+the gauges cover **38%** of what we actually meet. That
 transparency, plus **CRASH=0 across 60 consecutive ladder games** and no crash signature in any
 earlier submission [#14], is our answer on robustness.
 
 The loop that produced the most value was **submit → autopsy → fix → re-measure**: replays
-showed the agent attacking a wall Pokémon for zero damage, and after a stadium-detection patch
+showed the agent attacking a wall Pokémon for zero damage, and after a wall-ability detection patch
 that matchup went 7–2 with the loop absent [#15] — a behavioural claim, not a rating one.
 
 ### 6. What Didn't Work, and Limitations
@@ -194,8 +209,8 @@ Monte-Carlo rewrite — did **not** survive re-examination on the calibrated ins
 **+2.62pt, 95% CI [−0.68, +5.93]**, so the sign now points toward the version we discarded,
 though the interval contains zero [#12]. We report it as an instrument success, not an
 embarrassment. One further line was closed by code inspection rather than measurement, and we
-label it so [#21]. Limits: the in-family bias law rests on **three** pilot pairs and is extrapolated, matchup-level
-samples are small, and our gauges cover 38% of what we actually meet.
+label it so [#21]. Limits: the in-family bias law rests on **three** pilot pairs and is extrapolated, and matchup-level
+samples are small.
 
 ### 7. Conclusion
 
@@ -203,7 +218,9 @@ For a high-variance stochastic game, the measurement apparatus is not the scaffo
 the agent — it is the main body of work. What we would tell our past selves is narrower than
 "measure more": **calibrate against the environment you are actually scored in; pre-register
 the number you expect; then keep auditing the rule that decides, including after you have
-already fixed it once — and be ready for it to overturn a decision you were proud of.**
+already fixed it once — and be ready for it to overturn a decision you were proud of.** The
+same instrument taught us the other half: a card's value is a property of the deck and the
+pilot together.
 
 ---
 ---
@@ -232,3 +249,40 @@ D54の裁定は執筆側から見ても正しい**。
 **v3時点の残タスク(いずれも測定不要)**: 族内バイアス法則の n=4 化(8/3の穴D副次で自動)/
 fig_rating_timeline の更新1点 / 8/17以降の清書とT6機械照合。
 **執筆側から見て、8/8までに新たに走らせるべき実験は無い。**
+
+---
+
+# v5保留分(台帳行が立ってから本文へ。出典スクリプトは全て replay_analysis/ に永続化済み)
+
+**必要な台帳行(起票案、ラベルはチーム判断)**:
+- L-a: サイド経済 — 総取得230vs229(56戦)/KOあたり1.35vs2.18枚/勝利中央値4KOターン・敗北3。
+  確証(計数)。出典 `prize_race.py` → `prize-race.md`。※最終KOは観測に現れず補完(手法注記あり)
+- L-b: 二峰性+着地一貫性 — 完封17/56(勝10負7)、完封負けの立ち上がり指標は完封勝ちと同一
+  (初手たね1.3vs1.4、Mega着地T3.2vs3.1)、**Mega着地55/56**。確証(計数)。出典 `shutout_anatomy.py`
+- L-c: 台帳#9の機構文訂正 — マリガンペナルティは実装あり(SetupProc.h: 相手が0..N追加ドロー)。
+  EXP7の実測結論(単調悪化)は不変
+- L-d: 打点誤差の局在 — FML×{M}下0%(21/21が−30)/それ以外98.7-100%。出典 `damage_pairing_diff.py`
+  (※シフト補正済みペアリング、`semantic_check.py` でattack 240/240・play 715/715整合確認)
+- L-e: NZ未知壁 — Neutralization Zone(1247, ACE SPECスタジアム)は評価器の不可視壁。
+  出現2/56戦で2敗(うち1つは5-0からの唯一の山札切れ)。計器4本に不在=効果測定不能のため凍結内では不修正
+
+**L-a/L-b が立ったら入れる本文(検算済み語数)**:
+
+§4冒頭差し替え(+15語):
+> Our list is a Mega Starmie ex aggro build with a single commitment — maximum setup
+> consistency, spent on an asymmetric prize race: Mega Starmie was online by turn 3–4 in
+> **55 of 56** ladder games, win or lose. Everything else was removed, and every removal was
+> forced by measurement rather than theory.
+
+§4末尾に追加(+70語、55/56は冒頭に移したので削除済み版):
+> Replay accounting then measured the plan's shape. Prizes traded even — **230 vs 229** across
+> 56 games — inside an asymmetric geometry: our KOs average **1.35** prizes, theirs **2.18**;
+> we need a median of four KO-turns to win, they need three. The deck compensates by frequency,
+> not by pivoting: **17 of 56** games were one-directional shutouts. The gust repair for
+> targeting had already measured ±0 [#24]: the deck accepts the asymmetric race because the
+> fix does nothing.
+
+**語数会計(実測)**: v5本文=**1,998語**(C2=eviction圧縮適用済み。適用前2,021で上限超過だった)。
+上記2件(+85)を入れる前に残りの圧縮 C1(§3自己監査3段目 −55)/C3(§6辞書修理 −30)/
+C4(§6 v3 −18)/C5(§2冒頭 −12) = **−115が必須**。着地見込み ≈1,969語。
+さらに安全域(≤1,950)が欲しければ §3 Half-one と §1 から −25。

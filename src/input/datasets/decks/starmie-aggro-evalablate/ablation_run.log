@@ -1,0 +1,86 @@
+START 2026-07-31 23:40:16 main.py sha256=7ad858bfdd23
+=== arm=full gauge=official_lucario_agent.py N=1562 t=23:40:16 ===
+我々: main.py   相手: ../../../../../verification/reference/official_lucario_agent.py + ../../../../../verification/decks/official_lucario_2026-07-21.csv   対戦数: 1562   (429.0秒, 274.7 ms/戦)
+結果: 739勝 819敗 4分
+勝率: 47.3%  (95%信頼区間 44.8%〜49.8%)   引分除く勝率: 47.4%
+WINRATE=0.4731
+CI_LOW=0.4484
+CRASH=0
+=== arm=full gauge=tomato_archaludon_agent.py N=1040 t=23:47:25 ===
+我々: main.py   相手: ../../../../../verification/reference/tomato_archaludon_agent.py + ../../../../../verification/decks/tomato_archaludon_2026-07-22.csv   対戦数: 1040   (311.9秒, 299.9 ms/戦)
+結果: 257勝 782敗 1分
+勝率: 24.7%  (95%信頼区間 22.2%〜27.4%)   引分除く勝率: 24.7%
+WINRATE=0.2471
+CI_LOW=0.2219
+CRASH=0
+=== arm=full gauge=official_dragapult_agent.py N=426 t=23:52:37 ===
+我々: main.py   相手: ../../../../../verification/reference/official_dragapult_agent.py + ../../../../../verification/decks/official_dragapult_2026-07-22.csv   対戦数: 426   (120.3秒, 282.5 ms/戦)
+結果: 346勝 80敗 0分
+勝率: 81.2%  (95%信頼区間 77.2%〜84.6%)   引分除く勝率: 81.2%
+WINRATE=0.8122
+CI_LOW=0.7724
+CRASH=0
+=== arm=full gauge=official_abomasnow_agent.py N=172 t=23:54:38 ===
+我々: main.py   相手: ../../../../../verification/reference/official_abomasnow_agent.py + ../../../../../verification/decks/official_abomasnow_2026-07-21.csv   対戦数: 172   (50.6秒, 294.4 ms/戦)
+結果: 54勝 118敗 0分
+勝率: 31.4%  (95%信頼区間 24.9%〜38.7%)   引分除く勝率: 31.4%
+WINRATE=0.3140
+CI_LOW=0.2493
+CRASH=0
+=== arm=prize_only gauge=official_lucario_agent.py N=1562 t=23:55:28 ===
+我々: main.py   相手: ../../../../../verification/reference/official_lucario_agent.py + ../../../../../verification/decks/official_lucario_2026-07-21.csv   対戦数: 1562   (427.8秒, 273.9 ms/戦)
+結果: 694勝 866敗 2分
+勝率: 44.4%  (95%信頼区間 42.0%〜46.9%)   引分除く勝率: 44.5%
+WINRATE=0.4443
+CI_LOW=0.4198
+CRASH=0
+=== arm=prize_only gauge=tomato_archaludon_agent.py N=1040 t=00:02:36 ===
+我々: main.py   相手: ../../../../../verification/reference/tomato_archaludon_agent.py + ../../../../../verification/decks/tomato_archaludon_2026-07-22.csv   対戦数: 1040   (301.3秒, 289.7 ms/戦)
+結果: 186勝 852敗 2分
+勝率: 17.9%  (95%信頼区間 15.7%〜20.3%)   引分除く勝率: 17.9%
+WINRATE=0.1788
+CI_LOW=0.1567
+CRASH=0
+=== arm=prize_only gauge=official_dragapult_agent.py N=426 t=00:07:38 ===
+我々: main.py   相手: ../../../../../verification/reference/official_dragapult_agent.py + ../../../../../verification/decks/official_dragapult_2026-07-22.csv   対戦数: 426   (131.8秒, 309.4 ms/戦)
+結果: 331勝 95敗 0分
+勝率: 77.7%  (95%信頼区間 73.5%〜81.4%)   引分除く勝率: 77.7%
+WINRATE=0.7770
+CI_LOW=0.7351
+CRASH=0
+=== arm=prize_only gauge=official_abomasnow_agent.py N=172 t=00:09:50 ===
+我々: main.py   相手: ../../../../../verification/reference/official_abomasnow_agent.py + ../../../../../verification/decks/official_abomasnow_2026-07-21.csv   対戦数: 172   (55.3秒, 321.3 ms/戦)
+結果: 52勝 120敗 0分
+勝率: 30.2%  (95%信頼区間 23.9%〜37.5%)   引分除く勝率: 30.2%
+WINRATE=0.3023
+CI_LOW=0.2386
+CRASH=0
+=== arm=board_only gauge=official_lucario_agent.py N=1562 t=00:10:45 ===
+我々: main.py   相手: ../../../../../verification/reference/official_lucario_agent.py + ../../../../../verification/decks/official_lucario_2026-07-21.csv   対戦数: 1562   (380.4秒, 243.5 ms/戦)
+結果: 575勝 983敗 4分
+勝率: 36.8%  (95%信頼区間 34.5%〜39.2%)   引分除く勝率: 36.9%
+WINRATE=0.3681
+CI_LOW=0.3446
+CRASH=0
+=== arm=board_only gauge=tomato_archaludon_agent.py N=1040 t=00:17:05 ===
+我々: main.py   相手: ../../../../../verification/reference/tomato_archaludon_agent.py + ../../../../../verification/decks/tomato_archaludon_2026-07-22.csv   対戦数: 1040   (278.9秒, 268.2 ms/戦)
+結果: 106勝 934敗 0分
+勝率: 10.2%  (95%信頼区間 8.5%〜12.2%)   引分除く勝率: 10.2%
+WINRATE=0.1019
+CI_LOW=0.0850
+CRASH=0
+=== arm=board_only gauge=official_dragapult_agent.py N=426 t=00:21:44 ===
+我々: main.py   相手: ../../../../../verification/reference/official_dragapult_agent.py + ../../../../../verification/decks/official_dragapult_2026-07-22.csv   対戦数: 426   (124.5秒, 292.1 ms/戦)
+結果: 286勝 140敗 0分
+勝率: 67.1%  (95%信頼区間 62.5%〜71.4%)   引分除く勝率: 67.1%
+WINRATE=0.6714
+CI_LOW=0.6254
+CRASH=0
+=== arm=board_only gauge=official_abomasnow_agent.py N=172 t=00:23:49 ===
+我々: main.py   相手: ../../../../../verification/reference/official_abomasnow_agent.py + ../../../../../verification/decks/official_abomasnow_2026-07-21.csv   対戦数: 172   (49.2秒, 286.2 ms/戦)
+結果: 41勝 131敗 0分
+勝率: 23.8%  (95%信頼区間 18.1%〜30.7%)   引分除く勝率: 23.8%
+WINRATE=0.2384
+CI_LOW=0.1809
+CRASH=0
+DONE 2026-08-01 00:24:38
