@@ -15,3 +15,6 @@ project_overview.html
 # meta.txt + autopsy_*.py があれば検死は完全に再現できるので追跡しない。
 # ※eps54943911/ は既に追跡済みのため対象外(履歴から消しても軽くならないので放置)。
 replay_analysis/eps*/ep*.json
+
+# 公開ノートブックの取得アーカイブ(検証専用・提出禁止。8/2締切でプール凍結のため退避)
+verification/reference/_inbox/

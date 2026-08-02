@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ディレクトリガイド — pokemonabc</title>
+<style>
+:root{
+  --bg:#0b0f19; --panel:#131a2a; --panel-2:#0f1524;
+  --line:rgba(255,255,255,.09); --line-strong:rgba(255,255,255,.16);
+  --fg:#e8ecf4; --fg-mid:#aab4c8; --fg-dim:#7b869d;
+  --blue:#5b9dff; --pink:#f472b6; --amber:#f5b83d; --green:#34d399; --red:#f87171;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: light){
+  :root{
+    --bg:#f6f7fb; --panel:#ffffff; --panel-2:#f0f2f8;
+    --line:rgba(10,20,40,.10); --line-strong:rgba(10,20,40,.18);
+    --fg:#141a26; --fg-mid:#4a5568; --fg-dim:#77839a;
+    --blue:#2563eb; --pink:#db2777; --amber:#b45309; --green:#059669; --red:#dc2626;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:1.5rem}
+body{
+  font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+  background:var(--bg); color:var(--fg); line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+  font-feature-settings:"palt" 1;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 1.5rem 6rem}
+
+/* ---- header ---- */
+header{padding:4rem 0 2.5rem;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.18em;color:var(--fg-dim);text-transform:uppercase}
+h1{font-size:clamp(1.9rem,4.5vw,2.9rem);line-height:1.25;margin:.6rem 0 .9rem;letter-spacing:-.02em;font-weight:800}
+h1 .accent{color:var(--blue)}
+.lede{color:var(--fg-mid);max-width:62ch;font-size:1.02rem}
+.meta{margin-top:1.4rem;font-family:var(--mono);font-size:.74rem;color:var(--fg-dim)}
+
+/* ---- layout ---- */
+.cols{display:grid;grid-template-columns:210px 1fr;gap:3rem;margin-top:2.5rem;align-items:start}
+@media(max-width:900px){.cols{grid-template-columns:1fr;gap:1.5rem}}
+nav{position:sticky;top:1.5rem}
+@media(max-width:900px){
+  nav{position:static;border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;background:var(--panel)}
+}
+nav .navtitle{font-family:var(--mono);font-size:.68rem;letter-spacing:.16em;color:var(--fg-dim);text-transform:uppercase;margin-bottom:.7rem}
+nav a{display:block;color:var(--fg-mid);text-decoration:none;font-size:.86rem;padding:.3rem 0;border-left:2px solid transparent;padding-left:.75rem;transition:.15s}
+nav a:hover{color:var(--fg);border-left-color:var(--blue)}
+nav a.sub{font-size:.78rem;color:var(--fg-dim);padding-left:1.5rem}
+
+/* ---- sections ---- */
+section{margin-top:3.5rem;scroll-margin-top:1.5rem}
+h2{font-size:1.5rem;letter-spacing:-.01em;margin-bottom:.5rem;display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap}
+h2 .path{font-family:var(--mono);font-size:1.05rem;color:var(--blue);font-weight:700}
+h2 .tag{font-family:var(--mono);font-size:.68rem;color:var(--fg-dim);border:1px solid var(--line-strong);border-radius:99px;padding:.1rem .55rem;font-weight:400}
+h3{font-size:1.02rem;margin:2rem 0 .6rem;color:var(--fg);letter-spacing:-.005em}
+h3::before{content:"";display:inline-block;width:6px;height:6px;background:var(--blue);border-radius:2px;margin-right:.55rem;vertical-align:middle}
+p{margin:.7rem 0;color:var(--fg-mid)}
+p strong,li strong,td strong{color:var(--fg);font-weight:700}
+a{color:var(--blue)}
+ul{margin:.6rem 0 .6rem 1.1rem;color:var(--fg-mid)}
+li{margin:.3rem 0}
+code{font-family:var(--mono);font-size:.85em;background:var(--panel-2);border:1px solid var(--line);border-radius:5px;padding:.08em .38em;color:var(--fg)}
+
+/* ---- blocks ---- */
+.tree{
+  font-family:var(--mono);font-size:.82rem;line-height:1.75;white-space:pre;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
+  padding:1.2rem 1.4rem;overflow-x:auto;margin:1.1rem 0;color:var(--fg-mid)
+}
+.tree b{color:var(--fg);font-weight:700}
+.tree .c{color:var(--fg-dim)}
+.tree .hl{color:var(--amber)}
+
+.quote{
+  border-left:3px solid var(--amber);background:var(--panel);
+  padding:.9rem 1.2rem;margin:1.1rem 0;border-radius:0 10px 10px 0;
+  font-size:.92rem;color:var(--fg-mid)
+}
+.quote .src{display:block;font-family:var(--mono);font-size:.7rem;color:var(--fg-dim);margin-top:.5rem}
+
+.callout{
+  border:1px solid var(--line-strong);border-radius:12px;padding:1.1rem 1.3rem;margin:1.3rem 0;
+  background:var(--panel);
+}
+.callout .h{font-size:.72rem;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:.4rem}
+.callout.key .h{color:var(--pink)}
+.callout p:first-of-type{margin-top:0}
+.callout p:last-child{margin-bottom:0}
+
+table{width:100%;border-collapse:collapse;margin:1.1rem 0;font-size:.88rem;display:block;overflow-x:auto}
+@media(min-width:700px){table{display:table}}
+th{
+  text-align:left;font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--fg-dim);font-weight:400;padding:.5rem .8rem;border-bottom:1px solid var(--line-strong);white-space:nowrap
+}
+td{padding:.62rem .8rem;border-bottom:1px solid var(--line);color:var(--fg-mid);vertical-align:top}
+tbody tr:hover td{background:var(--panel)}
+td code{white-space:nowrap}
+
+.pill{display:inline-block;font-family:var(--mono);font-size:.68rem;padding:.1rem .5rem;border-radius:99px;border:1px solid;white-space:nowrap}
+.pill.live{color:var(--green);border-color:var(--green)}
+.pill.arch{color:var(--fg-dim);border-color:var(--line-strong)}
+.pill.warn{color:var(--red);border-color:var(--red)}
+.pill.auto{color:var(--blue);border-color:var(--blue)}
+.pill.you{color:var(--pink);border-color:var(--pink)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem;margin:1.2rem 0}
+.card{border:1px solid var(--line);border-radius:12px;padding:1rem 1.15rem;background:var(--panel)}
+.card .n{font-family:var(--mono);font-size:.7rem;color:var(--fg-dim);letter-spacing:.1em}
+.card .t{font-weight:700;margin:.25rem 0 .35rem;font-size:.95rem}
+.card p{font-size:.84rem;margin:0;color:var(--fg-mid)}
+
+footer{margin-top:5rem;padding-top:2rem;border-top:1px solid var(--line);font-size:.8rem;color:var(--fg-dim);font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">pokemonabc / repository reference</div>
+  <h1>ディレクトリガイド<br><span class="accent">何がどこにあり、誰がいつ読むのか</span></h1>
+  <p class="lede">
+    Pokémon TCG AI Battle Challenge（Kaggle）の作業リポジトリの構造リファレンス。
+    4つの主要ディレクトリを「役割」ではなく<strong>「誰がいつ開くか」</strong>の軸で整理してある。
+  </p>
+  <div class="meta">作成 2026-08-02 ／ branch: yuji/verify-infra ／ 対象コミット: d2fa8d8</div>
+</header>
+
+<div class="cols">
+<nav>
+  <div class="navtitle">Contents</div>
+  <a href="#overview">0. 全体像</a>
+  <a href="#src">1. src/ — 提出物</a>
+  <a href="#verification">2. verification/ — 測る</a>
+  <a href="#replay">3. replay_analysis/ — 答え合わせ</a>
+  <a class="sub" href="#replay-eps">eps〇〇/ とは</a>
+  <a class="sub" href="#replay-py">18本の .py</a>
+  <a href="#docs">4. docs/ — 記録と成果物</a>
+  <a class="sub" href="#docs-readers">5人の読者</a>
+  <a class="sub" href="#docs-layers">.md の5層</a>
+  <a class="sub" href="#docs-figures">figures/</a>
+  <a href="#claude">5. .claude/ — 自動化</a>
+  <a href="#cheat">付録: 早見表</a>
+</nav>
+
+<main>
+
+<!-- ============ 0 ============ -->
+<section id="overview">
+<h2>0. 全体像</h2>
+<p>
+  このリポジトリは <strong>4つの動詞</strong>でできている。
+  <em>作る</em>（src）→ <em>測る</em>（verification）→ <em>答え合わせする</em>（replay_analysis）→ <em>記録する</em>（docs）。
+</p>
+
+<div class="tree">pokemonabc/
+├── <b>CLAUDE.md</b>            <span class="c">セッション起動時の規約。playbook.md の読了を強制する</span>
+├── <b>src/</b>          75MB   <span class="c">提出物そのもの（デッキ × パイロット）</span>
+├── <b>verification/</b> 1.5MB  <span class="c">出す前に測るツールボックス</span>
+├── <b>replay_analysis/</b>695MB<span class="c">出した後に検死する解析室</span>
+├── <b>docs/</b>         1.0MB  <span class="c">意思決定ログ + レポート原稿（＝成果物）</span>
+├── <b>.claude/</b>             <span class="c">スキル / サブエージェント / ワークフロー定義</span>
+└── submission_*.tar.gz  <span class="c">提出済みアーカイブ（gitignore）</span></div>
+
+<div class="callout key">
+  <div class="h">この構造を生んだ発見</div>
+  <p>
+    D27:<strong>ローカルの自己対戦は自分に甘い</strong>（族内ベンチは相手操縦者との実力差に比例して
+    +8〜+62pt 過大評価する）。この一点が、<code>verification/</code> に較正の仕組みを、
+    <code>replay_analysis/</code> に本番検死を、<code>docs/</code> に主張台帳を要求した。
+    3ディレクトリすべてが同じ問題への対処になっている。
+  </p>
+</div>
+</section>
+
+<!-- ============ 1 ============ -->
+<section id="src">
+<h2><span class="path">src/</span> <span class="tag">75MB / 13デッキ</span></h2>
+<p>
+  提出物置き場。<strong>エージェント ＝ デッキ（60枚）× パイロット（main.py）</strong>なので、
+  1実験 = 1ディレクトリ。パスが <code>src/input/datasets/decks/</code> なのは
+  Kaggle 側の <code>/kaggle/input/...</code> を模しているから。
+</p>
+
+<div class="tree">src/input/datasets/decks/starmie-clockguard/
+├── <b>main.py</b>       42KB  <span class="c">agent(obs) -&gt; list[int] を返す本体</span>
+├── <b>deck.csv</b>      259B  <span class="c">60枚のカードID</span>
+├── <b>cg/</b>                 <span class="c">ゲームエンジン（C製 libcg.dylib/.so/.dll + ctypes ラッパ）</span>
+├── <b>GATES.md</b>            <span class="c">このデッキが通した受入基準の記録</span>
+└── run_acceptance.sh + acceptance_*.log</div>
+
+<h3>13デッキの内訳</h3>
+<table>
+<thead><tr><th>系統</th><th>ディレクトリ</th><th>目的</th></tr></thead>
+<tbody>
+<tr><td><strong>本命</strong></td><td><code>starmie-aggro</code> / <code>starmie-clockguard</code> / <code>starmie-widthprobe</code></td><td>現行の主力と、進行中のプローブ実験</td></tr>
+<tr><td><strong>アブレーション</strong></td><td><code>starmie-aggro-evalablate</code> / <code>starmie-belt-e1</code> / <code>starmie-boss-e2</code> / <code>alakazam-e3</code></td><td>1要素だけ差し替えて効果を測る対照群</td></tr>
+<tr><td><strong>較正</strong></td><td><code>lucario-calib</code> / <code>dragapult-calib</code></td><td>族外の絶対水準アンカーを取るための提出</td></tr>
+<tr><td><strong>旧世代</strong></td><td><code>v2-search</code> / <code>v3-mcts</code> / <code>starmie-aggro-metadecks</code> / <code>mega-starmie-ex-deck</code></td><td>過去のパイロット世代（v3 は棄却済み、素材として保存）</td></tr>
+</tbody>
+</table>
+
+<div class="callout">
+  <div class="h">注意</div>
+  <p><code>cg/</code> のバイナリ（<code>*.dylib / *.so / *.dll</code>）は gitignore 済み。
+  無ければ Kaggle の sample_submission からコピーする。<br>
+  また<strong>デッキ合法性（同名4枚制限）はエンジンが検査しない</strong>（6枚入りを受理することを実測済み）。手で確認する。</p>
+</div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section id="verification">
+<h2><span class="path">verification/</span> <span class="tag">出す前に測る</span></h2>
+<p>提出ゲートを通すための道具一式。仕様書は <code>verification/README.md</code>。</p>
+
+<table>
+<thead><tr><th>ファイル</th><th>役割</th></tr></thead>
+<tbody>
+<tr><td><code>bench.py</code> / <code>parbench.py</code></td><td>勝率 + 95%CI の測定（並列版あり）</td></tr>
+<tr><td><code>selfplay.py</code></td><td>自己対戦ドライバ</td></tr>
+<tr><td><strong><code>cew.py</code> / <code>cew_stats.py</code></strong></td><td><strong>CEW（較正済み遭遇加重スコア）— 効果量の正式な判定指標</strong></td></tr>
+<tr><td><code>conformance.py</code> / <code>kaggle_conformance_notebook.py</code></td><td>提出形式・エージェント契約の検査</td></tr>
+<tr><td><code>donk_meter.py</code></td><td>ドンク（先攻速攻）率の計測</td></tr>
+<tr><td><code>probe.py</code> / <code>probe_metadecks.py</code> / <code>infamily_probe.py</code></td><td>メタデッキ相手のプローブ</td></tr>
+<tr><td><code>gauges/</code></td><td>族外ゲージ相手エージェント 2種（alakazam, grimmsnarl）</td></tr>
+<tr><td><code>decks/</code></td><td>対戦相手デッキ 34種（公式サンプル・メタ読み・実験変種）</td></tr>
+<tr><td><code>data/</code></td><td>カードDB（<code>EN_Card_Data.csv</code> / <code>JP_Card_Data.csv</code>）＝ <code>/lookup-card</code> の参照元</td></tr>
+<tr><td><code>reference/</code></td><td>公開サードパーティ agent 5本 — <span class="pill warn">研究用のみ・提出禁止</span></td></tr>
+</tbody>
+</table>
+
+<div class="quote">
+  効果量の判定は<strong>族外ゲージ上の CEW</strong> で行う。自前パイロットが相手デッキを操縦するゲージは
+  <strong>スクリーニング専用</strong>とし、絶対値を語らない。<br>
+  独立に判定してよいのは「妥当性」だけ： CRASH=0 ／ vs random ≥96% ／ <code>check.py --submission</code>。
+  <span class="src">CLAUDE.md「Team rules」/ D27・D29</span>
+</div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section id="replay">
+<h2><span class="path">replay_analysis/</span> <span class="tag">695MB / 出した後に検死する</span></h2>
+<p>
+  Kaggle 本番（実ラダー）の試合記録をダウンロードして解剖する<strong>検死室</strong>。
+  リプレイは <code>https://www.kaggle.com/competitions/episodes/{id}/replay.json</code> で<strong>公開</strong>されている。
+</p>
+<p>
+  なぜ必要か。ローカルが信用できないなら、<strong>本物の対戦記録だけが真実</strong>になるから。
+  作戦文書は「免許表」としてこう定めている：
+</p>
+
+<table>
+<thead><tr><th>問い</th><th>測ってよい場所</th></tr></thead>
+<tbody>
+<tr><td>勝率の絶対水準（±19pt）</td><td><strong>本番のみ</strong>（T1）</td></tr>
+<tr><td>勝率の相対差 ±2〜4pt</td><td><span class="pill warn">どちらも不可</span>（常に明記する）</td></tr>
+<tr><td>1手あたりの思考時間</td><td><strong>本番のみ</strong>（ローカルは 5.4倍 楽観と実証済み）</td></tr>
+</tbody>
+</table>
+
+<h3 id="replay-pycache">__pycache__/ — 気にしなくていいもの</h3>
+<p>
+  Python が <code>.py</code> を実行する際に自動生成するバイトコードのキャッシュ。
+  <strong>作ったものでもデータでもない</strong>。gitignore 済みで、消しても次回実行時に再生成される。
+</p>
+<p>
+  ひとつだけ読み取れる情報がある —
+  ここに <code>.pyc</code> がある5本（<code>damage_accuracy</code> / <code>damage_pairing_diff</code> /
+  <code>extract_decks</code> / <code>prize_race</code> / <code>trace_replay</code>）は
+  <strong>他のスクリプトから import された＝部品として再利用されている</strong>ということ。
+</p>
+
+<h3 id="replay-eps">eps〇〇/ — 提出1本ぶんのリプレイ倉庫</h3>
+<p>
+  <code>〇〇</code> は <strong>Kaggle の提出ID（submission ID）</strong>。
+  <code>eps55163442/</code> なら「提出 #55163442 が実ラダーで戦った試合を全部集めた箱」。
+</p>
+
+<div class="tree">eps55163442/                <span class="c">123MB</span>
+├── <span class="hl">curl.cfg</span>             <span class="c">ダウンロード指示書（URL一覧）</span>
+├── <span class="hl">curl_new.cfg</span>         <span class="c">追加分（後から到着した試合）</span>
+├── ep89334624.json     <span class="c">1試合ぶんの完全な記録（2.0MB）</span>
+├── ep89334721.json     <span class="c">3.7MB</span>
+└── ...  約48試合</div>
+
+<table>
+<thead><tr><th>ディレクトリ</th><th>中身</th><th>サイズ</th></tr></thead>
+<tbody>
+<tr><td><code>eps54943911/</code></td><td>lucario-calib（較正提出）</td><td>136MB</td></tr>
+<tr><td><code>eps54961048/</code></td><td>王者再提出 #2</td><td>157MB</td></tr>
+<tr><td><code>eps55058443/</code></td><td>王者再提出 #3</td><td>154MB</td></tr>
+<tr><td><code>eps55060473/</code></td><td>dragapult-calib</td><td><strong>8KB</strong>（meta.txt のみ）</td></tr>
+<tr><td><code>eps55163442/</code></td><td>P1 clockguard <span class="pill live">進行中</span></td><td>123MB</td></tr>
+<tr><td><code>eps55169074/</code></td><td>P2 widthprobe <span class="pill live">進行中</span></td><td>125MB</td></tr>
+</tbody>
+</table>
+
+<p><strong>JSON 1本の中身</strong>はこうなっている：</p>
+<div class="tree">top keys: ['configuration','rewards','statuses','steps', ...]
+steps:    85              <span class="c">85ステップ = 試合の全経過</span>
+rewards:  [1, -1]         <span class="c">我々の勝ち</span>
+statuses: ['DONE','DONE'] <span class="c">どちらもクラッシュせず完走</span></div>
+<p>
+  各 step に<strong>その瞬間の盤面（<code>observation.current</code>）と、実際に選んだ手（<code>action</code>）</strong>が
+  丸ごと入っている。だから「あの局面で何を選んだか」を後から完全に再現できる。これが検死の材料。
+</p>
+
+<div class="callout">
+  <div class="h">本体は meta.txt の方</div>
+  <p>
+    <code>eps55060473/</code> が 8KB しかないのに注目。JSON 本体は捨ててあり、レシピだけが残っている。
+  </p>
+  <div class="tree" style="margin:.8rem 0 .6rem">meta.txt:
+88652311:0:1:SELF,  88652365:0:-1:53853843,  88652869:1:1:54990484, ...
+   <span class="c">試合ID :席:勝敗:相手の提出ID</span></div>
+  <p>
+    <strong>.gitignore の記述</strong>：「検死用リプレイJSON本体（1提出あたり約150MB）。公開エンドポイントから
+    再取得でき、<strong>meta.txt + autopsy_*.py があれば検死は完全に再現できる</strong>ので追跡しない。」<br>
+    → 695MB のうち Git に入っているのは実質ゼロ。<strong>重いデータはレシピに圧縮して保存する</strong>設計。
+  </p>
+</div>
+
+<p>
+  <strong>誰がどう見るか</strong>：人間は直接開かない（2〜4MB の JSON が50本）。
+  読むのは常にスクリプト経由で、<strong>Claude が解析を走らせて要約を <code>docs/memo/data.md</code> に書き込む</strong>。
+  あなたが目にするのはその要約。例外は <code>trace_replay.py</code> で、これだけは人間が1試合を物語として読むための道具。
+</p>
+
+<h3 id="replay-py">18本の .py — 5つの役割</h3>
+<p>日付とファイル名を並べると、<strong>3ヶ月で関心がどう移ったか</strong>がそのまま見える。</p>
+
+<div class="grid">
+  <div class="card"><div class="n">① 7/13</div><div class="t">基盤ツール</div><p>リプレイを読む・分類する・相手デッキを抽出する。ここから <code>verification/decks/meta_*.csv</code> が生まれた。</p></div>
+  <div class="card"><div class="n">② 7/22 →</div><div class="t">T1判定（主砲）</div><p>提出前に固定した予測と実測を突き合わせる。writeup の一番の売りを生産する装置。</p></div>
+  <div class="card"><div class="n">③ 7/22 →</div><div class="t">機構の検死</div><p>勝率ではなく「なぜ負けたのか」の構造を見る。</p></div>
+  <div class="card"><div class="n">④ 7/30-31</div><div class="t">自分の計器の監査</div><p>測定対象ではなく、自分の測定スクリプトを疑う。バグ2件を自己摘発。</p></div>
+  <div class="card"><div class="n">⑤ 7/29</div><div class="t">運用データ</div><p>提出後に何時間監視すればスコアが確定するか。</p></div>
+</div>
+
+<table>
+<thead><tr><th>層</th><th>ファイル</th><th>問い / 役割</th></tr></thead>
+<tbody>
+<tr><td rowspan="3">①<br>基盤</td><td><code>trace_replay.py</code></td><td>1試合を人間が読める物語に変換</td></tr>
+<tr><td><code>classify_replays.py</code></td><td>全試合を「どう勝った/負けた」で分類</td></tr>
+<tr><td><code>extract_decks.py</code></td><td><strong>相手デッキを抽出</strong>してアーキタイプ集計 → CEW の遭遇重みの元</td></tr>
+
+<tr><td rowspan="5">②<br>T1判定</td><td><code>t1_verdict.py</code></td><td>原型。較正ゲージは実ラダーを予測するか</td></tr>
+<tr><td><code>calib_verdict_54943911.py</code></td><td>lucario-calib の判定</td></tr>
+<tr><td><code>autopsy_54961048.py</code></td><td>王者再提出 #2</td></tr>
+<tr><td><code>autopsy_2026-07-29.py</code></td><td>2提出同時（#3 + dragapult）</td></tr>
+<tr><td><strong><code>probe_autopsy.py</code></strong> <span class="pill live">8/2</span></td><td><strong>キャンペーン共通ツール化</strong>。T1判定 + タイミング + ガード挙動 + CRASH検査を一本化</td></tr>
+
+<tr><td rowspan="4">③<br>機構</td><td><code>mechanism_autopsy.py</code></td><td>EXP8 の挙動は本番に転移したか（→ 転換85%、台帳#6）</td></tr>
+<tr><td><code>prize_race.py</code></td><td>サイドレース収支の全数集計</td></tr>
+<tr><td><code>shutout_anatomy.py</code></td><td>サイド0完封負け7戦は「押し負け」か「立ち上がり不成立」か</td></tr>
+<tr><td><code>alakazam_autopsy.py</code></td><td><strong>計器の最大の盲点</strong>の解剖（遭遇1位・敗北1位・較正ゲージ不在）</td></tr>
+
+<tr><td rowspan="5">④<br>自己監査</td><td><code>damage_accuracy.py</code></td><td>ダメージ予測器は当たっているか</td></tr>
+<tr><td><code>damage_pairing_diff.py</code></td><td>off-by-one 補正は本当に「ずれていただけ」か</td></tr>
+<tr><td><code>semantic_check.py</code></td><td>補正後の対応付けは<em>意味論的に</em>正しいか</td></tr>
+<tr><td><code>decision_census.py</code></td><td>公表した「12,506決定点」が独立計数と4.7倍乖離 → 二重計数では？</td></tr>
+<tr><td><code>damage_placement_audit.py</code></td><td>ダメカン配置規則は実ラダーで何回効いたか（<strong>0件なら実装しないと事前固定</strong>）</td></tr>
+
+<tr><td>⑤ 運用</td><td><code>episode_arrival.py</code></td><td>提出後どのくらい監視すればスコアが確定するか（→ 48〜56h）</td></tr>
+</tbody>
+</table>
+
+<div class="callout key">
+  <div class="h">④が一番効いている層</div>
+  <p><code>damage_pairing_diff.py</code> の docstring：</p>
+  <div class="quote" style="margin:.7rem 0 .5rem">
+    新規回収54件の誤りが0件なら、回収群は元の186件と<strong>系統的に異なる</strong>（0.876<sup>54</sup> ≈ 0.08%）。
+    <strong>「対応がずれていただけ」では説明にならない。</strong>
+  </div>
+  <p>
+    自分のバグ修正が「都合よく直りすぎている」ことを確率で検出しにいっている。
+    この監査から<strong>計測バグ2件を自己摘発</strong>して D59 / 台帳 #30・#31 に記録された。
+  </p>
+</div>
+</section>
+
+<!-- ============ 4 ============ -->
+<section id="docs">
+<h2><span class="path">docs/</span> <span class="tag">記録であり、成果物でもある</span></h2>
+<p>
+  <code>docs/memo/</code> は「メモ」ではない。<strong>5種類の読者に向けた5種類の文書が同居している場所</strong>で、
+  しかも一部は<strong>Kaggle に出す最終成果物そのもの</strong>。
+</p>
+
+<h3 id="docs-readers">読み手は5人いる</h3>
+<table>
+<thead><tr><th>読者</th><th>読む文書</th><th>いつ</th></tr></thead>
+<tbody>
+<tr><td><strong>① 未来の Claude</strong><br><span class="pill auto">自動</span></td>
+    <td><code>playbook.md</code> / <code>decisions.md</code> / <code>plan-*.md</code> / <code>handover-*.md</code></td>
+    <td>セッション起動時（CLAUDE.md が強制）</td></tr>
+<tr><td><strong>② ゆうじ</strong><br><span class="pill you">承認</span></td>
+    <td>HTML 解説群 / <code>plan-*.md</code> の承認ブロック / <code>data.md</code> の提出履歴</td>
+    <td>GO/NO-GO 判断、現在地の把握</td></tr>
+<tr><td><strong>③ りょーちん</strong></td>
+    <td><code>team-share-*.md</code> / <code>prompt-v2-for-ryochin-*.md</code> / <code>review-ryochin-v8-*.md</code></td>
+    <td>合意が必要な時だけ（期限つき依頼状）</td></tr>
+<tr><td><strong>④ 外部レビュワー</strong><br>（別モデル）</td>
+    <td><code>review-request-fable5-*.md</code> / <code>t7-panel-*-verdict.md</code></td>
+    <td>大きな設計判断を実行に移す直前（T7）</td></tr>
+<tr><td><strong>⑤ Kaggle 審査員</strong></td>
+    <td><code>writeup-v1-fulldraft.md</code> / <code>report-outline.md</code> / <code>figures/</code></td>
+    <td>締切 2026-09-13（Model 70% / Deck 20% / Report 10%）</td></tr>
+</tbody>
+</table>
+
+<div class="quote">
+  あなたは<strong>独立レビュワー</strong>です。このプロジェクトの過去の判断・現在の計画・作成者の推奨、
+  <strong>どれにも忠実である必要はありません</strong>。（…）
+  「これまでやってきたこと自体が的外れ」「残り13日は全部捨てて別のことをしろ」——
+  <strong>そういう結論に到達することを明示的に歓迎します。</strong>
+  <span class="src">review-request-fable5-full.md §0（④宛の文書の書き出し）</span>
+</div>
+
+<h3 id="docs-layers">.md 34本は5層に分かれている</h3>
+<p>乱雑に見えるのは、<strong>寿命の違う文書が同じ棚にフラットに並んでいる</strong>から。ファイル名で見分けられる。</p>
+
+<table>
+<thead><tr><th>層</th><th>命名</th><th>本数</th><th>誰が読むか</th></tr></thead>
+<tbody>
+<tr><td><strong>1. 常設の台帳</strong></td><td>日付なし</td><td>6</td><td><span class="pill auto">Claude が自動</span> ＋ あなた</td></tr>
+<tr><td><strong>2. その日の作戦</strong></td><td><code>plan-YYYY-MM-DD-*</code></td><td>11</td><td>最新1本のみ生存、残りは履歴</td></tr>
+<tr><td><strong>3. 誰か宛の手紙</strong></td><td>宛先が名前に入る</td><td>9</td><td>渡した時点で役目終了 <span class="pill arch">アーカイブ</span></td></tr>
+<tr><td><strong>4. 単発の測定レポート</strong></td><td>主題名だけ</td><td>4</td><td>data.md の詳細版</td></tr>
+<tr><td><strong>5. 成果物</strong></td><td><code>writeup-*</code></td><td>2</td><td>Kaggle 審査員</td></tr>
+</tbody>
+</table>
+
+<p><strong>層1（常設の台帳）の中身</strong>：</p>
+<table>
+<thead><tr><th>ファイル</th><th>行数</th><th>役割</th></tr></thead>
+<tbody>
+<tr><td><code>playbook.md</code> <span class="pill auto">必読</span></td><td>212</td><td>運用規範。<strong>CLAUDE.md が「開発・測定の計画前に必ず読め」と強制</strong></td></tr>
+<tr><td><code>decisions.md</code></td><td>1374</td><td>D1〜D59 の意思決定ログ。冒頭に「最小読了セット」のナビあり</td></tr>
+<tr><td><code>data.md</code></td><td>3363</td><td>測定の生値・提出履歴。<strong>数字の一次ソース</strong></td></tr>
+<tr><td><code>journal.md</code></td><td>227</td><td>作業ログ（時系列の経緯）</td></tr>
+<tr><td><code>claims-ledger.md</code></td><td>56</td><td><strong>主張台帳</strong>。writeup に書く全数値がここを通る関門</td></tr>
+<tr><td><code>report-outline.md</code></td><td>91</td><td>審査基準から逆算した骨子。「埋まっていない穴」＝実験計画</td></tr>
+</tbody>
+</table>
+
+<div class="callout key">
+  <div class="h">claims-ledger.md の関門設計</div>
+  <p>
+    測定結果 → writeup への直通路を<strong>意図的に塞いで</strong>、必ず証拠グレードのラベル付けを通す。
+    ラベルは <strong>確証 / 弱確証 / 探索的 / 撤回・格下げ済</strong> の4段階で、
+    各主張に「writeup でどう書くか」まで指定してある。
+  </p>
+  <ul>
+    <li>「<strong>確証された改善</strong>とは書かない」（台帳#5）</li>
+    <li>「n=3 の外挿であることを明記。『法則』でなく『3アーキタイプで一致した観測』と書く」（台帳#1）</li>
+    <li>「<strong>v3棄却は正しかった、と断定しない</strong>」（台帳#12）</li>
+  </ul>
+  <p>実際にこれで +15.7pt（事後選択値）などの格下げが機能した。</p>
+</div>
+
+<h3 id="docs-figures">memo/figures/ — レポートに貼る図</h3>
+<p>
+  SVG 6枚 + 生成スクリプト 1本。<strong>手描きではなくコードから生成</strong>している。
+</p>
+<div class="tree">"""レポート用図表の生成（標準ライブラリのみ、SVG出力）。
+データは docs/memo/data.md の確定値を転記（出典コメント付き）。数値を更新したら再実行。
+    python3 docs/memo/figures/make_figures.py
+"""</div>
+<p>matplotlib すら使わず SVG タグを文字列で組んでいる。数値には必ず出典コメントが付き、data.md を更新して再実行すれば図が追随する。</p>
+
+<table>
+<thead><tr><th>ファイル</th><th>何の図</th><th>状態</th></tr></thead>
+<tbody>
+<tr><td><code>fig_calibration_gap.svg</code></td><td>族内 / 族外 / 実ラダーの3本棒（<strong>主砲</strong>）</td><td><span class="pill live">現役</span></td></tr>
+<tr><td><code>fig_prospective.svg</code></td><td>前向き検証（予測 vs 実測）</td><td><span class="pill live">現役</span></td></tr>
+<tr><td><code>fig_search_ablation.svg</code></td><td>探索 ON/OFF 対照 +13.62pt</td><td><span class="pill live">現役</span></td></tr>
+<tr><td><code>fig_eviction.svg</code></td><td>提出枠の押し出し機構（10提出のダンベル図）</td><td><span class="pill live">現役</span></td></tr>
+<tr><td><code>fig_rating_timeline.svg</code></td><td>提出ごとのレーティング推移</td><td><span class="pill warn">要更新</span></td></tr>
+<tr><td><code>fig_deck_matrix.svg</code></td><td>D21 の8対面ヒートマップ</td><td><span class="pill warn">単体使用禁止</span></td></tr>
+</tbody>
+</table>
+
+<div class="quote">
+  fig_deck_matrix.svg は<strong>単体使用禁止</strong>（族内数値）— 較正の物語の<strong>対比としてのみ</strong>。
+  <span class="src">writeup-draft.md ／ 族内測定を告発するレポートで族内測定の数値を誇らしげに貼るのは自己矛盾（D30）</span>
+</div>
+</section>
+
+<!-- ============ 5 ============ -->
+<section id="claude">
+<h2><span class="path">.claude/</span> <span class="tag">この作業場の自動化</span></h2>
+<table>
+<thead><tr><th>場所</th><th>中身</th></tr></thead>
+<tbody>
+<tr><td><code>skills/</code></td><td><code>/bench</code> <code>/council</code> <code>/try-heuristic</code> <code>/lookup-card</code> <code>/submission-check</code> <code>/agent-api</code> <code>/kaggle-coach</code> <code>/loop-discipline</code></td></tr>
+<tr><td><code>agents/</code></td><td><code>robustness-guard.md</code> — agent() のクラッシュ・不正手を監査するサブエージェント</td></tr>
+<tr><td><code>workflows/</code></td><td><code>t7-panel.js</code> — 設計レビューのパネル型ワークフロー（斥候 → 4レンズ発見 → 検証 → 裁定）</td></tr>
+</tbody>
+</table>
+</section>
+
+<!-- ============ cheat ============ -->
+<section id="cheat">
+<h2>付録：早見表</h2>
+
+<h3>命名規則で寿命がわかる</h3>
+<table>
+<thead><tr><th>パターン</th><th>意味</th><th>例</th></tr></thead>
+<tbody>
+<tr><td><strong>日付なしの名前</strong></td><td>常設。生きている</td><td><code>playbook.md</code> <code>data.md</code></td></tr>
+<tr><td><strong>YYYY-MM-DD 入り</strong></td><td>使い捨て。最新1本以外は履歴</td><td><code>plan-2026-08-01-*.md</code></td></tr>
+<tr><td><strong>宛先が入る</strong></td><td>渡した時点で役目終了</td><td><code>team-share-*.md</code></td></tr>
+<tr><td><strong>eps + 数字</strong></td><td>Kaggle 提出ID ごとのリプレイ倉庫</td><td><code>eps55163442/</code></td></tr>
+<tr><td><strong>*_autopsy.py / *_verdict.py</strong></td><td>特定の提出に対する1回限りの検死</td><td><code>autopsy_54961048.py</code></td></tr>
+<tr><td><strong>__pycache__ / *.pyc</strong></td><td>自動生成。無視してよい</td><td>—</td></tr>
+</tbody>
+</table>
+
+<h3>今どうなっているか知りたい時、どこを開くか</h3>
+<table>
+<thead><tr><th>知りたいこと</th><th>開く場所</th></tr></thead>
+<tbody>
+<tr><td>なぜ今この形なのか</td><td><code>docs/memo/decisions.md</code>（末尾から遡る）</td></tr>
+<tr><td>実際の数字</td><td><code>docs/memo/data.md</code>（提出履歴テーブル）</td></tr>
+<tr><td>いま何をやっているか</td><td><code>docs/memo/plan-2026-08-01-probe-campaign.md</code>（現在の正典）</td></tr>
+<tr><td>レポートの現状</td><td><code>docs/memo/writeup-v1-fulldraft.md</code>（v5、約1,950語）</td></tr>
+<tr><td>どの主張が使えるか</td><td><code>docs/memo/claims-ledger.md</code></td></tr>
+<tr><td>本番で今どう戦っているか</td><td><code>replay_analysis/probe_autopsy.py</code> を実行</td></tr>
+</tbody>
+</table>
+
+<div class="callout">
+  <div class="h">一行でまとめると</div>
+  <p>
+    <strong>src が作り、verification が測り、replay_analysis が本番で答え合わせし、docs がその判断を残す。</strong>
+    そして docs に残した記録が、そのまま Strategy 部門の提出物になる —
+    <strong>規律を守るために書いたログが、そのまま点数になる</strong>構造になっている。
+  </p>
+</div>
+</section>
+
+</main>
+</div>
+
+<footer>
+  docs/directory-guide.html ／ 作成 2026-08-02 ／ 対象: commit d2fa8d8 (branch yuji/verify-infra)<br>
+  ファイル数・サイズは作成時点の実測値。構成が変わったら実測し直すこと。
+</footer>
+
+</div>
+</body>
+</html>
