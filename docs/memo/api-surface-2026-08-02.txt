@@ -1,0 +1,323 @@
+API面の数え上げ — agent=main.py / api=cg/api.py
+定義: 21 クラス / 255 項目   参照あり 127 (50%)   **未参照 128**
+
+Enum AreaType  (9/12 参照)
+------------------------
+  ✓   1  DECK
+  ✓   2  HAND
+  ✓   2  DISCARD
+  ✓   3  ACTIVE
+  ✓   2  BENCH
+  ✓   1  PRIZE
+  ✓   2  STADIUM
+  ✗   —  ENERGY
+  ✓   2  TOOL
+  ✗   —  PRE_EVOLUTION
+  ✗   —  PLAYER
+  ✓   1  LOOKING
+
+Enum EnergyType  (0/12 参照)
+--------------------------
+  ✗   —  COLORLESS
+  ✗   —  GRASS
+  ✗   —  FIRE
+  ✗   —  WATER
+  ✗   —  LIGHTNING
+  ✗   —  PSYCHIC
+  ✗   —  FIGHTING
+  ✗   —  DARKNESS
+  ✗   —  METAL
+  ✗   —  DRAGON
+  ✗   —  RAINBOW
+  ✗   —  TEAM_ROCKET
+
+Enum CardType  (6/7 参照)
+-----------------------
+  ✓   2  POKEMON
+  ✓   3  ITEM
+  ✓   2  TOOL
+  ✓   3  SUPPORTER
+  ✓   2  STADIUM
+  ✓   2  BASIC_ENERGY
+  ✗   —  SPECIAL_ENERGY
+
+Enum SpecialConditionType  (0/5 参照)
+-----------------------------------
+  ✗   —  POISON
+  ✗   —  BURN
+  ✗   —  SLEEP
+  ✗   —  PARALYZE
+  ✗   —  CONFUSE
+
+Enum SelectType  (8/11 参照)
+--------------------------
+  ✓   2  MAIN
+  ✓   1  CARD
+  ✓   1  ATTACHED_CARD
+  ✓   1  CARD_OR_ATTACHED_CARD
+  ✗   —  ENERGY
+  ✗   —  SKILL
+  ✓   3  ATTACK
+  ✓   1  EVOLVE
+  ✓   1  COUNT
+  ✓   1  YES_NO
+  ✗   —  SPECIAL_CONDITION
+
+Enum SelectContext  (19/49 参照)
+------------------------------
+  ✓   2  MAIN
+  ✓   2  SETUP_ACTIVE_POKEMON
+  ✗   —  SETUP_BENCH_POKEMON
+  ✓   1  SWITCH
+  ✓   1  TO_ACTIVE
+  ✗   —  TO_BENCH
+  ✗   —  TO_FIELD
+  ✗   —  TO_HAND
+  ✓   2  DISCARD
+  ✓   1  TO_DECK
+  ✓   1  TO_DECK_BOTTOM
+  ✓   1  TO_PRIZE
+  ✗   —  NOT_MOVE
+  ✓   1  DAMAGE_COUNTER
+  ✓   1  DAMAGE_COUNTER_ANY
+  ✓   1  DAMAGE
+  ✓   1  REMOVE_DAMAGE_COUNTER
+  ✓   1  HEAL
+  ✗   —  EVOLVES_FROM
+  ✗   —  EVOLVES_TO
+  ✗   —  DEVOLVE
+  ✗   —  ATTACH_FROM
+  ✗   —  ATTACH_TO
+  ✗   —  DETACH_FROM
+  ✗   —  LOOK
+  ✗   —  EFFECT_TARGET
+  ✓   1  DISCARD_ENERGY_CARD
+  ✓   1  DISCARD_TOOL_CARD
+  ✗   —  SWITCH_ENERGY_CARD
+  ✓   1  DISCARD_CARD_OR_ATTACHED_CARD
+  ✓   1  DISCARD_ENERGY
+  ✗   —  TO_HAND_ENERGY
+  ✗   —  TO_DECK_ENERGY
+  ✗   —  SWITCH_ENERGY
+  ✗   —  SKILL_ORDER
+  ✓   3  ATTACK
+  ✗   —  DISABLE_ATTACK
+  ✓   1  EVOLVE
+  ✗   —  DRAW_COUNT
+  ✗   —  DAMAGE_COUNTER_COUNT
+  ✗   —  REMOVE_DAMAGE_COUNTER_COUNT
+  ✗   —  IS_FIRST
+  ✗   —  MULLIGAN
+  ✗   —  ACTIVATE
+  ✗   —  FIRST_EFFECT
+  ✗   —  MORE_DEVOLVE
+  ✗   —  COIN_HEAD
+  ✗   —  AFFECT_SPECIAL_CONDITION
+  ✗   —  RECOVER_SPECIAL_CONDITION
+
+Enum OptionType  (10/17 参照)
+---------------------------
+  ✗   —  NUMBER
+  ✓   1  YES
+  ✗   —  NO
+  ✓   1  CARD
+  ✗   —  TOOL_CARD
+  ✗   —  ENERGY_CARD
+  ✗   —  ENERGY
+  ✓   1  PLAY
+  ✓   1  ATTACH
+  ✓   1  EVOLVE
+  ✓   1  ABILITY
+  ✓   2  DISCARD
+  ✓   1  RETREAT
+  ✓   3  ATTACK
+  ✓   1  END
+  ✗   —  SKILL
+  ✗   —  SPECIAL_CONDITION
+
+Enum LogType  (5/24 参照)
+-----------------------
+  ✗   —  SHUFFLE
+  ✗   —  HAS_BASIC_POKEMON
+  ✗   —  TURN_START
+  ✗   —  TURN_END
+  ✗   —  DRAW
+  ✗   —  DRAW_REVERSE
+  ✗   —  MOVE_CARD
+  ✗   —  MOVE_CARD_REVERSE
+  ✓   1  SWITCH
+  ✗   —  CHANGE
+  ✓   1  PLAY
+  ✓   1  ATTACH
+  ✓   1  EVOLVE
+  ✗   —  DEVOLVE
+  ✗   —  MOVE_ATTACHED
+  ✓   3  ATTACK
+  ✗   —  HP_CHANGE
+  ✗   —  POISONED
+  ✗   —  BURNED
+  ✗   —  ASLEEP
+  ✗   —  PARALYZED
+  ✗   —  CONFUSED
+  ✗   —  COIN
+  ✗   —  RESULT
+
+data Card  (2/3 参照)
+-------------------
+  ✓  23  id
+  ✗   —  serial
+  ✓   8  playerIndex
+
+data Pokemon  (7/9 参照)
+----------------------
+  ✓  23  id
+  ✗   —  serial
+  ✓  16  hp
+  ✓   3  maxHp
+  ✗   —  appearThisTurn
+  ✓   8  energies
+  ✓   2  energyCards
+  ✓   1  tools
+  ✓   1  preEvolution
+
+data PlayerState  (7/13 参照)
+---------------------------
+  ✓   8  active
+  ✓   5  bench
+  ✗   —  benchMax
+  ✓   3  deckCount
+  ✓   2  discard
+  ✓   5  prize
+  ✓   3  handCount
+  ✓   8  hand
+  ✗   —  poisoned
+  ✗   —  burned
+  ✗   —  asleep
+  ✗   —  paralyzed
+  ✗   —  confused
+
+data State  (5/12 参照)
+---------------------
+  ✓   2  turn
+  ✗   —  turnActionCount
+  ✓   5  yourIndex
+  ✗   —  firstPlayer
+  ✗   —  supporterPlayed
+  ✗   —  stadiumPlayed
+  ✗   —  energyAttached
+  ✗   —  retreated
+  ✓   8  result
+  ✗   —  stadium
+  ✓   2  looking
+  ✓  19  players
+
+data Option  (10/14 参照)
+-----------------------
+  ✓  15  type
+  ✓   3  number
+  ✓  15  area
+  ✓  16  index
+  ✓   8  playerIndex
+  ✗   —  toolIndex
+  ✗   —  energyIndex
+  ✓  10  count
+  ✓   3  inPlayArea
+  ✓   2  inPlayIndex
+  ✓   5  attackId
+  ✓   3  cardId
+  ✗   —  serial
+  ✗   —  specialConditionType
+
+data SelectData  (6/10 参照)
+--------------------------
+  ✓  15  type
+  ✓   1  context
+  ✓  14  minCount
+  ✓  13  maxCount
+  ✗   —  remainDamageCounter
+  ✗   —  remainEnergyCost
+  ✓  17  option
+  ✓   8  deck
+  ✗   —  contextCard
+  ✗   —  effect
+
+data Log  (5/24 参照)
+-------------------
+  ✓  15  type
+  ✓   8  playerIndex
+  ✗   —  hasBasicPokemon
+  ✓   3  cardId
+  ✗   —  serial
+  ✗   —  fromArea
+  ✗   —  toArea
+  ✗   —  cardIdActive
+  ✗   —  serialActive
+  ✗   —  cardIdBench
+  ✗   —  serialBench
+  ✗   —  cardIdBefore
+  ✗   —  serialBefore
+  ✗   —  cardIdAfter
+  ✗   —  serialAfter
+  ✗   —  cardIdTarget
+  ✗   —  serialTarget
+  ✓   5  attackId
+  ✗   —  value
+  ✗   —  putDamageCounter
+  ✗   —  isRecover
+  ✗   —  head
+  ✓   8  result
+  ✗   —  reason
+
+data Observation  (3/4 参照)
+--------------------------
+  ✓  12  select
+  ✗   —  logs
+  ✓   9  current
+  ✓   1  search_begin_input
+
+data SearchState  (2/2 参照)
+--------------------------
+  ✓   2  observation
+  ✓   3  searchId
+
+data ApiResult  (2/2 参照)
+------------------------
+  ✓  48  state
+  ✓   3  error
+
+data Skill  (2/2 参照)
+--------------------
+  ✓   1  name
+  ✓   5  text
+
+data CardData  (14/18 参照)
+-------------------------
+  ✓   3  cardId
+  ✓   1  name
+  ✓   9  cardType
+  ✗   —  retreatCost
+  ✓  16  hp
+  ✓   2  weakness
+  ✓   2  resistance
+  ✓   2  energyType
+  ✗   —  basic
+  ✓   1  stage1
+  ✓   1  stage2
+  ✓   2  ex
+  ✓   1  megaEx
+  ✗   —  tera
+  ✗   —  aceSpec
+  ✓   2  evolvesFrom
+  ✓   1  skills
+  ✓   8  attacks
+
+data Attack  (5/5 参照)
+---------------------
+  ✓   5  attackId
+  ✓   1  name
+  ✓   5  text
+  ✓   3  damage
+  ✓   8  energies
+
+注意: 判定は識別子の grep であり、意味的な使用を保証しない。
+      出力は『未参照の候補』であって『未使用の証明』ではない。1件ずつ人が見ること。
