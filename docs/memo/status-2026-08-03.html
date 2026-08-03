@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026-08-03 いま何が起きていてどう進めているか</title>
+<style>
+:root{
+  color-scheme: light;
+  --page:#f9f9f7; --surface:#fcfcfb;
+  --ink:#0b0b0b; --ink-2:#52514e; --ink-muted:#898781;
+  --grid:#e1e0d9; --baseline:#c3c2b7; --ring:rgba(11,11,11,.10);
+  --s1:#2a78d6; --s2:#eb6834;
+  --good:#0ca30c; --critical:#d03b3b; --warning:#fab219;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19;
+    --ink:#ffffff; --ink-2:#c3c2b7; --ink-muted:#898781;
+    --grid:#2c2c2a; --baseline:#383835; --ring:rgba(255,255,255,.10);
+    --s1:#3987e5; --s2:#d95926;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --page:#0d0d0d; --surface:#1a1a19;
+  --ink:#ffffff; --ink-2:#c3c2b7; --ink-muted:#898781;
+  --grid:#2c2c2a; --baseline:#383835; --ring:rgba(255,255,255,.10);
+  --s1:#3987e5; --s2:#d95926;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:1.5rem}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;
+  background:var(--page); color:var(--ink); line-height:1.8;
+  -webkit-font-smoothing:antialiased; font-feature-settings:"palt" 1;
+}
+.wrap{max-width:900px;margin:0 auto;padding:0 1.4rem 6rem}
+header{padding:3.5rem 0 2rem;border-bottom:1px solid var(--grid)}
+.eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;color:var(--ink-muted);text-transform:uppercase}
+h1{font-size:clamp(1.7rem,4.6vw,2.5rem);line-height:1.3;margin:.6rem 0 .8rem;letter-spacing:-.02em}
+.lede{color:var(--ink-2);font-size:1.02rem;max-width:64ch}
+.stamp{margin-top:1.2rem;font-family:var(--mono);font-size:.72rem;color:var(--ink-muted);line-height:1.8}
+section{margin-top:3rem}
+h2{font-size:1.3rem;letter-spacing:-.01em;margin-bottom:.6rem;line-height:1.45}
+h2 .num{font-family:var(--mono);font-size:.78rem;color:var(--ink-muted);display:block;margin-bottom:.15rem}
+h3{font-size:.99rem;margin:1.7rem 0 .5rem}
+p{margin:.7rem 0;color:var(--ink-2)}
+p strong,li strong,td strong,th strong{color:var(--ink);font-weight:700}
+ul{margin:.6rem 0 .6rem 1.2rem;color:var(--ink-2)}li{margin:.3rem 0}
+code{font-family:var(--mono);font-size:.85em;background:var(--surface);border:1px solid var(--ring);border-radius:5px;padding:.08em .38em;color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:.85rem;margin:1rem 0;display:block;overflow-x:auto}
+@media(min-width:640px){table{display:table}}
+th{text-align:left;font-size:.68rem;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);font-weight:400;padding:.5rem .7rem;border-bottom:1px solid var(--baseline);white-space:nowrap}
+td{padding:.55rem .7rem;border-bottom:1px solid var(--grid);color:var(--ink-2);vertical-align:top}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr:hover td{background:var(--surface)}
+.q{background:var(--surface);border:1px solid var(--ring);border-left:3px solid var(--s1);border-radius:0 10px 10px 0;padding:.9rem 1.15rem;margin:1.2rem 0;font-size:.92rem;color:var(--ink-2)}
+.q .src{display:block;font-family:var(--mono);font-size:.68rem;color:var(--ink-muted);margin-top:.45rem}
+.box{border:1px solid var(--ring);border-radius:10px;padding:1rem 1.2rem;margin:1.2rem 0;background:var(--surface)}
+.box .h{font-size:.69rem;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-muted);margin-bottom:.4rem}
+.box.warn{border-color:var(--warning)}.box.warn .h{color:var(--warning)}
+.box.crit{border-color:var(--critical)}.box.crit .h{color:var(--critical)}
+.box.ok{border-color:var(--good)}.box.ok .h{color:var(--good)}
+.box p:first-of-type{margin-top:0}.box p:last-child{margin-bottom:0}
+.pill{display:inline-block;font-family:var(--mono);font-size:.67rem;padding:.08rem .48rem;border-radius:99px;border:1px solid;white-space:nowrap}
+.pill.dead{color:var(--critical);border-color:var(--critical)}
+.pill.live{color:var(--good);border-color:var(--good)}
+.pill.warn{color:var(--warning);border-color:var(--warning)}
+.mark{font-family:var(--mono);font-weight:700}
+.mark.ok{color:var(--good)}.mark.ng{color:var(--critical)}
+figure{background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:1.2rem 1.3rem 1rem;margin:1.4rem 0}
+figcaption{font-size:.96rem;font-weight:700;margin-bottom:.2rem;line-height:1.5;color:var(--ink)}
+.sub{font-size:.78rem;color:var(--ink-2);margin-bottom:1rem;line-height:1.6}
+.legend{display:flex;gap:1.1rem;font-size:.76rem;color:var(--ink-2);margin-bottom:.9rem;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:.35rem;vertical-align:-1px}
+.db{display:grid;grid-template-columns:minmax(84px,auto) 1fr;gap:.6rem;align-items:center;margin:.55rem 0}
+.dbl{font-size:.78rem;color:var(--ink);text-align:right;font-weight:700}
+.dbt{position:relative;height:24px}
+.dbline{position:absolute;top:50%;height:2px;background:var(--baseline);transform:translateY(-50%)}
+.dot{position:absolute;top:50%;width:11px;height:11px;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 2px var(--surface)}
+.dot.a{background:var(--s1)}.dot.b{background:var(--s2)}
+.dnum{position:absolute;top:50%;transform:translate(-50%,-50%);font-size:.68rem;font-variant-numeric:tabular-nums;color:var(--ink-muted);white-space:nowrap}
+.axis{margin-left:calc(84px + .6rem);border-top:1px solid var(--baseline);position:relative;height:20px;margin-top:.5rem}
+.tick{position:absolute;top:3px;transform:translateX(-50%);font-size:.67rem;color:var(--ink-muted);font-variant-numeric:tabular-nums}
+footer{margin-top:4rem;padding-top:1.4rem;border-top:1px solid var(--grid);font-size:.75rem;color:var(--ink-muted);font-family:var(--mono);line-height:1.9}
+nav.toc{background:var(--surface);border:1px solid var(--ring);border-radius:10px;padding:1rem 1.2rem;margin:1.8rem 0}
+nav.toc a{display:inline-block;color:var(--s1);text-decoration:none;font-size:.83rem;margin-right:1.1rem;padding:.15rem 0}
+nav.toc a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">pokemonabc / 作戦共有</div>
+  <h1>2026-08-03 いま何が起きていて<br>どう進めているか</h1>
+  <p class="lede">
+    ゆうじの「<strong>現状のデッキとロジックでは優勝に足りない</strong>」「<strong>記事から逆算する作戦が
+    新しいアイデアを阻止している</strong>」という指摘を受けて、作戦を組み替えた1日の記録。
+    結論から言うと <strong>指摘は当たっていて、しかも思っていたより差は大きかった</strong>。
+    <strong>デッキを1枚差し替えるだけで勝率が60pt動く</strong>ことを実測した。
+  </p>
+  <div class="stamp">
+    作成 2026-08-03 ／ 記録先: decisions.md <strong>D63</strong>、data.md 同日5節、CLAUDE.md 訂正1件<br>
+    新設した計器: band_meta_census / field_ev / ladder_scout / action_vocabulary / card_support_scan / extract_meta_decks<br>
+    対戦数: デッキ入替 1,000戦 ＋ ゲージ掃引 1,600戦 ＋ 安全ゲート 480戦 ／ 全て CRASH=0
+  </div>
+</header>
+
+<nav class="toc">
+  <a href="#s1">1. 何を変えたか</a>
+  <a href="#s2">2. 最大の実測</a>
+  <a href="#s3">3. なぜそうなるのか</a>
+  <a href="#s4">4. デッキの成績表</a>
+  <a href="#s5">5. 分かっていないこと</a>
+  <a href="#s6">6. 今日4回踏んだ罠</a>
+  <a href="#s7">7. 次の一手</a>
+</nav>
+
+<section id="s1">
+  <h2><span class="num">01</span>何を変えたか — 記事を凍結して、デッキ軸へ</h2>
+
+  <p>
+    ゆうじの承認で2つ決めた。<strong>①Strategy記事は8/16まで凍結(手を触れない)</strong>
+    <strong>②デッキ転換を検討対象に入れる</strong>。
+  </p>
+
+  <div class="box ok">
+    <div class="h">凍結の根拠 — 時間が非対称だった</div>
+    <p>
+      Sim(オンライン)は残り<strong>14日</strong>。Strategy記事は残り<strong>42日</strong>で、
+      <strong>うち29日は提出が終わった後</strong>。しかも運営は「締切後およそ2週間、
+      凍結したエージェント同士の対戦が続く」「締切後はエピソード配信頻度を上げる」と明言している。
+      <strong>記事は後で書ける。オンラインだけが戻らない。</strong>
+    </p>
+    <p>
+      そもそも我々の運用規範(playbook §7)は「<strong>8/17以降=執筆</strong>」と決めてあった。
+      記事から逆算していたのは<strong>自分たちの規定を先食いしていた</strong>状態で、
+      凍結は規定に戻すだけだった。
+    </p>
+  </div>
+
+  <p>
+    そして「記事から逆算する作戦が邪魔をしている」というゆうじの指摘は、<strong>仮説ではなく再発</strong>だった。
+    D62の本文に「この懸念は当たっていた」と既に書いてある。<strong>そして私は今日それを再現した</strong> —
+    地図が変わった直後に、決まっている実行列の項目に直行した。2例目。
+  </p>
+
+  <div class="q">
+    hyper-optimized simulation agent is interesting, <strong>it doesn't tell the whole story</strong>
+    behind the Pokémon TCG, <strong>gameplay, deckcrafting, and underlying strategic decisions</strong>
+    that go into playing a top tier deck.
+    <span class="src">Kaggle運営スタッフ / Strategy部門の固定スレッド(我々は未読だった)</span>
+  </div>
+
+  <p>
+    <strong>運営自身が「deckcrafting」を名指しで評価軸に挙げていた。</strong>
+    ゆうじの「記事が面白くない」という直感は、運営の評価軸と一致していた。
+  </p>
+</section>
+
+<section id="s2">
+  <h2><span class="num">02</span>最大の実測 — デッキだけで60pt動いた</h2>
+
+  <p>
+    <code>main.py</code>(操縦者)を<strong>1バイトも変えず</strong>、<code>deck.csv</code> だけを
+    実ラダーから抽出した本物のデッキに差し替えて、同じ相手(Alakazamゲージ)と200戦ずつ戦わせた。
+  </p>
+
+  <table>
+    <thead><tr><th>我々の操縦者 × このデッキ</th><th class="num">事前予測</th><th class="num">実測</th><th class="num">差</th></tr></thead>
+    <tbody>
+      <tr><td><strong>tarountula</strong></td><td class="num">84.8%</td><td class="num"><strong>94.5%</strong></td><td class="num">+9.7</td></tr>
+      <tr><td><strong>crustle</strong></td><td class="num">55.0%</td><td class="num"><strong>85.0%</strong></td><td class="num">+30.0</td></tr>
+      <tr><td>starmie(現行=対照)</td><td class="num">44.7%</td><td class="num">57.0%</td><td class="num">+12.3</td></tr>
+      <tr><td>garchomp</td><td class="num">39.4%</td><td class="num">51.5%</td><td class="num">+12.1</td></tr>
+      <tr><td><strong>grimmsnarl</strong></td><td class="num">58.1%</td><td class="num"><strong>35.0%</strong></td><td class="num">−23.1</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box crit">
+    <div class="h">桁が違う</div>
+    <p>
+      同じ操縦者・同じ相手で、<strong>35.0% 〜 94.5% = 60pt</strong>。
+      対照(現行デッキ)の57.0%は、前回D61で測った57.3%をほぼ完全に再現したので、
+      測定環境そのものは健全だと確認できている。
+    </p>
+    <p>
+      比較のために書くと、<strong>我々が7ヶ月かけて測った操縦者側の最大の介入</strong>
+      (探索・上書き層をまるごとON/OFFした対照実験)は <strong>+13.62pt</strong> だった。
+      <strong>デッキ軸はその4倍以上の幅を持っている。</strong>
+    </p>
+  </div>
+
+  <p>
+    測定前に<strong>予測を封じてから</strong>測った。予測は実ラダーの対面勝率をそのまま使った。
+    結果、<strong>予測した順序は壊れた</strong> — grimmsnarl は予測2位から実測5位へ、23pt落ちた。
+    これは「デッキの強さはそのまま我々に移らない」ことの直接の証拠になる。
+  </p>
+</section>
+
+<section id="s3">
+  <h2><span class="num">03</span>なぜそうなるのか — 機構が特定できた</h2>
+
+  <p>我々の操縦者が特性(ポケモンの能力)を扱うコードは、<strong>これだけ</strong>である。</p>
+
+  <div class="box warn">
+    <div class="h">main.py:335 — 全部で3行</div>
+    <p><code>idx = first(lambda o: o.type == OptionType.ABILITY)</code></p>
+    <p><code>if idx is not None: return [idx]</code></p>
+    <p style="margin-top:.6rem">
+      <strong>提示された最初の特性を、中身を見ずに押しているだけ。</strong>
+      どの特性か、何を対象にするか、使うべきかは一切判断していない。
+    </p>
+  </div>
+
+  <p>
+    そしてホスト(運営)の裁定では、特性には2種類ある —
+    <strong>ABILITY = 明示的に選ぶ行動</strong> と <strong>SKILL = 受動・常在で自動適用</strong>。
+    ここで綺麗に割れた。
+  </p>
+
+  <table>
+    <thead><tr><th>デッキ</th><th>強さの動力源</th><th>選択の要否</th><th class="num">我々の実測</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>tarountula</strong></td>
+        <td>Articuno「Repelling Veil」= 相手の攻撃の<strong>効果</strong>を無効化(<strong>常在</strong>)</td>
+        <td><span class="pill live">不要</span></td>
+        <td class="num"><strong>94.5%</strong></td>
+      </tr>
+      <tr>
+        <td>crustle</td>
+        <td>Crustle の壁(常在)+ 高耐久</td>
+        <td><span class="pill warn">運用が要る</span></td>
+        <td class="num">85.0%</td>
+      </tr>
+      <tr>
+        <td><strong>grimmsnarl</strong></td>
+        <td>Munkidori = ダメカンを最大3個「どこからどこへ」移す /
+            Punk Up = 悪エネ5枚を「好きなように」配分</td>
+        <td><span class="pill dead">選択が必須</span></td>
+        <td class="num"><strong>35.0%</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="box ok">
+    <div class="h">得られた原理(機構つきの仮説)</div>
+    <p>
+      <strong>我々の操縦者が引き出せるデッキ性能は、そのデッキの動力源が
+      「常在効果」か「能動的な対象選択」かで決まる。</strong>
+      前者は操縦不要で満額出る。後者は先頭選択の盲打ちになり、実ラダーより20pt級で劣化する。
+    </p>
+  </div>
+
+  <p>
+    <strong>tarountula が Alakazam を狩る理由も機構で説明できた。</strong>
+    Alakazam の攻撃「Strange Hacking」は<strong>ダメージが n/a</strong> —
+    こんらん付与とダメカン移動という<strong>純粋な"効果"</strong>しか持たない。
+    Articuno の Repelling Veil は、その効果を丸ごと無効化する。
+    外部の3つの独立した観測(公開分析72% / 実ラダー84.8% / 我々の測定94.5%)が
+    <strong>同じ向きで、機構つきで一致した</strong>。
+  </p>
+
+  <div class="box">
+    <div class="h">この実験は「前例のない向き」だった</div>
+    <p>
+      公開されている最大の先行研究(citerne)は<strong>デッキを固定して操縦者を入れ替える</strong>実験をした。
+      我々が今日やったのは<strong>操縦者を固定してデッキを入れ替える</strong> —
+      <strong>その直交補</strong>で、291件の公開ノートブック監査でも前例がなかった。
+    </p>
+    <p>
+      これは深夜の超会議で出た未解決の問い
+      「<strong>我々の計器は全部デッキ固定・操縦者可変の設計。逆を一度もやっていない。道具の向きが逆では</strong>」
+      への回答でもある。
+    </p>
+  </div>
+</section>
+
+<section id="s4">
+  <h2><span class="num">04</span>デッキの成績表 — 3つのゲージで掃引した</h2>
+
+  <p>
+    1つの相手だけで判断すると誤る。較正済みのゲージ3体(Alakazam / Lucario / Archaludon)に
+    全デッキをぶつけた。合計1,600戦、全セル CRASH=0。
+  </p>
+
+  <table>
+    <thead><tr>
+      <th>デッキ</th><th class="num">Alakazam</th><th class="num">Lucario</th><th class="num">Archaludon</th>
+      <th class="num">フィールド加重</th><th class="num">vs random(安全)</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>crustle</strong></td><td class="num">85.0%</td><td class="num">39.0%</td>
+        <td class="num"><strong>75.0%</strong></td><td class="num"><strong>71.5%</strong></td>
+        <td class="num"><span class="pill dead">78.3% 失格</span></td>
+      </tr>
+      <tr>
+        <td><strong>tarountula</strong></td><td class="num"><strong>94.5%</strong></td><td class="num">60.5%</td>
+        <td class="num"><strong>9.0%</strong></td><td class="num"><strong>68.8%</strong></td>
+        <td class="num"><span class="pill live">98.3% 通過</span></td>
+      </tr>
+      <tr>
+        <td>starmie(現行)</td><td class="num">57.0%</td><td class="num">48.0%</td>
+        <td class="num">27.0%</td><td class="num">48.7%</td><td class="num">—(王者)</td>
+      </tr>
+      <tr>
+        <td>grimmsnarl</td><td class="num">35.0%</td><td class="num">31.5%</td>
+        <td class="num">18.5%</td><td class="num">30.8%</td><td class="num">95.8%</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    <strong>現行比: crustle +22.8pt / tarountula +20.1pt / grimmsnarl −17.9pt。</strong>
+  </p>
+
+  <h3>読み取れる形</h3>
+  <ul>
+    <li>
+      <strong>tarountula は「専門家」だった</strong>。事前の実ラダー予測どおり —
+      Alakazam に94.5%、しかし <strong>Archaludon に9.0%</strong>。
+      <strong>1つのゲージだけで判断していたら完全に誤っていた。</strong>
+    </li>
+    <li>
+      <strong>crustle は逆の形</strong>。我々の最悪対面である Archaludon を
+      <strong>27.0% → 75.0%(+48pt)</strong>に改善するが、Lucario で39.0%に沈む。
+      そして<strong>安全フロア(vs random ≥96%)を割るので、このままでは提出できない</strong>。
+    </li>
+  </ul>
+</section>
+
+<section id="s5">
+  <h2><span class="num">05</span>分かっていないこと — ここを隠さない</h2>
+
+  <div class="box crit">
+    <div class="h">覆域は53.1%しかない</div>
+    <p>
+      較正ゲージがあるのは Alakazam(29.2%)・Lucario(13.2%)・Archaludon(10.7%)の3つだけ。
+      <strong>grimmsnarl(19.3%)と crustle(13.5%)= フィールドの32.8%は測れていない。</strong>
+    </p>
+    <p>
+      しかも <strong>tarountula は実ラダーで grimmsnarl に35.7%で負ける</strong>ので、
+      真のフィールド加重は上の表より低い。
+    </p>
+  </div>
+
+  <p>
+    <strong>穴を実ラダーの数字で埋めることは禁止にした。</strong>
+    実ラダーの値は「そのデッキを<strong>その持ち主が</strong>操縦した」数字であり、
+    grimmsnarl では我々の操縦者が 58.1% → 35.0% と<strong>23pt落として</strong>いる。
+    混ぜれば、今日4回踏んだのと同じ「単位の取り違え」になる。
+  </p>
+
+  <h3>Grimmsnarl のゲージが作れない</h3>
+  <p>
+    埋めるべき穴は Grimmsnarl だと分かっている。<strong>デッキは既に手元にある</strong>
+    (実ラダーの723体中505体が完全一致する標準形を抽出済み)。<strong>足りないのは操縦者だけ</strong>。
+  </p>
+  <p>
+    そこで公開ノートブック291件を検索したが、<strong>Grimmsnarl を自分のデッキとして使っている
+    エージェントは0件だった</strong>。
+  </p>
+
+  <div class="q">
+    Marnie's エージェントを競争力のある水準で作るのが一番簡単。<strong>単にデータが大量にあるから</strong>。
+    それがさらに Marnie's を増やすサイクルを生む。集中しすぎて負債になるまで。
+    <span class="src">Jake(Sim部門 8位)/ 公開掲示板</span>
+  </div>
+
+  <p>
+    <strong>Grimmsnarl は 1000-1099帯で 33.5% = 最大勢力なのに、誰も公開していない。</strong>
+    皆リプレイから模倣学習していて、公開スケルトンから作っていないから。
+    この事実自体が、レポートに書ける観測になる。
+  </p>
+
+  <p>
+    他にも留保がある — 各ゲージは<strong>操縦者1体</strong>なので絶対値は楽観側に出る。
+    ミラー戦は未測定。そして<strong>これは層S(スクリーニング)であって、採否判断には使えない</strong>
+    (採用には Neyman N=3,200 の本測定と安全ゲート一式が要る)。
+  </p>
+</section>
+
+<section id="s6">
+  <h2><span class="num">06</span>今日4回踏んだ罠 — これ自体が記事の材料になる</h2>
+
+  <p>
+    今日は同じ型の測定ミスを<strong>4回</strong>踏んだ。全部「統計的に有意かどうか」ではなく、
+    <strong>「何を1と数えるか」と「何を黙って捨てたか」</strong>だった。
+  </p>
+
+  <table>
+    <thead><tr><th class="num">#</th><th>誤り</th><th>実体</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td>外部データが<strong>チーム</strong>単位、我々の計器は<strong>遭遇</strong>単位</td>
+          <td>前日の決定(D62)の統計的根拠が成立しなくなった</td></tr>
+      <tr><td class="num">2</td><td>「上位帯は crustle が60.8%」</td>
+          <td>distinct なチーム数では <strong>crustle 4体 vs grimmsnarl 67体</strong>。
+              少数のエージェントが大量に試合していただけ</td></tr>
+      <tr><td class="num">3</td><td>「800帯は lucario が30.8%」</td>
+          <td>1体(725戦)の寄与。斥候を広げたら <strong>18.4%</strong> に落ちた</td></tr>
+      <tr><td class="num">4</td><td>自作の計算器が標本の少ないセルを<strong>黙って除外</strong></td>
+          <td>たまたま負け対面2つだけが落ち、あるデッキの評価が <strong>+8.1pt 水増し</strong>された</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box warn">
+    <div class="h">4件に共通すること</div>
+    <p>
+      <strong>計器はどの場合も、堂々と信頼区間つきの数字を出していた。</strong>
+      間違っていることを教えてくれる仕組みは、どこにも無かった。
+      これは我々が以前から書いている「実験設計には計器が無い」という主張の、
+      同じ日に4例の実証になった。
+    </p>
+    <p style="margin-top:.6rem">
+      対策として、計器そのものに<strong>「distinct な提出数を必ず併記する」</strong>
+      <strong>「落としたセルを必ず開示する」</strong>を組み込んだ。次から自動で見える。
+    </p>
+  </div>
+</section>
+
+<section id="s7">
+  <h2><span class="num">07</span>次の一手</h2>
+
+  <h3>私が進めること(承認不要)</h3>
+  <ul>
+    <li>
+      <strong>crustle が安全フロアを割る機構の特定。</strong> 仮説は立っている —
+      この構成は <strong>Mega Kangaskhan ex(倒されるとサイド3枚)</strong>を抱えていて、
+      我々の操縦者は<strong>バトル場に出す個体を「エネ枚数→打点→HP」で選び、
+      サイド負債を一切見ていない</strong>。HP300の負債を前に出して献上している疑い。
+      <strong>同じ欠陥は現行デッキにもある</strong>(Mega Starmie ex も3枚、それを4枚積んでいる)。
+    </li>
+    <li>
+      これは<strong>機構が特定済みの操縦者修理</strong>なので、我々の規範では最優先の標的になる。
+      直せば現行デッキも crustle も同時に良くなる可能性がある。
+    </li>
+    <li>Grimmsnarl の穴は「埋められない」ことを限界として明記したうえで進める。</li>
+  </ul>
+
+  <h3>ゆうじの判断が要ること</h3>
+  <ul>
+    <li>
+      <strong>提出</strong>。tarountula は安全ゲートを通り、フィールド加重で現行比 +20.1pt。
+      ただし<strong>層Sの数字なので、このまま出すのは我々の規範違反</strong>。
+      本測定(層B)を通すか、それとも「本番を計器として使う」プローブとして出すかは、
+      枠の使い方の判断になる。<strong>数字を揃えてから改めて持っていく。</strong>
+    </li>
+    <li>
+      <strong>デッキ転換そのもの</strong>は既に「検討対象に入れる」承認をもらっているが、
+      実際に王者を差し替えるのは別の決定。
+    </li>
+  </ul>
+
+  <div class="box">
+    <div class="h">率直な現状評価</div>
+    <p>
+      ゆうじの読みは当たっていた。<strong>デッキ軸には、操縦者軸の4倍以上の余地があった。</strong>
+      ただし「上位デッキに乗り換える」だけは外部データが正面から否定している
+      (公開された74,634試合の分析: <strong>LBで支配的に見えた時点で、そのデッキの優位は既に消えている</strong>)。
+      だから基準は「上位が使っているか」ではなく
+      <strong>「フィールドに対するEV × シェアの低さ」</strong>に置いた。
+      tarountula(シェア3.2%)がその基準で最初に上がってきた候補になる。
+    </p>
+  </div>
+</section>
+
+<footer>
+  pokemonabc / 2026-08-03<br>
+  一次記録: docs/memo/decisions.md D63 ／ docs/memo/data.md 2026-08-03 の5節<br>
+  新設した計器: replay_analysis/{band_meta_census, field_ev, ladder_scout, action_vocabulary, extract_meta_decks}.py ／ verification/card_support_scan.py<br>
+  この文書は説明用。<strong>数値の正典は data.md</strong>。
+</footer>
+
+</div>
+</body>
+</html>
