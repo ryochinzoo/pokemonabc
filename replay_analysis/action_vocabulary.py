@@ -55,23 +55,41 @@ def load_names():
 NAMES = load_names()
 
 
+def _max_merge(a, b):
+    out = Counter()
+    for k in set(a) | set(b):
+        out[k] = max(a[k], b[k])
+    return out
+
+
 def scan_game(path, my_index):
-    """1試合ぶんの、自分側の行動カウント。"""
+    """1試合ぶんの、自分側の行動カウント。
+
+    2026-08-04 修理(red-team-D 実証): 旧版は step 内の**両view**の同一ログを合算しており、
+    全計数が約2倍だった(view0=6/view1=5 の試合を 11 と数えていた)。同じイベントは両者の
+    observation.logs に載る。正しくは **view 別に数えて、キーごとに max でマージ**する
+    (mechanism_autopsy.per_turn_view の規約。片側でなく max なのは、終局間際のイベントが
+    片方の view に欠けうるため。キー単位 max は per-turn max の近似 — 両viewが同一キーの
+    **別々の**インスタンスを欠く稀ケースのみ過小になる)。
+    """
     try:
         d = json.loads(path.read_text())
     except Exception:
         return None
-    c = Counter()
-    attacks = Counter()        # attackId -> n
-    attackers = Counter()      # cardId -> n
-    played = Counter()         # cardId -> n
-    prev = [None, None]
-    for step in d.get("steps", []):
-        for si, ag in enumerate(step):
-            logs = (ag.get("observation") or {}).get("logs")
-            if logs is None or logs == prev[si]:
+    views = []
+    for si in (0, 1):
+        c = Counter()
+        attacks = Counter()        # attackId -> n
+        attackers = Counter()      # cardId -> n
+        played = Counter()         # cardId -> n
+        prev = None
+        for step in d.get("steps", []):
+            if si >= len(step):
+                continue
+            logs = (step[si].get("observation") or {}).get("logs")
+            if logs is None or logs == prev:
                 continue                      # 再送の重複排除(台帳#31)
-            prev[si] = logs
+            prev = logs
             for L in logs:
                 t, p = L.get("type"), L.get("playerIndex")
                 if t == TURN_START:
@@ -95,7 +113,8 @@ def scan_game(path, my_index):
                     c["switch"] += 1
                 elif t in STATUS and not L.get("isRecover"):
                     c["status_taken"] += 1     # 自分が受けた状態異常
-    return c, attacks, attackers, played
+        views.append((c, attacks, attackers, played))
+    return tuple(_max_merge(x, y) for x, y in zip(views[0], views[1]))
 
 
 def main(per_agent=30):

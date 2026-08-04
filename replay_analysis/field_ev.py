@@ -57,9 +57,17 @@ def main(lo=800, hi=1100):
         print(f"  {a:<14}{100*c/tot:5.1f}%  ({c})")
 
     # --- 対面行列(同帯対戦のみ) ---
+    # 2026-08-04 修理(red-team-D/ood 実証): 旧版は行列に**我々自身の試合を含めており**、
+    # 検算(starmie行の予測 vs 我々の実測)が部分循環になっていた(重複35.6%、自チーム除外で
+    # 予測が 41.5→53.8% に動く)。行列は「フィールドの持ち主たちのデッキ対デッキ」を表すべきなので
+    # 我々の側が絡む試合は除外する。
     mat = defaultdict(lambda: [0, 0, set(), set()])
+    n_ours_dropped = 0
     for sides in games.values():
         a, b = sides
+        if a["sub"] in B.OUR_SUBS or b["sub"] in B.OUR_SUBS:
+            n_ours_dropped += 1
+            continue
         if a["score"] is None or b["score"] is None:
             continue
         if not (lo <= a["score"] < hi and lo <= b["score"] < hi):
@@ -115,7 +123,10 @@ def main(lo=800, hi=1100):
                   + "  ← EVはこの分だけ偏りうる")
 
     # --- 検算: 我々の予測 vs 実測 ---
-    print("\n## 検算 — starmie(我々)の予測EV vs 実ラダー実測")
+    # 注意(2026-08-04): 予測側は「starmieアーキタイプの**持ち主たち**のEV」、実測側は「**我々**」。
+    # 単位(操縦者)が違うので、これは**モデルの検証ではなく較正参照**(差=操縦者差の見積り)。
+    # モデル自体の検証は ev_crosscheck.py(k点・自チーム除外・零情報比較)で行う。
+    print(f"\n## 較正参照 — starmie持ち主たちの予測EV vs 我々の実測(行列から自チーム{n_ours_dropped}戦を除外済み)")
     num = den = 0.0
     detail = []
     for o in archs:
@@ -141,8 +152,9 @@ def main(lo=800, hi=1100):
     clo, chi = wilson(ow, on)
     print(f"  予測EV {pred:.1f}%(覆域{100*den:.0f}%) — {' / '.join(detail)}")
     print(f"  実測   {100*ow/max(1,on):.1f}%  ({ow}/{on}、95%CI[{clo:.1f},{chi:.1f}])")
-    ok = clo <= pred <= chi
-    print(f"  → 予測は実測CI{'内' if ok else '外'} = モデルは{'棄却されない' if ok else '棄却'}")
+    gap = pred - 100 * ow / max(1, on)
+    print(f"  → 差 {gap:+.1f}pt = 持ち主平均と我々の操縦者差の見積り(モデル検証には使わない。"
+          f"検証は ev_crosscheck.py)")
 
 
 if __name__ == "__main__":
