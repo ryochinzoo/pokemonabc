@@ -7,8 +7,14 @@ t1_verdict.py の対面分類(デッキベース、RULES先勝ち)を継承し�
 ④remainingOverageTime 差分で本番課金テレメトリ ⑤statuses で CRASH 検査。
 
 使い方:
-  python3 replay_analysis/probe_autopsy.py <submissionId> <epsDir> <H1覆域予測%>
+  python3 replay_analysis/probe_autopsy.py <submissionId> <epsDir> <H1覆域予測%> [自デッキcsv] [覆域対面CSV]
   例: python3 replay_analysis/probe_autopsy.py 55163442 replay_analysis/eps55163442 44.04
+  P9: python3 replay_analysis/probe_autopsy.py <ref> <epsDir> 68.8 \
+        src/input/datasets/decks/deckswap-tarountula/deck.csv "Alakazam,Lucario,Archaludon"
+
+2026-08-04 修理(red-team-D指摘): ①OUR_TEAM_SUBS に 55169074 を追加 ②自側同定デッキが
+starmie-clockguard 固定だった(P9=tarountulaで誤同定)→引数化 ③覆域対面が旧CEW4面固定だった
+(P9の登録は Alakazam/Lucario/Archaludon の3面)→引数化。省略時は旧挙動=過去プローブの再現に影響なし。
 """
 import csv
 import json
@@ -19,8 +25,11 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-OUR_TEAM_SUBS = {55163442, 55070495, 55060473, 55058443, 54961048, 54858780, 54832323}
-COVERED = {"Lucario", "Archaludon", "Abomasnow", "Dragapult"}
+OUR_TEAM_SUBS = {55163442, 55070495, 55060473, 55058443, 54961048, 54858780, 54832323,
+                 55169074,  # P2幅プローブ(2026-08-04追加)
+                 55209782, 55216410,  # 2026-08-03 ゆうじのproto提出2本(CLI一覧で発見、2026-08-04追記)
+                 55236642}  # P9 deckswap-tarountula(2026-08-04提出)。新規提出のたびにここへ追記する
+COVERED = {"Lucario", "Archaludon", "Abomasnow", "Dragapult"}  # 既定=旧CEW4面(argv[5]で上書き可)
 RULES = [
     ("Lucario", ["Mega Lucario ex"]),
     ("Archaludon", ["Archaludon ex"]),
@@ -55,7 +64,8 @@ def wilson(k, n):
     return (100 * max(0, c - h), 100 * min(1, c + h))
 
 
-def main(sub_id, eps_dir, h1):
+def main(sub_id, eps_dir, h1, deck_csv=None, covered=None):
+    covered = covered if covered is not None else COVERED
     r = subprocess.run(["curl", "-s", "-X", "POST",
         "https://www.kaggle.com/api/i/competitions.EpisodeService/ListEpisodes",
         "-H", "Content-Type: application/json",
@@ -73,8 +83,9 @@ def main(sub_id, eps_dir, h1):
                          team_internal=opp.get("submissionId") in OUR_TEAM_SUBS))
 
     names = load_names()
-    ours = Counter(int(l) for l in open(
-        REPO / "src/input/datasets/decks/starmie-clockguard/deck.csv") if l.strip())
+    deck_path = Path(deck_csv) if deck_csv else (
+        REPO / "src/input/datasets/decks/starmie-clockguard/deck.csv")
+    ours = Counter(int(l) for l in open(deck_path) if l.strip())
 
     tally = defaultdict(lambda: [0, 0])
     internal = [0, 0]
@@ -137,11 +148,11 @@ def main(sub_id, eps_dir, h1):
     cov_w = cov_n = 0
     for lab, (w, l) in sorted(tally.items(), key=lambda kv: -sum(kv[1])):
         print(f"{lab:<24}{f'{w}-{l}':>8}{w+l:>4}")
-        if lab in COVERED:
+        if lab in covered:
             cov_w += w
             cov_n += w + l
     lo, hi = wilson(cov_w, cov_n)
-    print(f"\n★覆域(4ゲージ対面): {cov_w}/{cov_n} = "
+    print(f"\n★覆域({sorted(covered)}): {cov_w}/{cov_n} = "
           f"{100*cov_w/max(1,cov_n):.1f}%  95%CI[{lo:.1f},{hi:.1f}]  H1={h1}")
     print(f"  N_cov={cov_n} (登録判定はN_cov>=20)  H1はCI{'内' if lo <= h1 <= hi else '外'}")
     if deltas:
@@ -155,4 +166,6 @@ def main(sub_id, eps_dir, h1):
 
 
 if __name__ == "__main__":
-    main(int(sys.argv[1]), sys.argv[2], float(sys.argv[3]))
+    main(int(sys.argv[1]), sys.argv[2], float(sys.argv[3]),
+         sys.argv[4] if len(sys.argv) > 4 else None,
+         set(sys.argv[5].split(",")) if len(sys.argv) > 5 else None)
