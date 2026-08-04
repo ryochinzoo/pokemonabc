@@ -4507,3 +4507,40 @@ H2(45〜50%)が真でも46〜55%の確率でH1判定が通る=識別力がほぼ
 効果由来の配分(修理可能)/ 自己消費機関(不可)/ テキスト内打点(完全盲点)。
 「常在動力×高DEX」の候補条件に**「打点がdamage欄に載っている」を追加**する。
 Repelling Veil の転移予測は検証不能のまま(エネ機関とテキスト打点が先に死ぬため、このデッキでは分離不能)。層S。
+
+## 2026-08-04 C5パイロット: 効果発火検査(10枚) 事前登録(層S、測定前に凍結)
+
+赤チームD設計(red-team-D.md §4)を実装(`verification/card_effect_probe.py`)。各カード:
+試験デッキ(対象×4+最小構成)ミラー vs random、N=20戦、obs.logs(logs==prev再送排除)から
+期待パターンの発火を判定。3値判定: **FIRED**(発火確認)/ **OFFERED_NOT_FIRED**(提示・使用されたのに
+効果ログ無し=no-op候補)/ **NEVER_USED**(発火条件を作れず=判定不能)。
+**予測(凍結)**: 10/10 が FIRED(=C5「受理→発火」への拡張が通る)。OFFERED_NOT_FIRED が1枚でも
+出ればエンジンのno-op発見(台帳#9型)。#4 Battle Cage と Mist の「不在証明」(対照腕必須)は
+本パイロットの範囲外(phase 2)とし、プレイ発火のみ確認する。
+
+### C5 結果(2026-08-04、10枚×N=20、全セルCRASH=0)
+
+**10/10 が FIRED = 事前登録の予測どおり。エンジン側の no-op は1枚も見つからず、
+C5は「2,022枚は受理される」から「多様な効果型10種(回復/エネ破壊/呼出/スタジアム/道具/
+特殊エネ×2/能動特性×2/サーチ)が実際に発火する」へ拡張された。**
+
+| 検査 | used | fired |
+|---|---|---|
+| JumboIceCream回復 | 18/20 | 18 | 
+| CrushingHammerエネ破壊 | 17/20 | 20 |
+| Boss's Orders呼出 | 8/20 | 8 |
+| BattleCageスタジアム設置(state判定) | 17/20 | 17 |
+| Hero's Cape maxHp+100(1枚積み) | 6/20 | 6 |
+| SpikyEnergy反撃20 | 10/20 | 9 |
+| GrowGrassEnergy maxHp+20 | 8/20 | 8 |
+| RunErrandドロー2 | 20/20 | 20 |
+| AdrenaBrainダメカン移動(混成エネ版) | 19/20 | 16 |
+| Poffin山→ベンチ | 18/20 | 18 |
+
+**方法論の記録**: v1走行は「no-op候補2件」を出したが、**両方とも検査器側の誤り**だった —
+①BattleCage: 期待ログ「MOVE_CARD→STADIUM」という仮説が誤り(スタジアム設置はstate欄にのみ現れる)
+②AdrenaBrain: 試験デッキが{P}/{W}必須の攻撃者に悪エネのみ=ダメカンが発生しえず、前提未成立を
+no-opと誤表示(used_fn仮置きの罠)。さらにID取り違え(3=Staryuと誤認、実は基本水エネ)を検証assertが
+起動前に捕捉、Hero's CapeのACE SPEC 1枚制限は4枚積み拒否(errorType=4)で正執行を再確認。
+**「no-op探し」はエンジンの穴を0件、自作検査器の穴を3件見つけた** — 台帳#10系列(計器を疑え)の追加例。
+再現: `cd src/input/datasets/decks/starmie-aggro && python3 ../../../../../verification/card_effect_probe.py 20`。層S。
