@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026-08-05 チーム検討資料 — スターミーの現在地とデッキ転換の提案</title>
+<style>
+:root{
+  color-scheme: light;
+  --page:#f9f9f7; --surface:#fcfcfb;
+  --ink:#0b0b0b; --ink-2:#52514e; --ink-muted:#898781;
+  --grid:#e1e0d9; --baseline:#c3c2b7; --ring:rgba(11,11,11,.10);
+  --s1:#2a78d6; --s2:#eb6834;
+  --good:#0ca30c; --critical:#d03b3b; --warning:#fab219;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19;
+    --ink:#ffffff; --ink-2:#c3c2b7; --ink-muted:#898781;
+    --grid:#2c2c2a; --baseline:#383835; --ring:rgba(255,255,255,.10);
+    --s1:#3987e5; --s2:#d95926;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --page:#0d0d0d; --surface:#1a1a19;
+  --ink:#ffffff; --ink-2:#c3c2b7; --ink-muted:#898781;
+  --grid:#2c2c2a; --baseline:#383835; --ring:rgba(255,255,255,.10);
+  --s1:#3987e5; --s2:#d95926;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:1.5rem}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;
+  background:var(--page); color:var(--ink); line-height:1.8;
+  -webkit-font-smoothing:antialiased; font-feature-settings:"palt" 1;
+}
+.wrap{max-width:920px;margin:0 auto;padding:0 1.4rem 6rem}
+header{padding:3.5rem 0 2rem;border-bottom:1px solid var(--grid)}
+.eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;color:var(--ink-muted);text-transform:uppercase}
+h1{font-size:clamp(1.7rem,4.6vw,2.4rem);line-height:1.35;margin:.6rem 0 .8rem;letter-spacing:-.02em}
+.lede{color:var(--ink-2);font-size:1.02rem;max-width:66ch}
+.stamp{margin-top:1.2rem;font-family:var(--mono);font-size:.72rem;color:var(--ink-muted);line-height:1.8}
+nav.toc{margin-top:1.4rem;font-size:.85rem;line-height:2}
+nav.toc a{color:var(--s1);text-decoration:none;margin-right:1.1em;white-space:nowrap}
+nav.toc a:hover{text-decoration:underline}
+section{margin-top:3rem}
+h2{font-size:1.3rem;letter-spacing:-.01em;margin-bottom:.6rem;line-height:1.45}
+h2 .num{font-family:var(--mono);font-size:.78rem;color:var(--ink-muted);display:block;margin-bottom:.15rem}
+h3{font-size:.99rem;margin:1.7rem 0 .5rem}
+p{margin:.7rem 0;color:var(--ink-2)}
+p strong,li strong,td strong,th strong{color:var(--ink);font-weight:700}
+ul,ol{margin:.6rem 0 .6rem 1.2rem;color:var(--ink-2)}li{margin:.34rem 0}
+code{font-family:var(--mono);font-size:.85em;background:var(--surface);border:1px solid var(--ring);border-radius:5px;padding:.08em .38em;color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:.85rem;margin:1rem 0;display:block;overflow-x:auto}
+@media(min-width:640px){table{display:table}}
+th{text-align:left;font-size:.68rem;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);font-weight:400;padding:.5rem .7rem;border-bottom:1px solid var(--baseline);white-space:nowrap}
+td{padding:.55rem .7rem;border-bottom:1px solid var(--grid);color:var(--ink-2);vertical-align:top}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr:hover td{background:var(--surface)}
+.q{background:var(--surface);border:1px solid var(--ring);border-left:3px solid var(--s1);border-radius:0 10px 10px 0;padding:.9rem 1.15rem;margin:1.2rem 0;font-size:.92rem;color:var(--ink-2)}
+.q.warn{border-left-color:var(--s2)}
+.q .tag{font-family:var(--mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-muted);display:block;margin-bottom:.3rem}
+.good{color:var(--good);font-weight:700}
+.bad{color:var(--critical);font-weight:700}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.8rem;margin:1.1rem 0}
+.kpi .card{background:var(--surface);border:1px solid var(--ring);border-radius:10px;padding:.85rem 1rem}
+.kpi .v{font-family:var(--mono);font-size:1.25rem;font-weight:700;color:var(--ink)}
+.kpi .l{font-size:.74rem;color:var(--ink-muted);margin-top:.2rem;line-height:1.5}
+footer{margin-top:4rem;padding-top:1.2rem;border-top:1px solid var(--grid);font-family:var(--mono);font-size:.72rem;color:var(--ink-muted);line-height:1.9}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Team Briefing — Pokémon TCG AI Battle Challenge</span>
+  <h1>スターミーの現在地・外部調査の総括・デッキ転換の提案</h1>
+  <p class="lede">優勝ライン(Strategy記事、$30k×8枠/約200チーム)から逆算して、いま何が分かっていて、何を試していて、どこをチームで決めたいかを<strong>議論できる形</strong>で共有する。数値は全て実測(N・CI付き、正典は <code>docs/memo/data.md</code>)。推測と実測は文中で区別する。</p>
+  <div class="stamp">2026-08-05 / 作成: cc(Fable 5) / 対象読者: りょーちん・ゆうじ<br>Markdown版: docs/memo/team-report-2026-08-05.md(内容同一)</div>
+  <nav class="toc">
+    <a href="#s1">1 背景</a><a href="#s2">2 外部調査</a><a href="#s3">3 分析リスト</a><a href="#s4">4 わかったこと</a><a href="#s5">5 現状照合</a><a href="#s6">6 tarountula選定の経緯</a><a href="#s7">7 P9の中身</a><a href="#s8">8 提案と問い</a><a href="#s9">9 実務メモ</a>
+  </nav>
+</header>
+
+<section id="s1">
+  <h2><span class="num">§1</span>背景 — スターミーデッキの限界と、いまのメタ</h2>
+  <h3>スターミー(現王者、確定レート783/793.9)の実測された限界</h3>
+  <ul>
+    <li><strong>700点を超えた瞬間に勝率52%→41%</strong>(帯別実測)。負け筋は Archaludon 16.7%・ミラー0-3・上位Lucario。</li>
+    <li><strong>「語れる要素」が測定した全デッキ中最少</strong>: 1試合に使うカード12.9枚(上位帯は15〜23)、カード種類11、攻撃役2種、スタジアム0、特性0、妨害・回収・ダメージ操作カード0。表現力指標DEXで12本中最下位(40、中央値68)。</li>
+    <li>運営は評価軸に <strong>deckcrafting を名指し</strong>(§2)。スターミーは「エンジンの穴を突いた合理的なデッキ」だが、<strong>Deck 20%と記事の主役としては構造的に弱い</strong>。</li>
+  </ul>
+  <h3>メタの分析(レーティング付き全譜=我々にしか作れない計器)</h3>
+  <p>800-1099帯の構成: <strong>Alakazam 29.2% / Grimmsnarl 19.3% / Crustle 13.5% / Lucario 13.2% / Archaludon 10.7%</strong>(distinct提出数で検証済み)。そして重要な発見——<strong>このメタは「強さ」で並んでいない</strong>:</p>
+  <ul>
+    <li>シェアと帯内勝率の相関 <strong>ρ=−0.02</strong>。最多のAlakazamは勝率ワースト3。</li>
+    <li><strong>Grimmsnarlは723体中505体(69.8%)が完全に同じ60枚</strong>。公開コードは0件(291件を実行して確認)なのに788体いる=<strong>リプレイダンプからの模倣学習</strong>で量産。8位Jakeも「データが多いから作りやすい」と証言。</li>
+    <li>garchompは公開評価が高くても素材が見えず133体止まり。</li>
+    <li>→ <strong>メタは「コピー素材の可視性」のシステム</strong>。たった2種類の同一リストが全チームの35.6%。</li>
+  </ul>
+  <div class="q"><span class="tag">それから — 方針転換の根拠</span>操縦者を固定して deck.csv だけ差し替える実験で<strong>勝率が最大60pt動いた</strong>(操縦者側7ヶ月の最大改善は+13.6pt)。デッキ軸は操縦者軸の4倍広く、記事もdeckcraftingを要求している——<strong>デッキ転換はSimと記事の両方に効く</strong>。</div>
+</section>
+
+<section id="s2">
+  <h2><span class="num">§2</span>調査して得た情報(外部一次情報・全て実物確認済み)</h2>
+  <h3>2.1 ゲーム評価の観点(審査員が見るもの)</h3>
+  <ul>
+    <li>配点: <strong>Model 70%(5項目、Sim順位はその1つ=全体の約14%)/ Deck 20% / Report 10%</strong>。記事は2,000語。審査員は<strong>ポケモン社3名:松尾研2名</strong>。</li>
+    <li>ホスト(shige)明言: 「<strong>機械学習は必須ではない。ルールベース+構造化されたレポートで十分競争力がある</strong>」。スタッフ明言: 「gameplay, <strong>deckcrafting</strong>, underlying strategic decisions が要る」「<strong>思考プロセス・試行錯誤・教訓</strong>を共有してほしい」。</li>
+    <li><strong>決勝8枠($30k×8、東京・対面)はStrategy部門の評価だけで選抜</strong>(discussion/732331)。決勝はBO3・前ゲームのログ参照可・デッキとコードは予選と別でもよい。</li>
+    <li><strong>提出済みwriteup 289件は締切まで誰も読めない</strong>(スタッフ回答で確認)。競合品質は全チーム相互に不可視——差別化は「他人が持てない材料」しかない。</li>
+  </ul>
+  <h3>2.2 コミュニティの議論(→ 我々の作戦への写像)</h3>
+  <ul>
+    <li><strong>Discord初偵察</strong>(公式サーバ、ゆうじのログインで): Jack p「NNがルールを模倣するには、単純なルールは~10サンプル、<strong>複雑なルール(TR ArticunoをAlakazam戦で維持する等)は~1000サンプル</strong>要る」——我々が実測した機構(§7)を模倣コスト側から言い当てている。Santiago「ML専門家は自分が遊ばないゲームを道具で最適化する」。一部チームは「純ルールベースは審査で不利では」と<strong>忖度して自制</strong>(運営声明と矛盾)。</li>
+    <li>思考時間解析(724362、73票): <strong>場の半分はルールベース、RL+探索は1位だけ</strong>。</li>
+    <li>SUMIの74,634戦センサス: Grimmsnarlはシェア51%で勝率50.3%に収束(飽和)。Archaludonバブル——「上位デッキへの乗り換え」は最悪手。Oshbocker(37位)はリプレイ模倣対策にダミー提出で隠れる(going dark)。</li>
+  </ul>
+  <div class="q"><span class="tag">作戦への写像</span>コピーが支配するメタでは ①コピー元=標準化された実物リストに対して<strong>実測で選んだデッキ</strong>が有利 ②<strong>複雑な対面技は模倣されない</strong>(=我々の防御壁) ③我々のルールベース路線は主流かつ運営公認。</div>
+  <h3>2.3 ゲームメタ(構造の実測)</h3>
+  <ul>
+    <li>マッチメイキング公式仕様(726690): 4分毎・レート比例・ガウス窓・最終評価リセット無し・<strong>直近2提出が対象</strong>。</li>
+    <li>帯構造: 600-800はLucario/Abomasnowの群れ、800-1000はAlakazam/Grimmsnarl中心。<strong>平衡レートは「最悪対面が濃い帯」で決まる</strong>(P9で実証)。</li>
+    <li>人間メタとの断絶: AI最大勢力のAlakazamは<strong>人間City League top-cut 16に0本</strong>。AI定番のCrustle壁/LOも人間側に実質不在。</li>
+  </ul>
+  <h3>2.4 その他(議論のやりがいがある論点)</h3>
+  <ul>
+    <li><strong>較正の法則の最大例</strong>: 公式サンプル操縦者のゲージは本物の操縦者相手より<strong>+45pt甘い</strong>(§7)。りょーちんの測定にも直結する警告(較正済みゲージは§9)。</li>
+    <li>スコア分散は同一エージェントで±150〜400——<strong>単発のレートで判断しない</strong>。提出枠は毎日5回復・最終順位は凍結時の直近2提出のみ=枠は希少でない。</li>
+    <li>公開物のタイトル自称数値は信用できない(「LB1084.5」自称の実LBが750だった等、2例確認)。</li>
+  </ul>
+</section>
+
+<section id="s3">
+  <h2><span class="num">§3</span>何を分析したか(リスト)</h2>
+  <ol>
+    <li>公開ノートブック<strong>291件を全件実行</strong>(agent()を呼び、返る60枚を分類)</li>
+    <li>レーティング付き帯別メタセンサス(4,263戦/8,526側)+フィールドEV+対面行列</li>
+    <li>行動語彙の計数(上位帯と我々の「1試合でやること」の差)</li>
+    <li>カードプール全数判定(2,022枚)+効果発火検査(10効果型)</li>
+    <li><strong>デッキ入替実験</strong>(操縦者を1バイトも変えず deck.csv だけ差替、5デッキ×4ゲージ)</li>
+    <li>操縦者の盲点特定と修理実験(grimmsnarlで+13〜20pt、3アンカー有意)</li>
+    <li>crustleの敗因解剖(自山切れ21/21)/ 人間デッキ輸入テスト(honchkrow、失敗機構の特定)</li>
+    <li><strong>P9プローブ提出→検死→全譜54本の採掘</strong>(本番ラダーでの実地検証)</li>
+    <li>人間City League top-cut 16とAIメタの突き合わせ</li>
+    <li>外部recon: 掲示板全量・Discord・writeup可視性・マッチメイキング仕様・リーダーボード</li>
+    <li>計器の総点検(6本の欠陥特定、3本修理)+主要な根拠6件の再検証(1件崩れ→訂正済み)</li>
+  </ol>
+</section>
+
+<section id="s4">
+  <h2><span class="num">§4</span>分析の結果わかったこと(要点4つ)</h2>
+  <ol>
+    <li><strong>メタはコピー可視性のシステム</strong>。標準化された実物リストへの実測が最強の選定手段。</li>
+    <li><strong>デッキ×操縦者の結合点は少数の「盲点」に集約される</strong>。3系統を特定: ①効果由来の資源配分(修理で+13〜20pt実証) ②山を消費する特性の盲打ち ③テキスト内打点(damage欄0)。</li>
+    <li><strong>他人の操縦の実ラダー値は我々の操縦者には転移しない</strong>(−23pt〜+42ptの双方向)。選定は必ず「我々の操縦者を載せた実測」で。</li>
+    <li><strong>ゲージには嘘がある</strong>: 公式サンプル由来Lucarioゲージは+45pt甘かった。実ラダー検証済みの較正ゲージに世代交代(P9実測セルと14.0%≈15.4%で一致)。</li>
+  </ol>
+</section>
+
+<section id="s5">
+  <h2><span class="num">§5</span>現状と照らし合わせた結果</h2>
+  <div class="kpi">
+    <div class="card"><div class="v">64.8%</div><div class="l">tarountula 4面加重EV(較正済み)</div></div>
+    <div class="card"><div class="v">52.1%</div><div class="l">starmie(王者)同EV</div></div>
+    <div class="card"><div class="v">51.8%</div><div class="l">修理grimmsnarl 同EV</div></div>
+    <div class="card"><div class="v">783 / ~670</div><div class="l">レート平衡: 王者(確定) / tarountula(P9実測)</div></div>
+  </div>
+  <p>スターミーは「安全だが語れない」。tarountulaは「Alakazamを狩り、記事の主役になれるが、Lucarioに轢かれる」。EV首位≠レート首位なのは、<strong>平衡レートが最悪対面の濃い帯で決まる</strong>ため。</p>
+  <div class="q warn"><span class="tag">凍結(8/13-16)の本当の問い</span>「どのレートが高いか」ではなく<strong>「どのデッキを、我々の測定の鎖で守り抜く記事を書きたいか」</strong>。ここをチームで決めたい(§8)。</div>
+</section>
+
+<section id="s6">
+  <h2><span class="num">§6</span>いま試しているアクション — なぜtarountulaを選んだか(正直な経緯)</h2>
+  <h3>6.1 選定の方法 — 構成は「設計」ではなく「輸入+選抜」</h3>
+  <p><strong>このデッキは我々が1枚ずつ組んだものではない。</strong>実ラダー800-1099帯の全譜からtarountula系101体のリストを抽出し、<strong>最も再現されている形(17体が完全一致の最頻出形)をそのまま輸入</strong>した。我々がやったのは構築ではなく<strong>選抜</strong>——操縦者を固定して deck.csv だけ差し替え、5デッキ×4ゲージで実測して最高値を出したこれを選んだ。枚数の根拠は「実ラダーで最も使われている形」という統計的根拠であって、カード単位の設計判断はしていない。<strong>だから「なぜこのカード?」は全部議論の余地があり、変更候補は§7の実戦データから既に出ている。</strong></p>
+  <h3>6.2 デッキ構成の詳細(60枚。役割は効果テキスト+実戦54戦の実測から)</h3>
+  <table>
+    <thead><tr><th>枚数</th><th>カード</th><th>役割(実測根拠つき)</th><th>議論点</th></tr></thead>
+    <tbody>
+      <tr><td class="num">4</td><td>Tarountula(たね50HP)</td><td>Spidopsへの進化元。Take Down 30(自傷10)</td><td class="bad">たね密度が低く、たね1枚スタートの全滅負けが4/53</td></tr>
+      <tr><td class="num">4</td><td><strong>Spidops</strong>(130、特性Charging Up=捨て札から基本エネを自分に装着)</td><td><strong>主砲。Rocket Rush=場のTRポケモン×30ダメージ</strong>(damage欄は0=テキスト打点)</td><td><strong>展開数=火力</strong>の構造。展開が遅いと火力も出ない</td></tr>
+      <tr><td class="num">2</td><td><strong>TR Articuno</strong>(120、特性Repelling Veil)</td><td><strong>たねTRポケモンへの「ワザの効果」を全無効(常在)</strong>。Alakazam 11勝1敗の主因(ターンレベルで実証)</td><td>攻撃はほぼしない({W}要求)。<span class="bad">操縦者がエネを毎戦1.7枚無駄貼り</span></td></tr>
+      <tr><td class="num">2</td><td>TR Mewtwo ex(280、Power Saver=場にTR4体ないと攻撃不可)</td><td>高打点160だが<strong>サイド2枚の負債</strong>。実戦では<span class="bad">献上サイドの33.7%</span>(Lucario戦45.9%)</td><td><strong>削る第一候補</strong>。攻撃条件を操縦者は見ていない</td></tr>
+      <tr><td class="num">2</td><td>TR Murkrow(80)</td><td>Deceit=サポーターサーチ(0エネ)</td><td></td></tr>
+      <tr><td class="num">1</td><td>TR Wobbuffet</td><td><strong>Rocket Mirror=ベンチTR1体のダメカンを全部相手バトル場へ</strong>(テキスト打点=操縦者の見積0)</td><td class="bad">53戦で3回しか使われていない。返し刃として未活用</td></tr>
+      <tr><td class="num">4</td><td>TR Transceiver</td><td>TRサポーターを山からサーチ</td><td></td></tr>
+      <tr><td class="num">4</td><td>TR Ariana</td><td>手札5枚まで補充(全TRなら8枚)</td><td>ドロー機関</td></tr>
+      <tr><td class="num">3</td><td>TR Giovanni</td><td>自分の入替+<strong>相手ベンチ呼び出し</strong></td><td>スターミーに無い「相手盤面への干渉」</td></tr>
+      <tr><td class="num">2</td><td>TR Proton</td><td>先攻1ターン目使用可、TRたね3枚展開</td><td><strong>展開速度の要。増量候補?</strong></td></tr>
+      <tr><td class="num">1+1</td><td>TR Archer / Petrel</td><td>補助サポート / トレーナーサーチ</td><td></td></tr>
+      <tr><td class="num">2</td><td>TR Factory(スタジアム)</td><td>TRサポーターを使ったターンに2ドロー</td><td>スターミーに無いスタジアム枠</td></tr>
+      <tr><td class="num">3</td><td>Bug Catching Set</td><td>山上7枚から{G}ポケモン/エネを2枚まで</td><td></td></tr>
+      <tr><td class="num">4+2+1</td><td>Poké Pad / Energy Search / Night Stretcher</td><td>サーチ・回収</td><td class="bad">Ultra Ballが0枚(ミラー勝者は入れていた→§7)</td></tr>
+      <tr><td class="num">1+1</td><td>Hero's Cape(ACE SPEC、+100HP)/ Brave Bangle</td><td>どうぐ(Bangleは非ルールボックスの対ex打点+30)</td><td>Capeの貼り先は操縦者任せ</td></tr>
+      <tr><td class="num">7+3+4</td><td>基本{G} / 基本{P} / TRエネ({P}{D}2個分供給・TR限定)</td><td>Rocket Rushは[G,C]、Wobbuffet/Mewtwoは{P}系</td><td class="bad">Pエネの74%が型不一致先に貼られていた(操縦者の穴)</td></tr>
+    </tbody>
+  </table>
+  <h3>6.3 工夫はどこにあるか(真似と、真似でない部分の区別)</h3>
+  <ul>
+    <li><strong>真似(輸入)</strong>: 上の60枚そのもの。</li>
+    <li><strong>我々の固有部分</strong>: 選定方法(操縦者固定の差し替え実測・事前予測の凍結・4ゲージ+本番プローブの検証鎖)と、機構の特定(Repelling Veil×Alakazamの因果、Rocket Rushの盤面スケーリング、Mewtwo負債の定量)。</li>
+    <li>つまり「なぜ〇〇を選ばなかったのか?」への現状の答えは<strong>「最頻出形に含まれていなかったから」しかない</strong>。ここから先(1枚単位の設計)を、実戦データを根拠にチームでやりたい。</li>
+  </ul>
+</section>
+
+<section id="s7">
+  <h2><span class="num">§7</span>試した結果 — P9(本番ラダー53戦)の中身(レートではなく内容)</h2>
+  <div class="kpi">
+    <div class="card"><div class="v good">11-1</div><div class="l">vs Alakazam(12体) Repelling Veilが完封。保護窓の破れゼロ(被ダメカン534個をターンレベル検証)</div></div>
+    <div class="card"><div class="v good">7-2</div><div class="l">vs 暗部(Grimmsnarl+Crustle系=測れなかった32.8%)。Crustle壁はRocket Rushが非exで素通し4-0</div></div>
+    <div class="card"><div class="v bad">2-11</div><div class="l">vs Lucario(13体)。敗因のほぼ全て</div></div>
+    <div class="card"><div class="v">1-1</div><div class="l">tarountulaミラー。負けは改良変種(Ultra Ball/Mimikyu)への速度負け</div></div>
+  </div>
+  <ul>
+    <li><strong>Lucario 2-11の中身は「開発速度の完敗」</strong>: 敗戦の我々の攻撃回数 中央値2回 vs 相手6回、完封級が8/11。KOの82%はMega Lucario打点だが、壁テックは検討の結果<strong>棄却</strong>(非ex打点が13デッキ中12〜13に常備・壁は自身しか守らない・特性で剥がされる)。</li>
+    <li><strong>ミラーの負けから改良レシピが読めた</strong>: 相手のRocket Rush 4回 vs 我々0回。Ultra Ball/Mimikyu入りの変種で、リストは相手の山からそのまま取れる。</li>
+    <li>皮肉な結果: <strong>旧王者系統(Mega Starmie使い)に0-2</strong>。</li>
+    <li><strong>操縦者の穴も本番で実測</strong>: 主砲Rocket Rushと返し刃Rocket Mirrorが評価器に打点0と見えている(テキスト打点未登録=2行で直る)/ Articunoへのエネ浪費1.7枚/戦 / Mewtwoの攻撃条件(TR4体)を見ずに前に出す。</li>
+  </ul>
+  <div class="q"><span class="tag">何が足りないと分析したか</span>①<strong>展開速度</strong>(Rocket Rush=場の数×30なので、展開の遅れは火力と防御を同時に殺す)→ たね密度とボール系の不足 ②<strong>Mewtwo ex負債の圧縮</strong>(献上サイドの1/3) ③操縦者の<strong>テキスト打点登録(2行)と型対応エネ配分</strong> ④Lucario対面はそれでも天井不明——「捨て対面として管理する」判断もあり得る。</div>
+</section>
+
+<section id="s8">
+  <h2><span class="num">§8</span>提案と、りょーちんに聞きたいこと</h2>
+  <p><strong>提案(tarountula-v2)</strong>: §7の実戦根拠に基づき、①ミラー勝者の改良要素(Ultra Ball/Mimikyu)の検証 ②Mewtwo 2→1or0 ③たね/Proton増量 ④操縦者の2行修理+型対応エネ配分——を<strong>個別に</strong>較正ゲージでスクリーニング(全て事前登録つき)→通った束だけでプローブ再提出→その実測で8/13-16の凍結を設計。</p>
+  <div class="q"><span class="tag">議論したいこと(4つ)</span>
+    <ol>
+      <li><strong>凍結設計の哲学</strong>: 「レート最高(王者starmie維持)」vs「記事で守るデッキ(tarountula-v2)」——どちらに張る?(1枠ずつの両にらみ案もあるが、最終2枠は「ベスト×2」が事故に強いというのが従来合意)</li>
+      <li>§6.2の構成で「なぜ〇〇を入れない/削らない?」——<strong>ポケカ側の直感での指摘</strong>が欲しい(例: Mimikyuの役割、Ultra Ballの手札コストとAriana補充の相性、Mewtwo全抜きのリスク)</li>
+      <li>りょーちんのStarmie系agentで得た技法のうち、TR系デッキに移植価値があるもの</li>
+      <li>この資料の形式で足りない情報(次回から改善する)</li>
+    </ol>
+  </div>
+</section>
+
+<section id="s9">
+  <h2><span class="num">§9</span>実務メモ(忘れがちなこと)</h2>
+  <ul>
+    <li><strong>タイムライン</strong>: Sim提出締切 8/17(凍結運用は8/13-16)/ Strategy writeup 9/14 / 決勝は後日・東京。</li>
+    <li><strong>現在の直近2提出</strong>: P9(tarountula)+proto2。凍結時にベスト×2で上書きする(枠は毎日5回復)。</li>
+    <li><strong>使える較正ゲージ</strong>(全て検証専用・提出禁止・デッキ読込は絶対パス化済み): Alakazam(ryota)/ Lucario(makthanithin=実ラダー検証済み。<strong>公式サンプルLucarioは+45pt甘いので効果量判定に使わない</strong>)/ Archaludon(tomato)/ Crustle(soutasakurai)/ 公式Dragapult・Abomasnow。</li>
+    <li><strong>Kaggle内部APIは必ず <code>replay_analysis/kaggle_gate.py</code> 経由</strong>(429事故=IP単位で丸1日封鎖、の再発防止。playbook §8)。</li>
+    <li>規則: LLM使用は明示的に許容 / 競技コードの私的共有は禁止(公開はフォーラム経由)/ 他者notebookは検証利用のみ・提出流用禁止 / タイトルの自称数値は裏取りするまで引用しない。</li>
+    <li>決勝(進出できた場合)はBO3・ログ参照可・別デッキ別コード可——今から素材だけ意識しておく価値あり。</li>
+  </ul>
+</section>
+
+<footer>
+  正典: docs/memo/data.md(数値)/ decisions.md D61〜D65(決定)/ agents-2026-08-03/(一次資料8ファイル)<br>
+  本資料のMarkdown版: docs/memo/team-report-2026-08-05.md(内容同一・こちらが原本)
+</footer>
+
+</div>
+</body>
+</html>
