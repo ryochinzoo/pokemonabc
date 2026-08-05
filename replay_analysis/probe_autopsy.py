@@ -66,11 +66,10 @@ def wilson(k, n):
 
 def main(sub_id, eps_dir, h1, deck_csv=None, covered=None):
     covered = covered if covered is not None else COVERED
-    r = subprocess.run(["curl", "-s", "-X", "POST",
-        "https://www.kaggle.com/api/i/competitions.EpisodeService/ListEpisodes",
-        "-H", "Content-Type: application/json",
-        "-d", json.dumps({"submissionId": sub_id})], capture_output=True, text=True)
-    eps = json.loads(r.stdout)["episodes"]
+    # 2026-08-05: playbook §8 に従い、一覧取得は門番(kaggle_gate)経由のみ。キャッシュ優先。
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import kaggle_gate
+    eps = kaggle_gate.list_episodes(sub_id)["episodes"]
     eps = [e for e in eps if e.get("state") == "COMPLETED"]
     eps.sort(key=lambda e: e["createTime"])
     validation = eps[0]["id"] if eps else None
