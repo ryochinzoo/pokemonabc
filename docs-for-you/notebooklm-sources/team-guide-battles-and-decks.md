@@ -111,15 +111,14 @@ python3 $REPO/verification/bench.py 200 \
 7. `team-guide-battles-and-decks.md` — 本ファイル(デッキ一覧と測定方法)
 8. (任意・重い) `data.md` — 数値の正典。根拠を深掘りしたい時用
 
-### 手順(CLI。※認証が切れているので先に `! notebooklm login`(半角の!)でログイン完了が必要)
+### 状態(2026-08-06): **稼働中**
 
-```bash
-notebooklm create "ポケカAI デッキ相談"
-cd /Users/yujiinoue/Documents/products/pokemonabc/docs-for-you/notebooklm-sources
-for f in *.md; do notebooklm source add "$f"; done
-```
-
-CLIが使えない間は **NotebookLMのWeb UIに上のファイルをドラッグ&ドロップでも同じ**。
+- NotebookLMは **Gemini Notebook** に改名された(notebook.google.com)。CLIは対応版 v0.8.0 に更新済み・認証済み。
+- **デッキ相談ノートブックは投入済みで使える**:
+  https://notebook.google.com/notebook/41482aa3-d790-4002-a096-d24a3894cd50
+  (上記8ファイル+ゆうじが入れた競技ページ2件=10ソース、全てインデックス済み)
+- 追加の資料を入れる時: `notebooklm use 41482aa3` してから `notebooklm source add <ファイル>`。
+  Web UIへのドラッグ&ドロップでも同じ。
 
 ### 質問の例(この用途のために素材を組んである)
 
