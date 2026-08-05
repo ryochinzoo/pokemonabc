@@ -632,12 +632,16 @@ def report(out):
         print(f"  {e:<28} -> {tgt:<28} {v}")
     print(f"\nエネのトラッシュ落ち: KOターン内 {edrop_koturn} / KOターン外(退却コスト・効果) {edrop_other}")
     print(f"SWITCH(我々のポケモン): 自ターン(退却/入替) {sw_our_turn} / 相手ターン(呼び出され・昇格) {sw_their_turn}")
-    # 全体の被KO集計(壁テックの全対面版)
+    # 全体の被KO集計(壁テックの全対面版)+ 犠牲者別(ex負債)
     kill_cls_all = Counter()
     prize_cls_all = Counter()
+    victim_all = Counter()
+    victim_prize = Counter()
     for g in games:
         for ser, ev in g["merged"]["ko_events"].items():
             pv = prize_value(ev["cardId"])
+            victim_all[cname(ev["cardId"])] += 1
+            victim_prize[cname(ev["cardId"])] += pv
             if ev["killer"]:
                 kill_cls_all[klass(ev["killer"][0])] += 1
                 prize_cls_all[klass(ev["killer"][0])] += pv
@@ -646,6 +650,22 @@ def report(out):
                 prize_cls_all["no-atk"] += pv
     print("\n(参考)全53戦の我々の被KO attacker class:", dict(kill_cls_all.most_common()),
           " 献上サイド:", dict(prize_cls_all.most_common()))
+    tp = sum(victim_prize.values())
+    print("犠牲者別(全53戦):", dict(victim_all.most_common()))
+    print("犠牲者別の献上サイド:", dict(victim_prize.most_common()))
+    mp = victim_prize.get("Team Rocket's Mewtwo ex", 0)
+    print(f"  Mewtwo ex(2枚負債)経由 {mp}/{tp} = {100*mp/max(1,tp):.0f}%")
+    # 終局理由の全数(RESULTログの有無も検証)
+    endings = Counter()
+    have_result = 0
+    for g in games:
+        _, reason = result_reason(g)
+        if reason is not None:
+            have_result += 1
+        endings[("W" if g["reward"] == 1 else "L", ending_of(g))] += 1
+    print(f"\n終局理由の全数(RESULTログ捕捉 {have_result}/{len(games)}):")
+    for (wl, e), v in sorted(endings.items()):
+        print(f"  {wl} {e}: {v}")
     # サイド収支のクロスチェック(状態ベース vs ログベース)
     mism = 0
     for g in games:
