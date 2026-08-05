@@ -1,5 +1,5 @@
-"""makthanithin「PTCG AI Battle 1084.5 baseline」の抽出版(Mega Lucario ex 操縦者、LB1084.5は
-タイトル自己申告)。出典: kaggle notebook makthanithin/pokemon-tcg-ai-battle-1084-5-baseline(公開、
+"""makthanithin「PTCG AI Battle 1084.5 baseline」の抽出版(Mega Lucario ex 操縦者。LB1084.5はタイトル自己申告で裏取り不能・実LB現在750.0/1499位。
+較正の根拠はP9実ラダーLucarioセル15.4%との一致=14.0%)。出典: kaggle notebook makthanithin/pokemon-tcg-ai-battle-1084-5-baseline(公開、
 ライセンスはKaggle既定Apache 2.0推定・未確認)。**検証専用・提出禁止・再配布禁止**。
 改変は2点のみ: %%writefile除去 / デッキ読込の絶対パス化。デッキは agent(select=None) の実返却60枚
 (corpus_exec_2026-08-03.jsonl)。2026-08-05設置(P9検死T1発火への較正監査)。
