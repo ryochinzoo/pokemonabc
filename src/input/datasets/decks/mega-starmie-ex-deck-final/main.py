@@ -1614,6 +1614,13 @@ class OpponentPublicThreatFacts:
     prizes_lost: int
     usable_attack_ids: Tuple[int, ...]
     unsupported_reason: Optional[str] = None
+    current_active_usable_attack_ids: Tuple[int, ...] = ()
+    public_retreat_status: Optional[str] = None
+    public_retreat_bench_usable_attack_ids: Tuple[int, ...] = ()
+    public_reply_unknown_attack_ids: Tuple[int, ...] = ()
+    best_reply_attacker_card_id: Optional[int] = None
+    best_reply_attacker_serial: Optional[int] = None
+    best_reply_evidence_kind: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -1840,6 +1847,24 @@ class Stage2b4IntegratedCounterlineFacts:
 
 
 @dataclass(frozen=True)
+class Stage2b4CounterlineActionStepFacts:
+    step_index: int
+    option_index: Optional[int]
+    option_type: Optional[OptionType]
+    option_card_id: Optional[int]
+    option_effect_id: Optional[int]
+    target_card_id: Optional[int]
+    target_serial: Optional[int]
+    route_origin: Optional[ActiveBenchTransitionOrigin]
+    current_observation_option: bool
+    projected_followup_action: bool
+    identity_exact: bool
+    legality_exact: bool
+    unsupported_reason: Optional[str] = None
+    reasons: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class Stage2b4ActionPlanFacts:
     supported: bool
     action_kind: str
@@ -1853,6 +1878,80 @@ class Stage2b4ActionPlanFacts:
     integrated_facts: Optional[Stage2b4IntegratedCounterlineFacts]
     resource_cost: float
     risk: float
+    unsupported_reason: Optional[str] = None
+    reasons: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class Stage2b4CounterlineRoutePlanFacts(Stage2b4ActionPlanFacts):
+    projected_active_card_id: Optional[int] = None
+    projected_active_serial: Optional[int] = None
+    action_steps: Tuple[Stage2b4CounterlineActionStepFacts, ...] = ()
+
+
+class Stage2b4CounterlineRouteKind(Enum):
+    NONE = "none"
+    DELUXE_BOMB_ONLY = "deluxe_bomb_only"
+    BRUXISH_ONLY = "bruxish_only"
+    DELUXE_BOMB_AND_BRUXISH = "deluxe_bomb_and_bruxish"
+    UNRESOLVED = "unresolved"
+
+
+_STAGE2B4_COUNTERLINE_FOLLOWUP_LIMITATION_REASONS = frozenset(
+    {
+        "stage2b4_drednaw_not_preserved",
+        "stage2b4_drednaw_route_preservation_unknown",
+        "stage2b4_drednaw_followup_unresolved",
+    }
+)
+
+
+@dataclass(frozen=True)
+class Stage2b4CounterlineActionLineFacts:
+    origin_option_index: int
+    origin_option_type: Optional[OptionType]
+    origin_option_card_id: Optional[int]
+    origin_target_card_id: Optional[int]
+    origin_target_serial: Optional[int]
+    action_kind: str
+    route_origin: Optional[ActiveBenchTransitionOrigin]
+    action_count: int
+    remaining_actions: int
+    action_steps: Tuple[Stage2b4CounterlineActionStepFacts, ...]
+    supported: bool
+    exact: bool
+    route_kind: Stage2b4CounterlineRouteKind
+    opponent_attack_id: Optional[int]
+    opponent_attacker_card_id: Optional[int]
+    opponent_attacker_serial: Optional[int]
+    holder_card_id: Optional[int]
+    holder_serial: Optional[int]
+    bruxish_trigger_confirmed: Optional[bool]
+    deluxe_bomb_trigger_confirmed: Optional[bool]
+    combined_trigger_confirmed: Optional[bool]
+    counter_damage_counters: Optional[int]
+    counter_damage_amount: Optional[int]
+    attacker_knocked_out: Optional[bool]
+    holder_knocked_out: Optional[bool]
+    holder_survives: Optional[bool]
+    simultaneous_knockout: Optional[bool]
+    drednaw_followup_supported: Optional[bool]
+    drednaw_serial: Optional[int]
+    drednaw_hard_crunch_damage: Optional[int]
+    integrated_facts: Stage2b4IntegratedCounterlineFacts
+    unsupported_reason: Optional[str] = None
+    reasons: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class Stage2b4CounterlineActionLineCollectionFacts:
+    origin_option_index: Optional[int]
+    origin_option_type: Optional[OptionType]
+    origin_option_card_id: Optional[int]
+    action_plans: Tuple[Stage2b4ActionPlanFacts, ...]
+    routes: Tuple[Stage2b4CounterlineActionLineFacts, ...]
+    supported: bool
+    exact: bool
     unsupported_reason: Optional[str] = None
     reasons: Tuple[str, ...] = ()
 
@@ -1898,6 +1997,9 @@ class NextAttackerFacts:
     confirmed_reply_ko: Optional[bool]
     confirmed_reply_has_ready_next_attacker: Optional[bool]
     unsupported_reason: Optional[str] = None
+    confirmed_ready_next_attacker_count: Optional[int] = None
+    unknown_ready_next_attacker_count: Optional[int] = None
+    unknown_usable_attack_ids: Tuple[int, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -2069,6 +2171,332 @@ class Phase3DirectAttackShadowFacts:
             raise ValueError("phase3_current_prepared_cross_product_mismatch")
 
 
+class ActionLineBestAttackState(str, Enum):
+    SELECTED = "SELECTED"
+    TIE = "TIE"
+    INCOMPARABLE = "INCOMPARABLE"
+    UNSUPPORTED = "UNSUPPORTED"
+
+
+@dataclass(frozen=True)
+class ActionLineAttackComparisonFacts:
+    left_candidate_ordinal: int
+    right_candidate_ordinal: int
+    left_attack_id: Optional[int]
+    right_attack_id: Optional[int]
+    relation: DirectAttackComparison
+    reason: DirectAttackComparisonReason
+    left_state: DirectAttackCandidateState
+    right_state: DirectAttackCandidateState
+
+
+@dataclass(frozen=True)
+class ActionLineOutcomeFacts:
+    origin_option_index: int
+    origin_option_type: Any
+    origin_option_card_id: Optional[int]
+    origin_target_card_id: Optional[int]
+    origin_target_serial: Optional[int]
+    adapter_names: Tuple[str, ...]
+    prepared_bindings: Tuple[Phase3PreparedAttackBindingFacts, ...]
+    attack_candidates: Tuple[DirectAttackShadowCandidate, ...]
+    comparisons: Tuple[ActionLineAttackComparisonFacts, ...]
+    best_attack: Optional[DirectAttackShadowCandidate]
+    best_attack_id: Optional[int]
+    outcome_facts: Optional[DirectDecisionOutcomeFacts]
+    phase3_state: Optional[DirectAttackCandidateState]
+    virtual_state_exact: bool
+    supported: bool
+    selection_state: ActionLineBestAttackState
+    duplicate_candidate_count: int = 0
+    unsupported_reason: Optional[str] = None
+    reasons: Tuple[str, ...] = ()
+
+
+
+
+class ActionLineOriginKind(str, Enum):
+    CURRENT_BOARD = "CURRENT_BOARD"
+    PREPARED_ACTION = "PREPARED_ACTION"
+
+
+@dataclass(frozen=True)
+class ActionLineOriginFacts:
+    kind: ActionLineOriginKind
+    option_index: Optional[int]
+    option_type: Optional[Any] = None
+    option_card_id: Optional[int] = None
+    target_card_id: Optional[int] = None
+    target_serial: Optional[int] = None
+    adapter_names: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class CurrentActionLineOutcomeFacts:
+    origin: ActionLineOriginFacts
+    attack_candidates: Tuple[DirectAttackShadowCandidate, ...]
+    comparisons: Tuple[ActionLineAttackComparisonFacts, ...]
+    best_attack: Optional[DirectAttackShadowCandidate]
+    best_attack_id: Optional[int]
+    outcome_facts: Optional[DirectDecisionOutcomeFacts]
+    phase3_state: Optional[DirectAttackCandidateState]
+    state_exact: bool
+    supported: bool
+    selection_state: ActionLineBestAttackState
+    duplicate_candidate_count: int = 0
+    unsupported_reason: Optional[str] = None
+    blocked_reasons: Tuple[str, ...] = ()
+    reasons: Tuple[str, ...] = ()
+
+
+
+
+
+@dataclass(frozen=True)
+class ActivePositionCurrentAttackLineFacts:
+    origin: ActionLineOriginFacts
+    current_active_card_id: Optional[int]
+    current_active_serial: Optional[int]
+    attack_option_index: Optional[int]
+    attack_id: Optional[int]
+    attack_candidate: Optional[DirectAttackShadowCandidate]
+    p6_input_facts: Optional[P6AttackDecisionInputFacts]
+    generic_outcome_facts: Optional[DirectDecisionOutcomeFacts]
+    counterline_recovery_applied: bool
+    projected_active_card_id: Optional[int]
+    projected_active_serial: Optional[int]
+    projected_opponent_active_card_id: Optional[int]
+    projected_opponent_active_serial: Optional[int]
+    projected_opponent_active_hp: Optional[int]
+    current_active_preserved: Optional[bool]
+    terminal_win: Optional[bool]
+    opponent_active_ko: Optional[bool]
+    reply_required: Optional[bool]
+    counterline_kind: Stage2b4CounterlineRouteKind
+    incoming_damage: Optional[int]
+    integrated_counterline_facts: Optional[Stage2b4IntegratedCounterlineFacts]
+    counterline_attack_facts: Optional[Stage2b4CounterlineAttackFacts]
+    supported: bool
+    exact: bool
+    unsupported_reason: Optional[str] = None
+    reasons: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class ActivePositionCurrentLineCollectionFacts:
+    current_action_line: CurrentActionLineOutcomeFacts
+    current_active_card_id: Optional[int]
+    current_active_serial: Optional[int]
+    selection_state: ActionLineBestAttackState
+    candidate_lines: Tuple[ActivePositionCurrentAttackLineFacts, ...]
+    supported: bool
+    exact: bool
+    unsupported_reason: Optional[str] = None
+    reasons: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class DeluxeBombResourcePreservationFacts:
+    bomb_line: Stage2b4CounterlineActionLineFacts
+    matching_current_lines: Tuple[ActivePositionCurrentAttackLineFacts, ...]
+    matching_non_bomb_routes: Tuple[Stage2b4CounterlineActionLineFacts, ...]
+    new_bomb_commitment: Optional[bool]
+    preservation_required: Optional[bool]
+    supported: bool
+    exact: bool
+    unsupported_reason: Optional[str] = None
+    reasons: Tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.preservation_required is False:
+            raise ValueError("deluxe_bomb_preservation_false_is_not_supported")
+        if self.supported:
+            if not self.exact or self.unsupported_reason is not None:
+                raise ValueError("incomplete_supported_deluxe_bomb_preservation")
+            if self.new_bomb_commitment not in {True, False}:
+                raise ValueError("supported_deluxe_bomb_commitment_must_be_exact")
+            if self.preservation_required is True and self.new_bomb_commitment is not True:
+                raise ValueError("deluxe_bomb_preservation_requires_new_commitment")
+            return
+        if self.exact or self.preservation_required is not None:
+            raise ValueError("unsupported_deluxe_bomb_preservation_must_fail_closed")
+        if not self.unsupported_reason:
+            raise ValueError("unsupported_deluxe_bomb_preservation_missing_reason")
+
+
+@dataclass(frozen=True)
+class ActivePositionTransitionCommitmentFacts:
+    current_position: ActivePositionCurrentLineCollectionFacts
+    transition: ActiveBenchTransitionFacts
+    strict_superiority_required: Optional[bool]
+    supported: bool
+    exact: bool
+    unsupported_reason: Optional[str] = None
+    reasons: Tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.supported:
+            if (
+                not self.exact
+                or self.strict_superiority_required is not True
+                or self.unsupported_reason is not None
+            ):
+                raise ValueError(
+                    "incomplete_supported_active_position_transition_commitment"
+                )
+            return
+        if self.exact or self.strict_superiority_required is not None:
+            raise ValueError(
+                "unsupported_active_position_transition_commitment_must_fail_closed"
+            )
+        if not self.unsupported_reason:
+            raise ValueError(
+                "unsupported_active_position_transition_commitment_missing_reason"
+            )
+
+
+@dataclass(frozen=True)
+class DrednawDefensiveActionLineFacts:
+    strategy: DrednawHighPowerStrategyFacts
+    origin: ActionLineOriginFacts
+    combat_line: DrednawHighPowerCombatLineFacts
+    transition: Optional[ActiveBenchTransitionFacts]
+    drednaw_serial: int
+    opponent_attack: DrednawHighPowerAttackFacts
+    supported: bool
+    exact: bool
+    unsupported_reason: Optional[str] = None
+    reasons: Tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if type(self.drednaw_serial) is not int:
+            raise TypeError("invalid_drednaw_defensive_line_identity")
+        if self.supported:
+            if not self.exact or self.unsupported_reason is not None:
+                raise ValueError("incomplete_supported_drednaw_defensive_line")
+            if self.opponent_attack.attack_id is None:
+                raise ValueError("supported_drednaw_defensive_line_attack_identity_missing")
+            if (
+                self.combat_line.drednaw_serial != self.drednaw_serial
+                or self.opponent_attack.target_drednaw_serial != self.drednaw_serial
+            ):
+                raise ValueError("supported_drednaw_defensive_line_identity_mismatch")
+            return
+        if self.exact:
+            raise ValueError("unsupported_drednaw_defensive_line_must_fail_closed")
+        if not self.unsupported_reason:
+            raise ValueError("unsupported_drednaw_defensive_line_missing_reason")
+
+
+@dataclass(frozen=True)
+class Phase3StrategicActionLineComparisonFacts:
+    left_origin: ActionLineOriginFacts
+    right_origin: ActionLineOriginFacts
+    left_line: Union[
+        ActivePositionCurrentAttackLineFacts,
+        Stage2b4CounterlineActionLineFacts,
+        DrednawDefensiveActionLineFacts,
+        "Stage2cStrategicActionLineFacts",
+    ]
+    right_line: Union[
+        ActivePositionCurrentAttackLineFacts,
+        Stage2b4CounterlineActionLineFacts,
+        DrednawDefensiveActionLineFacts,
+        "Stage2cStrategicActionLineFacts",
+    ]
+    opponent_attacker_card_id: Optional[int]
+    opponent_attacker_serial: Optional[int]
+    opponent_attack_id: Optional[int]
+    relation: DirectAttackComparison
+    reason: DirectAttackComparisonReason
+    supported: bool
+    exact: bool
+    unsupported_reason: Optional[str] = None
+    reasons: Tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.supported:
+            if not self.exact or self.unsupported_reason is not None:
+                raise ValueError("incomplete_supported_strategic_phase3_comparison")
+            return
+        if self.exact or not self.unsupported_reason:
+            raise ValueError("unsupported_strategic_phase3_comparison_must_fail_closed")
+
+
+@dataclass(frozen=True)
+class CrossOriginActionLineCandidateComparisonFacts:
+    left_candidate: DirectAttackShadowCandidate
+    right_candidate: DirectAttackShadowCandidate
+    result: DirectAttackComparisonResult
+
+
+@dataclass(frozen=True)
+class CrossOriginActionLineComparisonFacts:
+    left_origin: ActionLineOriginFacts
+    right_origin: ActionLineOriginFacts
+    left_selection_state: ActionLineBestAttackState
+    right_selection_state: ActionLineBestAttackState
+    left_attack_candidates: Tuple[DirectAttackShadowCandidate, ...]
+    right_attack_candidates: Tuple[DirectAttackShadowCandidate, ...]
+    candidate_comparisons: Tuple[
+        CrossOriginActionLineCandidateComparisonFacts, ...
+    ]
+    relation: DirectAttackComparison
+    reason: DirectAttackComparisonReason
+    pairwise_reasons: Tuple[DirectAttackComparisonReason, ...]
+    supported: bool
+    exact: bool
+    unsupported_reason: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class Phase3ActionLineComparisonFoundationFacts:
+    current_line: CurrentActionLineOutcomeFacts
+    prepared_lines: Tuple[ActionLineOutcomeFacts, ...]
+    comparisons: Tuple[CrossOriginActionLineComparisonFacts, ...]
+
+
+@dataclass(frozen=True)
+class Phase5ConfirmedPreparedOriginFacts:
+    origin_option_index: int
+    adapter_names: Tuple[str, ...]
+    prepared_candidates: Tuple[DirectAttackShadowCandidate, ...]
+    selected_candidate: Optional[DirectAttackShadowCandidate]
+    current_comparisons: Tuple[Phase3CurrentPreparedComparisonFacts, ...]
+    eligible: bool
+    unsupported_reason: Optional[str] = None
+    reasons: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class Phase5ConfirmedLiveFacts:
+    supported: bool
+    current_candidates: Tuple[DirectAttackShadowCandidate, ...]
+    prepared_bindings: Tuple[Phase3PreparedAttackBindingFacts, ...]
+    phase3_facts: Phase3DirectAttackShadowFacts
+    eligible_origins: Tuple[Phase5ConfirmedPreparedOriginFacts, ...]
+    selected_origin_indices: Tuple[int, ...]
+    selected_candidate: Optional[DirectAttackShadowCandidate]
+    live_applied: bool
+    no_op_reason: Optional[str] = None
+    reasons: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class Phase5StrategicLiveFacts:
+    current_position: ActivePositionCurrentLineCollectionFacts
+    counterline_collections: Tuple[Stage2b4CounterlineActionLineCollectionFacts, ...]
+    drednaw_lines: Tuple[DrednawDefensiveActionLineFacts, ...]
+    comparisons: Tuple[Phase3StrategicActionLineComparisonFacts, ...]
+    eligible_origin_indices: Tuple[int, ...]
+    selected_origin_indices: Tuple[int, ...]
+    blocked_origin_indices: Tuple[int, ...]
+    supported: bool
+    live_applied: bool
+    no_op_reason: Optional[str] = None
+    reasons: Tuple[str, ...] = ()
+
+
 class Phase4CurrentValueGateReason(str, Enum):
     CURRENT_IMMEDIATE_WIN = "CURRENT_IMMEDIATE_WIN"
     CURRENT_CONFIRMED_KO = "CURRENT_CONFIRMED_KO"
@@ -2223,6 +2651,200 @@ class Phase4CurrentValueGateFacts:
             or self.current_has_confirmed_prize_gain
         ):
             raise ValueError("invalid_open_phase4_gate")
+
+
+class Phase4EXCandidateFamily(str, Enum):
+    CURRENT_ATTACK = "CURRENT_ATTACK"
+    EXACT_STRATEGIC_ACTION = "EXACT_STRATEGIC_ACTION"
+    SELF_PREPARATION = "SELF_PREPARATION"
+    BOARD_DEVELOPMENT = "BOARD_DEVELOPMENT"
+    HEALING_SURVIVAL = "HEALING_SURVIVAL"
+    OPPONENT_DISRUPTION = "OPPONENT_DISRUPTION"
+
+
+@dataclass(frozen=True)
+class Phase4EXCandidateExactnessFacts:
+    legal: bool
+    supported: bool
+    option_identity_exact: bool
+    target_identity_exact: bool
+    transition_exact: bool
+    policy_facts_complete: bool
+    hidden_dependent_component: bool
+    exact_public_facts: bool
+    uncertainty_reasons: Tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        expected_exact = bool(
+            self.legal
+            and self.supported
+            and self.option_identity_exact
+            and self.target_identity_exact
+            and self.transition_exact
+            and self.policy_facts_complete
+            and not self.hidden_dependent_component
+        )
+        if self.exact_public_facts != expected_exact:
+            raise ValueError("phase4ex_candidate_exactness_mismatch")
+
+
+@dataclass(frozen=True)
+class Phase4EXCandidateFacts:
+    origin_option_index: int
+    option_type: Any
+    option_card_id: Optional[int]
+    target_card_id: Optional[int]
+    target_serial: Optional[int]
+    legal: bool
+    supported: bool
+    exact_public_facts: bool
+    families: Tuple[Phase4EXCandidateFamily, ...]
+    stage2c_kind: Optional["Stage2cStrategicActionLineKind"]
+    phase5_selected: bool
+    continuation_confirmed: Optional[bool]
+    attack_preserved_after_origin: Optional[bool]
+    exact_development_line: bool
+    development_line_access_count: Optional[int]
+    avoids_board_out: bool
+    avoids_prize_loss: bool
+    prizes_preserved: int
+    preserves_primary_pokemon: bool
+    healed_damage: int
+    recovered_energy_count: int
+    board_energy_removed: int
+    breaks_engine: bool
+    removes_tool: bool
+    uncertainty_reasons: Tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if type(self.origin_option_index) is not int or self.origin_option_index < 0:
+            raise ValueError("invalid_phase4ex_candidate_origin")
+        if not self.families:
+            raise ValueError("phase4ex_candidate_family_required")
+        if self.exact_public_facts and (not self.legal or not self.supported):
+            raise ValueError("phase4ex_exact_candidate_must_be_legal_supported")
+        if self.development_line_access_count is not None and self.development_line_access_count < 0:
+            raise ValueError("invalid_phase4ex_development_line_access_count")
+
+
+@dataclass(frozen=True)
+class Phase4EXBoardNeedFacts:
+    supported: bool
+    exact_public_facts: bool
+    current_terminal_win: bool
+    current_attack_available: bool
+    bench_space: int
+    ready_next_attacker_exists: Optional[bool]
+    next_attacker_deficit: Optional[bool]
+    certain_active_can_ko: bool
+    certain_active_best_damage: int
+    public_reachable_bench_threat_count: int
+    public_reachable_bench_can_ko: bool
+    hidden_dependent_risk: bool
+    hidden_dependent_reasons: Tuple[str, ...]
+    uncertainty_reasons: Tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.bench_space < 0:
+            raise ValueError("invalid_phase4ex_bench_space")
+        if self.public_reachable_bench_threat_count < 0:
+            raise ValueError("invalid_phase4ex_public_bench_threat_count")
+        if self.exact_public_facts and (
+            not self.supported
+            or type(self.ready_next_attacker_exists) is not bool
+            or type(self.next_attacker_deficit) is not bool
+        ):
+            raise ValueError("phase4ex_exact_board_need_incomplete")
+
+
+class Phase4EXPreference(str, Enum):
+    PREFER_LEFT = "PREFER_LEFT"
+    PREFER_RIGHT = "PREFER_RIGHT"
+    EQUIVALENT_POLICY = "EQUIVALENT_POLICY"
+    ABSTAIN = "ABSTAIN"
+
+
+class Phase4EXPreferenceReason(str, Enum):
+    URGENT_LOSS_AVOIDANCE = "URGENT_LOSS_AVOIDANCE"
+    BOARD_DEVELOPMENT_NEED = "BOARD_DEVELOPMENT_NEED"
+    EXACT_AUTHORITY_SHIELD = "EXACT_AUTHORITY_SHIELD"
+    OPPONENT_PUBLIC_THREAT = "OPPONENT_PUBLIC_THREAT"
+    HIDDEN_DEPENDENT_UNCERTAINTY = "HIDDEN_DEPENDENT_UNCERTAINTY"
+    INEXACT_PUBLIC_FACTS = "INEXACT_PUBLIC_FACTS"
+    BOARD_DEVELOPMENT_NEED_NOT_ESTABLISHED = "BOARD_DEVELOPMENT_NEED_NOT_ESTABLISHED"
+    CONFLICTING_NONTERMINAL_PREP = "CONFLICTING_NONTERMINAL_PREP"
+    INSUFFICIENT_POLICY_EVIDENCE = "INSUFFICIENT_POLICY_EVIDENCE"
+    SAME_FAMILY_NO_CROSS_FAMILY_POLICY = "SAME_FAMILY_NO_CROSS_FAMILY_POLICY"
+    INVALID_PREFERENCE_SET = "INVALID_PREFERENCE_SET"
+    PREFERENCE_CYCLE = "PREFERENCE_CYCLE"
+
+
+@dataclass(frozen=True)
+class Phase4EXPreferenceFacts:
+    left_origin_option_index: int
+    right_origin_option_index: int
+    preference: Phase4EXPreference
+    reason: Phase4EXPreferenceReason
+    supported: bool
+    exact_public_facts: bool
+    policy_applicable: bool
+    uncertainty_reasons: Tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if (
+            type(self.left_origin_option_index) is not int
+            or type(self.right_origin_option_index) is not int
+            or self.left_origin_option_index < 0
+            or self.right_origin_option_index < 0
+        ):
+            raise ValueError("invalid_phase4ex_preference_identity")
+        if self.preference != Phase4EXPreference.ABSTAIN and (
+            not self.supported
+            or not self.exact_public_facts
+            or not self.policy_applicable
+        ):
+            raise ValueError("invalid_phase4ex_non_abstain_preference")
+
+
+@dataclass(frozen=True)
+class Phase4EXResolutionFacts:
+    candidate_indices: Tuple[int, ...]
+    preferred_edges: Tuple[Tuple[int, int], ...]
+    abstained: bool
+    reason: Phase4EXPreferenceReason
+    cycle_detected: bool
+    missing_relation: bool
+    supported: bool
+    exact: bool
+    policy_applicable: bool
+    invalid_preference_detected: bool
+
+    def __post_init__(self) -> None:
+        if tuple(sorted(set(self.candidate_indices))) != self.candidate_indices:
+            raise ValueError("phase4ex_resolution_candidate_indices_not_canonical")
+        if any(
+            type(left) is not int
+            or type(right) is not int
+            or left == right
+            or left not in self.candidate_indices
+            or right not in self.candidate_indices
+            for left, right in self.preferred_edges
+        ):
+            raise ValueError("invalid_phase4ex_resolution_edge")
+        if tuple(sorted(set(self.preferred_edges))) != self.preferred_edges:
+            raise ValueError("phase4ex_resolution_edges_not_canonical")
+        if self.abstained and self.preferred_edges:
+            raise ValueError("abstained_phase4ex_resolution_must_not_have_edges")
+        if not self.abstained and (
+            not self.supported
+            or not self.exact
+            or not self.policy_applicable
+            or self.cycle_detected
+            or self.missing_relation
+            or self.invalid_preference_detected
+            or not self.preferred_edges
+        ):
+            raise ValueError("invalid_live_eligible_phase4ex_resolution")
 
 
 @dataclass(frozen=True)
@@ -4409,6 +5031,27 @@ class BoardView:
             return HAND_ACTIVITY_LOW
         if cid == SURFING_BEACH:
             return HAND_ACTIVITY_LIVE_NOW if self.has_foreign_stadium() else HAND_ACTIVITY_KEEP
+        if cid == HILDA:
+            return (
+                HAND_ACTIVITY_LIVE_NOW
+                if self.can_use_supporter(HILDA)
+                and (
+                    self.needs_mega_starmie()
+                    or self.needs_mega_yuki()
+                    or self.starmie_needs_energy()
+                )
+                else HAND_ACTIVITY_LOW
+            )
+        if cid == SUGURI:
+            if not self.can_use_supporter(SUGURI):
+                return HAND_ACTIVITY_LOW
+            evaluator = ImmediateOutcomeEvaluator(self)
+            boosted = evaluator.evaluate_suguri_damage_boost()
+            if boosted.reachable_knockout:
+                return HAND_ACTIVITY_LIVE_NOW
+            if Policy(self).best_suguri_switch_play_outcome() is not None:
+                return HAND_ACTIVITY_LIVE_NOW
+            return HAND_ACTIVITY_LOW
         if cid == MEGA_SIGNAL:
             return HAND_ACTIVITY_LIVE_NOW if self.needs_mega_starmie() or self.needs_mega_yuki() else HAND_ACTIVITY_LOW
         return HAND_ACTIVITY_KEEP
@@ -4925,20 +5568,39 @@ class OpponentPublicThreatEvaluator:
             )
 
         evaluator = cls(board, projected_active=projection)
-        candidates = tuple(
+        public_active = opponent_active
+        active_candidates = tuple(
             evaluator._attack_facts(
                 board.opp_active,
                 ThreatEvidenceKind.CERTAIN,
                 active_position=True,
             )
-            if opponent_active is None
+            if public_active is None
             else evaluator._attack_facts_from_public_active(
-                opponent_active,
+                public_active,
                 ThreatEvidenceKind.CERTAIN,
                 active_position=True,
             )
         )
-        return evaluator._projected_threat_facts(candidates)
+        public_retreat = evaluator._fact_correct_public_retreat_evaluation(
+            public_active,
+        )
+        bench_candidates: Tuple[OpponentThreatFact, ...] = ()
+        if public_retreat.status == PublicRetreatStatus.PAYABLE:
+            bench_candidates = tuple(
+                fact
+                for attacker in board.opp_bench
+                for fact in evaluator._attack_facts(
+                    attacker,
+                    ThreatEvidenceKind.PUBLICLY_REACHABLE,
+                    active_position=False,
+                )
+            )
+        return evaluator._projected_threat_facts(
+            active_candidates,
+            public_retreat,
+            bench_candidates,
+        )
 
     @classmethod
     def evaluate_public_active_facts(
@@ -4978,70 +5640,300 @@ class OpponentPublicThreatEvaluator:
                 unsupported_reason="missing_current_opponent_active",
             )
         evaluator = cls(board, projected_our_active=our_active)
-        candidates = tuple(
+        active_candidates = tuple(
             evaluator._attack_facts_from_public_active(
                 opponent_active,
                 ThreatEvidenceKind.CERTAIN,
                 active_position=True,
             )
         )
-        return evaluator._projected_threat_facts(candidates)
+        public_retreat = evaluator._fact_correct_public_retreat_evaluation(
+            opponent_active,
+        )
+        bench_candidates: Tuple[OpponentThreatFact, ...] = ()
+        if public_retreat.status == PublicRetreatStatus.PAYABLE:
+            bench_candidates = tuple(
+                fact
+                for attacker in board.opp_bench
+                for fact in evaluator._attack_facts(
+                    attacker,
+                    ThreatEvidenceKind.PUBLICLY_REACHABLE,
+                    active_position=False,
+                )
+            )
+        return evaluator._projected_threat_facts(
+            active_candidates,
+            public_retreat,
+            bench_candidates,
+        )
+
+    @staticmethod
+    def _reply_projection_effect_unknown(attack: Any) -> bool:
+        text = _normalized_attack_text(attack)
+        if attack_can_damage_opponent_bench(attack):
+            return True
+        markers = (
+            "switch this pokemon with",
+            "switch out this pokemon",
+            "return this pokemon",
+            "shuffle this pokemon",
+            "put this pokemon and all attached cards",
+            "damage to itself",
+            "damage to this pokemon",
+            "heal ",
+            "is now asleep",
+            "is now burned",
+            "is now confused",
+            "is now paralyzed",
+            "is now poisoned",
+            "during your opponent's next turn",
+        )
+        if any(marker in text for marker in markers):
+            return True
+        return bool(
+            ("discard" in text or "move" in text or "attach" in text)
+            and "energy" in text
+        )
+
+    @classmethod
+    def _fact_correct_retreat_effect_reason(
+        cls,
+        board: BoardView,
+        active: Pokemon,
+        incoming: Optional[Pokemon] = None,
+    ) -> Optional[str]:
+        del active
+        if incoming is None:
+            return None
+        after_damage_pattern = re.compile(
+            r"^if (?:the pokemon this card is attached to|the attached pokemon|"
+            r"this pokemon) is in the active spot and is damaged by an attack "
+            r"from your opponent's pokemon"
+            r"(?: \(even if (?:this|that) pokemon is knocked out\))?, .+$"
+        )
+        dependent_damage_cleanup_patterns = (
+            re.compile(
+                r"^if you placed (?:any )?damage counters? in this way, "
+                r"discard this card$"
+            ),
+            re.compile(r"^if you did, discard this card$"),
+            re.compile(r"^then,? discard this card$"),
+        )
+        hp_pattern = re.compile(
+            r"^(?:the pokemon this card is attached to|the attached pokemon|"
+            r"this pokemon) gets \+\d+ hp$"
+        )
+        transition_words = (
+            "retreats",
+            "retreated",
+            "is switched",
+            "switches",
+            "moves from the active spot to the bench",
+            "moves from active to the bench",
+            "moves from the bench to the active spot",
+            "becomes active",
+        )
+        transition_triggers = ("when ", "whenever ", "after ", "if ", "each time ")
+        for public_card in tuple(getattr(incoming, "tools", None) or ()):
+            card_data = board.data(card_id(public_card))
+            blocks = [str(getattr(card_data, "text", "") or "")]
+            blocks.extend(
+                str(getattr(skill, "text", "") or "")
+                for skill in tuple(getattr(card_data, "skills", ()) or ())
+            )
+            if not any(block.strip() for block in blocks):
+                return "public_retreat_incoming_tool_effect_unknown"
+            for block in blocks:
+                normalized = block.replace("\u2019", "'").replace(
+                    "\xa0", " "
+                ).replace("Pok\u00e9mon", "Pokemon").lower()
+                normalized = re.sub(r"\s+", " ", normalized).strip()
+                if not normalized:
+                    continue
+                clauses = tuple(
+                    clause.strip(" \t\r\n.,;:")
+                    for clause in re.split(r"[.!?;]+", normalized)
+                    if clause.strip(" \t\r\n.,;:")
+                )
+                previous_clause_kind: Optional[str] = None
+                for clause in clauses:
+                    if (
+                        any(word in clause for word in transition_words)
+                        and any(
+                            trigger in clause for trigger in transition_triggers
+                        )
+                    ):
+                        return "public_retreat_or_switch_effect_unmodeled"
+                    if after_damage_pattern.fullmatch(clause) is not None:
+                        previous_clause_kind = "attack_damage_reaction"
+                        continue
+                    if any(
+                        pattern.fullmatch(clause) is not None
+                        for pattern in dependent_damage_cleanup_patterns
+                    ):
+                        if previous_clause_kind == "attack_damage_reaction":
+                            previous_clause_kind = "dependent_damage_cleanup"
+                            continue
+                        return "public_retreat_incoming_tool_effect_unknown"
+                    if hp_pattern.fullmatch(clause) is not None:
+                        previous_clause_kind = "static_effect"
+                        continue
+                    clause_data = SimpleNamespace(
+                        cardType=CardType.TOOL,
+                        skills=(SimpleNamespace(text=clause),),
+                    )
+                    clause_kinds = classify_public_effect(clause_data)
+                    if PublicEffectKind.RETREAT_OR_SWITCH_TRIGGERED_EFFECT in clause_kinds:
+                        return "public_retreat_or_switch_effect_unmodeled"
+                    if PublicEffectKind.UNKNOWN not in clause_kinds:
+                        previous_clause_kind = "static_effect"
+                        continue
+                    return "public_retreat_incoming_tool_effect_unknown"
+        return None
+
+    def _fact_correct_public_retreat_evaluation(
+        self,
+        opponent_active: Optional[ProjectedActivePublicFacts],
+    ) -> PublicRetreatEvaluation:
+        evaluation = self._projected_public_retreat_evaluation(opponent_active)
+        if (
+            evaluation.status != PublicRetreatStatus.UNSUPPORTED
+            or evaluation.unsupported_reason
+            != "public_retreat_incoming_tool_effect_unknown"
+        ):
+            return evaluation
+        current = self.b.opp_active
+        if current is None:
+            return evaluation
+        for incoming in self.b.opp_bench:
+            reason = self._fact_correct_retreat_effect_reason(
+                self.b,
+                current,
+                incoming,
+            )
+            if reason is not None:
+                return PublicRetreatEvaluation(
+                    PublicRetreatStatus.UNSUPPORTED,
+                    evaluation.effective_cost,
+                    evaluation.attached_energy_count,
+                    reason,
+                )
+        return self._public_retreat_evaluation()
+
 
     def _projected_threat_facts(
         self,
-        candidates: Tuple[OpponentThreatFact, ...],
+        active_candidates: Tuple[OpponentThreatFact, ...],
+        public_retreat: PublicRetreatEvaluation,
+        bench_candidates: Tuple[OpponentThreatFact, ...] = (),
     ) -> OpponentPublicThreatFacts:
-        payable = tuple(
-            fact for fact in candidates
-            if fact.can_attack_with_current_energy
-        )
-        unsupported = tuple(
-            fact
-            for fact in candidates
-            if fact.unsupported_reason is not None
-        )
-        confirmed = tuple(
-            fact
-            for fact in payable
-            if fact.unsupported_reason is None
-            and fact.estimated_damage is not None
-        )
-        if unsupported:
-            return OpponentPublicThreatFacts(
-                supported=False,
-                best_confirmed_damage=max(
-                    (safe_int(fact.estimated_damage) for fact in confirmed),
-                    default=0,
-                ),
-                can_ko_projected_active=any(
-                    fact.can_ko_our_active for fact in confirmed
-                ),
-                prizes_lost=max(
-                    (fact.prizes_if_ko for fact in confirmed),
-                    default=0,
-                ),
-                usable_attack_ids=tuple(
-                    fact.attack_id for fact in confirmed
-                ),
-                unsupported_reason=unsupported[0].unsupported_reason,
+        def confirmed_facts(
+            candidates: Tuple[OpponentThreatFact, ...],
+        ) -> Tuple[OpponentThreatFact, ...]:
+            return tuple(
+                fact
+                for fact in candidates
+                if fact.can_attack_with_current_energy
+                and fact.estimated_damage is not None
             )
+
+        def unknown_facts(
+            candidates: Tuple[OpponentThreatFact, ...],
+        ) -> Tuple[OpponentThreatFact, ...]:
+            return tuple(
+                fact
+                for fact in candidates
+                if fact.unsupported_reason is not None
+            )
+
+        def with_projection_unknown(
+            candidates: Tuple[OpponentThreatFact, ...],
+        ) -> Tuple[OpponentThreatFact, ...]:
+            values: List[OpponentThreatFact] = []
+            for fact in candidates:
+                if (
+                    fact.unsupported_reason is None
+                    and fact.can_attack_with_current_energy
+                    and fact.estimated_damage is not None
+                ):
+                    attack = self.b.attack(fact.attack_id)
+                    if attack is not None and self._reply_projection_effect_unknown(attack):
+                        fact = replace(
+                            fact,
+                            unsupported_reason="attack_projection_effect_unresolved",
+                        )
+                values.append(fact)
+            return tuple(values)
+
+        active_candidates = with_projection_unknown(active_candidates)
+        bench_candidates = with_projection_unknown(bench_candidates)
+        active_confirmed = confirmed_facts(active_candidates)
+        bench_confirmed = confirmed_facts(bench_candidates)
+        confirmed = active_confirmed + bench_confirmed
+        unknown = unknown_facts(active_candidates + bench_candidates)
+
+        best: Optional[OpponentThreatFact] = None
+        if confirmed:
+            best = min(
+                confirmed,
+                key=lambda fact: (
+                    not fact.wins_game_if_ko,
+                    -safe_int(fact.prizes_if_ko),
+                    not fact.can_ko_our_active,
+                    -safe_int(fact.estimated_damage),
+                    0 if fact.evidence_kind == ThreatEvidenceKind.CERTAIN else 1,
+                    safe_int(fact.attacker_serial, 1 << 30),
+                    fact.attack_id,
+                ),
+            )
+
+        unsupported_reason = None
+        if public_retreat.status == PublicRetreatStatus.UNSUPPORTED:
+            unsupported_reason = (
+                public_retreat.unsupported_reason
+                or "public_retreat_evaluation_unsupported"
+            )
+        elif unknown:
+            unsupported_reason = (
+                unknown[0].unsupported_reason
+                or "public_reply_route_unknown"
+            )
+
         return OpponentPublicThreatFacts(
-            supported=True,
-            best_confirmed_damage=max(
-                (safe_int(fact.estimated_damage) for fact in confirmed),
-                default=0,
+            supported=unsupported_reason is None,
+            best_confirmed_damage=(
+                0 if best is None else safe_int(best.estimated_damage)
             ),
-            can_ko_projected_active=any(
-                fact.can_ko_our_active for fact in confirmed
+            can_ko_projected_active=bool(
+                best is not None and best.can_ko_our_active
             ),
-            prizes_lost=max(
-                (fact.prizes_if_ko for fact in confirmed),
-                default=0,
+            prizes_lost=(
+                0 if best is None else safe_int(best.prizes_if_ko)
             ),
-            usable_attack_ids=tuple(
+            usable_attack_ids=tuple(sorted({
                 fact.attack_id for fact in confirmed
+            })),
+            unsupported_reason=unsupported_reason,
+            current_active_usable_attack_ids=tuple(sorted({
+                fact.attack_id for fact in active_confirmed
+            })),
+            public_retreat_status=public_retreat.status.value,
+            public_retreat_bench_usable_attack_ids=tuple(sorted({
+                fact.attack_id for fact in bench_confirmed
+            })),
+            public_reply_unknown_attack_ids=tuple(sorted({
+                fact.attack_id for fact in unknown
+                if fact.attack_id >= 0
+            })),
+            best_reply_attacker_card_id=(
+                None if best is None else best.attacker_card_id
             ),
-            unsupported_reason=None,
+            best_reply_attacker_serial=(
+                None if best is None else best.attacker_serial
+            ),
+            best_reply_evidence_kind=(
+                None if best is None else best.evidence_kind.value
+            ),
         )
 
     def _evaluate(self) -> OpponentPublicThreat:
@@ -5653,6 +6545,90 @@ class OpponentPublicThreatEvaluator:
                 if PublicEffectKind.UNKNOWN in kinds:
                     return f"public_retreat_{placement}_effect_unknown"
         return None
+
+    def _public_retreat_incoming_effect_evaluation(
+        self,
+        active: Optional[Pokemon],
+        evaluation: PublicRetreatEvaluation,
+    ) -> PublicRetreatEvaluation:
+        if evaluation.status != PublicRetreatStatus.PAYABLE:
+            return evaluation
+        if active is None:
+            return PublicRetreatEvaluation(
+                PublicRetreatStatus.UNSUPPORTED,
+                evaluation.effective_cost,
+                evaluation.attached_energy_count,
+                "missing_current_opponent_active",
+            )
+        for incoming in self.b.opp_bench:
+            incoming_reason = self._public_retreat_effect_unsupported_reason(
+                active,
+                incoming,
+            )
+            if incoming_reason is not None:
+                return PublicRetreatEvaluation(
+                    PublicRetreatStatus.UNSUPPORTED,
+                    evaluation.effective_cost,
+                    evaluation.attached_energy_count,
+                    incoming_reason,
+                )
+        return evaluation
+
+    def _projected_public_retreat_evaluation(
+        self,
+        opponent_active: Optional[ProjectedActivePublicFacts],
+    ) -> PublicRetreatEvaluation:
+        if opponent_active is None:
+            return self._public_retreat_incoming_effect_evaluation(
+                self.b.opp_active,
+                self._public_retreat_evaluation(),
+            )
+        current = self.b.opp_active
+        if current is None:
+            return PublicRetreatEvaluation(
+                PublicRetreatStatus.UNSUPPORTED,
+                None,
+                0,
+                "missing_current_opponent_active",
+            )
+        current_energy_ids = tuple(self.b.energies(current))
+        current_tool_ids = self._attacker_tool_ids(current)
+        current_owner = getattr(self.b, "opp", None)
+        current_status = (
+            bool(getattr(current_owner, "asleep", False)),
+            bool(getattr(current_owner, "paralyzed", False)),
+            bool(getattr(current_owner, "confused", False)),
+            bool(getattr(current_owner, "burned", False)),
+            bool(getattr(current_owner, "poisoned", False)),
+        )
+        projected_status = (
+            opponent_active.asleep,
+            opponent_active.paralyzed,
+            opponent_active.confused,
+            opponent_active.burned,
+            opponent_active.poisoned,
+        )
+        if (
+            self.b.pid(current) != opponent_active.card_id
+            or type(getattr(current, "serial", None)) is not int
+            or getattr(current, "serial", None) != opponent_active.serial
+            or current_energy_ids != opponent_active.energy_card_ids
+            or current_tool_ids != opponent_active.tool_ids
+            or opponent_active.energy_tokens is None
+            or tuple(self.b.energy_tokens(current))
+            != tuple(opponent_active.energy_tokens)
+            or current_status != projected_status
+        ):
+            return PublicRetreatEvaluation(
+                PublicRetreatStatus.UNSUPPORTED,
+                None,
+                len(current_energy_ids),
+                "projected_opponent_retreat_state_unresolved",
+            )
+        return self._public_retreat_incoming_effect_evaluation(
+            current,
+            self._public_retreat_evaluation(),
+        )
 
     def _public_retreat_evaluation(self) -> PublicRetreatEvaluation:
         active = self.b.opp_active
@@ -7004,6 +7980,108 @@ def _stage2b4_project_board(board: BoardView, *, switch_target_serial: Optional[
             projected.opp.active = [projected_opponent]
             projected.opp.bench = list(projected.opp_bench)
     return (projected, None)
+
+
+
+def _stage2b4_project_bruxish_play_board(
+    board: BoardView,
+    option: Any,
+) -> Tuple[Optional[BoardView], Optional[int], Optional[str]]:
+    """Project one exact current Basic PLAY using only public card identity/state."""
+    entries = tuple(board.iter_options())
+    option_indexes = tuple(index for index, candidate in entries if candidate is option)
+    cid = board.option_card(option)
+    if (
+        len(option_indexes) != 1
+        or option.type != OptionType.PLAY
+        or cid != BRUXISH
+        or not board.is_basic_pokemon(cid)
+    ):
+        return None, None, "stage2b4_basic_play_option_identity_unresolved"
+    if board.bench_space <= 0:
+        return None, None, "stage2b4_basic_play_bench_full"
+
+    hand = list(tuple(getattr(board, "hand", ()) or ()))
+    hand_index = getattr(option, "index", None)
+    source_card = None
+    if (
+        getattr(option, "area", None) == AreaType.HAND
+        and getattr(option, "playerIndex", None) in (None, board.my_index)
+        and type(hand_index) is int
+        and 0 <= hand_index < len(hand)
+        and getattr(hand[hand_index], "id", None) == cid
+    ):
+        source_card = hand[hand_index]
+    else:
+        matches = tuple(card for card in hand if getattr(card, "id", None) == cid)
+        if len(matches) == 1:
+            source_card = matches[0]
+            hand_index = hand.index(source_card)
+    serial = None if source_card is None else getattr(source_card, "serial", None)
+    data = board.data(cid)
+    max_hp_value = None if data is None else getattr(data, "hp", None)
+    if source_card is None or type(serial) is not int or type(max_hp_value) is not int:
+        return None, None, "stage2b4_basic_play_card_identity_unresolved"
+
+    projected, reason = _stage2b4_project_board(board)
+    if projected is None:
+        return None, None, reason or "stage2b4_basic_play_projection_unresolved"
+
+    played = SimpleNamespace(
+        id=cid,
+        serial=serial,
+        playerIndex=board.my_index,
+        hp=max_hp_value,
+        maxHp=max_hp_value,
+        energyCards=[],
+        tools=[],
+        appearThisTurn=True,
+    )
+    projected_hand = [
+        card for index, card in enumerate(hand)
+        if index != hand_index
+    ]
+    projected_bench = list(tuple(getattr(board, "bench", ()) or ())) + [played]
+    projected.hand = projected_hand
+    projected.hand_ids = [getattr(card, "id", None) for card in projected_hand]
+    projected.bench = projected_bench
+    projected.all_my_pokemon = [projected.active] + projected_bench
+    projected.bench_space = max(0, board.bench_space - 1)
+
+    select = getattr(board, "select", None)
+    if select is not None:
+        projected.select = SimpleNamespace(**vars(select))
+        projected_options = []
+        for candidate in tuple(getattr(select, "option", ()) or ()):
+            if candidate is option:
+                continue
+            cloned = SimpleNamespace(**vars(candidate))
+            if (
+                getattr(cloned, "area", None) == AreaType.HAND
+                and getattr(cloned, "playerIndex", None) in (None, board.my_index)
+                and type(getattr(cloned, "index", None)) is int
+                and cloned.index > hand_index
+            ):
+                cloned.index -= 1
+            projected_options.append(cloned)
+        projected.select.option = projected_options
+
+    me = getattr(board, "me", None)
+    if me is not None:
+        projected.me = SimpleNamespace(**vars(me))
+        projected.me.active = [projected.active]
+        projected.me.bench = list(projected_bench)
+        projected.me.hand = list(projected_hand)
+
+    projected.card_counts = Counter(
+        projected.hand_ids
+        + list(tuple(getattr(projected, "discard_ids", ()) or ()))
+        + [projected.pid(pokemon) for pokemon in projected.all_my_pokemon]
+    )
+    identity_error = _stage2b4_projected_card_identity_error(board, projected)
+    if identity_error is not None:
+        return None, None, identity_error
+    return projected, serial, None
 
 
 
@@ -12504,7 +13582,7 @@ class CandidateProjectionEvaluator:
             getattr(pokemon, "serial", None)
             for pokemon in projected_bench
         )
-        if any(serial is None for serial in serials):
+        if any(type(serial) is not int for serial in serials):
             return cls._unsupported_next_attacker_facts(
                 "missing_projected_bench_serial",
                 projected_bench_count,
@@ -12519,13 +13597,11 @@ class CandidateProjectionEvaluator:
             int,
             Tuple[Pokemon, Tuple[Tuple[int, int, bool], ...]],
         ] = {}
+        unknown_attack_ids_by_serial: Dict[int, Tuple[int, ...]] = {}
         damage_probe = OpponentPublicThreatEvaluator(board)
         attack_evaluator = ImmediateOutcomeEvaluator(board)
         target = board.opp_active
-        target_hp = max(
-            0,
-            safe_int(projected_opponent_active_hp),
-        )
+        target_hp = max(0, safe_int(projected_opponent_active_hp))
         uncertain_damage_markers = (
             "for each",
             "more damage",
@@ -12542,6 +13618,7 @@ class CandidateProjectionEvaluator:
         )
 
         for pokemon in projected_bench:
+            serial = safe_int(getattr(pokemon, "serial", None))
             pokemon_id = board.pid(pokemon)
             pokemon_data = board.data(pokemon_id)
             if pokemon_data is None:
@@ -12549,27 +13626,67 @@ class CandidateProjectionEvaluator:
                     "missing_projected_bench_card_data",
                     projected_bench_count,
                 )
-            tokens = cls._exact_energy_tokens_as(
-                board,
+            missing_public_tokens = object()
+            public_tokens = getattr(
                 pokemon,
-                pokemon_id,
+                "energies",
+                missing_public_tokens,
             )
-            if tokens is None:
-                return cls._unsupported_next_attacker_facts(
-                    "projected_bench_energy_unsupported",
-                    projected_bench_count,
+            if public_tokens is missing_public_tokens:
+                tokens = cls._exact_energy_tokens_as(
+                    board,
+                    pokemon,
+                    pokemon_id,
                 )
-
+            elif (
+                not isinstance(public_tokens, Sequence)
+                or isinstance(public_tokens, (str, bytes))
+            ):
+                tokens = None
+            else:
+                normalized_tokens: List[Any] = []
+                for token in tuple(public_tokens):
+                    if type(token) is bool:
+                        normalized_tokens = []
+                        tokens = None
+                        break
+                    if isinstance(token, EnergyType):
+                        normalized_tokens.append(token)
+                        continue
+                    if type(token) is int:
+                        try:
+                            normalized_tokens.append(EnergyType(token))
+                        except ValueError:
+                            normalized_tokens = []
+                            tokens = None
+                            break
+                        continue
+                    if isinstance(token, str):
+                        token_name = token.strip().upper()
+                        if token_name.startswith("ENERGYTYPE."):
+                            token_name = token_name.split(".", 1)[1]
+                        try:
+                            normalized_tokens.append(EnergyType[token_name])
+                        except KeyError:
+                            normalized_tokens = []
+                            tokens = None
+                            break
+                        continue
+                    normalized_tokens = []
+                    tokens = None
+                    break
+                else:
+                    tokens = tuple(normalized_tokens)
             confirmed_attacks: List[Tuple[int, int, bool]] = []
+            unknown_attack_ids: List[int] = []
             for attack_id in dict.fromkeys(
                 getattr(pokemon_data, "attacks", ()) or ()
             ):
+                resolved_attack_id = safe_int(attack_id)
                 attack = board.attack(attack_id)
-                if attack is None:
-                    return cls._unsupported_next_attacker_facts(
-                        "missing_projected_bench_attack_data",
-                        projected_bench_count,
-                    )
+                if attack is None or tokens is None:
+                    unknown_attack_ids.append(resolved_attack_id)
+                    continue
                 if not can_pay_attack_with_tokens(attack, tokens):
                     continue
                 attack_text = _normalized_attack_text(attack)
@@ -12577,12 +13694,14 @@ class CandidateProjectionEvaluator:
                     marker in attack_text
                     for marker in uncertain_damage_markers
                 ):
+                    unknown_attack_ids.append(resolved_attack_id)
                     continue
                 _, damage_reason = damage_probe._certain_damage(
                     pokemon,
                     attack,
                 )
                 if damage_reason is not None:
+                    unknown_attack_ids.append(resolved_attack_id)
                     continue
                 limitations = cls._unique(
                     cls._attack_projection_limitations(attack)
@@ -12594,31 +13713,33 @@ class CandidateProjectionEvaluator:
                     )
                 )
                 if limitations:
+                    unknown_attack_ids.append(resolved_attack_id)
                     continue
                 outcome = attack_evaluator._attack_outcome_with_tokens_against(
                     pokemon,
-                    safe_int(attack_id),
+                    resolved_attack_id,
                     tokens,
                     target,
                     "next_attacker_public_fact",
                 )
                 if not outcome.supported:
+                    unknown_attack_ids.append(resolved_attack_id)
                     continue
                 damage = max(0, safe_int(outcome.damage))
-                confirmed_attacks.append(
-                    (
-                        safe_int(attack_id),
-                        damage,
-                        bool(damage > 0 and damage >= target_hp),
-                    )
-                )
+                confirmed_attacks.append((
+                    resolved_attack_id,
+                    damage,
+                    bool(damage > 0 and damage >= target_hp),
+                ))
 
             if confirmed_attacks:
-                confirmed_by_serial[safe_int(
-                    getattr(pokemon, "serial", None)
-                )] = (
+                confirmed_by_serial[serial] = (
                     pokemon,
                     tuple(confirmed_attacks),
+                )
+            if unknown_attack_ids:
+                unknown_attack_ids_by_serial[serial] = tuple(
+                    sorted(set(unknown_attack_ids))
                 )
 
         attack_candidates = [
@@ -12633,6 +13754,16 @@ class CandidateProjectionEvaluator:
             for serial, (pokemon, attacks) in confirmed_by_serial.items()
             for attack_id, damage, knockout in attacks
         ]
+        unknown_attack_ids = tuple(sorted({
+            attack_id
+            for attack_ids in unknown_attack_ids_by_serial.values()
+            for attack_id in attack_ids
+        }))
+        unknown_only_serials = (
+            set(unknown_attack_ids_by_serial) - set(confirmed_by_serial)
+        )
+        unknown_outcome_exists = bool(unknown_attack_ids)
+
         if attack_candidates:
             best = min(
                 attack_candidates,
@@ -12644,68 +13775,82 @@ class CandidateProjectionEvaluator:
                 ),
             )
             (
-                best_ko,
+                confirmed_best_ko,
                 best_damage,
                 best_serial,
                 best_attack_id,
                 best_pokemon,
                 best_attacks,
             ) = best
-            usable_attack_ids = tuple(
-                sorted({
-                    attack_id
-                    for attack_id, _, _ in best_attacks
-                })
-            )
+            usable_attack_ids = tuple(sorted({
+                attack_id for attack_id, _, _ in best_attacks
+            }))
             best_card_id = board.pid(best_pokemon)
         else:
-            best_ko = False
-            best_damage = 0
+            confirmed_best_ko = False
+            best_damage = None if unknown_outcome_exists else 0
             best_serial = None
             best_card_id = None
             best_attack_id = None
             usable_attack_ids = ()
 
-        ready_exists = bool(confirmed_by_serial)
-        if not threat.supported:
-            return NextAttackerFacts(
-                supported=True,
-                projected_bench_count=projected_bench_count,
-                ready_next_attacker_exists=ready_exists,
-                ready_next_attacker_count=len(confirmed_by_serial),
-                best_confirmed_damage=best_damage,
-                can_ko_projected_opponent_active=bool(best_ko),
-                best_next_attacker_card_id=best_card_id,
-                best_next_attacker_serial=best_serial,
-                best_attack_id=best_attack_id,
-                usable_attack_ids=usable_attack_ids,
-                confirmed_reply_supported=False,
-                confirmed_reply_ko=None,
-                confirmed_reply_has_ready_next_attacker=None,
-                unsupported_reason=(
-                    threat.unsupported_reason
-                    or "opponent_public_threat_unsupported"
-                ),
-            )
+        if confirmed_by_serial:
+            ready_exists: Optional[bool] = True
+        elif unknown_only_serials:
+            ready_exists = None
+        else:
+            ready_exists = False
+        ready_count = (
+            None
+            if unknown_only_serials
+            else len(confirmed_by_serial)
+        )
+        can_ko: Optional[bool]
+        if confirmed_best_ko:
+            can_ko = True
+        elif unknown_outcome_exists:
+            can_ko = None
+        else:
+            can_ko = False
 
-        confirmed_reply_ko = bool(threat.can_ko_projected_active)
+        confirmed_reply_supported = bool(threat.supported)
+        confirmed_reply_ko = (
+            bool(threat.can_ko_projected_active)
+            if threat.supported
+            else None
+        )
+        confirmed_reply_has_ready = (
+            None
+            if not threat.supported
+            else ready_exists
+            if confirmed_reply_ko
+            else False
+        )
         return NextAttackerFacts(
             supported=True,
             projected_bench_count=projected_bench_count,
             ready_next_attacker_exists=ready_exists,
-            ready_next_attacker_count=len(confirmed_by_serial),
+            ready_next_attacker_count=ready_count,
             best_confirmed_damage=best_damage,
-            can_ko_projected_opponent_active=bool(best_ko),
+            can_ko_projected_opponent_active=can_ko,
             best_next_attacker_card_id=best_card_id,
             best_next_attacker_serial=best_serial,
             best_attack_id=best_attack_id,
             usable_attack_ids=usable_attack_ids,
-            confirmed_reply_supported=True,
+            confirmed_reply_supported=confirmed_reply_supported,
             confirmed_reply_ko=confirmed_reply_ko,
-            confirmed_reply_has_ready_next_attacker=bool(
-                confirmed_reply_ko and ready_exists
+            confirmed_reply_has_ready_next_attacker=(
+                confirmed_reply_has_ready
             ),
-            unsupported_reason=None,
+            unsupported_reason=(
+                None
+                if threat.supported
+                else threat.unsupported_reason
+                or "opponent_public_threat_unsupported"
+            ),
+            confirmed_ready_next_attacker_count=len(confirmed_by_serial),
+            unknown_ready_next_attacker_count=len(unknown_only_serials),
+            unknown_usable_attack_ids=unknown_attack_ids,
         )
 
     @classmethod
@@ -13169,6 +14314,9 @@ class CandidateProjectionEvaluator:
             confirmed_reply_ko=None,
             confirmed_reply_has_ready_next_attacker=None,
             unsupported_reason=reason or "next_attacker_unsupported",
+            confirmed_ready_next_attacker_count=None,
+            unknown_ready_next_attacker_count=None,
+            unknown_usable_attack_ids=(),
         )
 
     @classmethod
@@ -14108,6 +15256,5836 @@ def current_direct_attack_candidate_facts(
         candidates=tuple(candidates),
         blocked_reasons=tuple(blocked_reasons),
     )
+def phase5_same_observation_prepared_bindings(
+    board: BoardView,
+    results: Sequence[SimulationResult],
+) -> Tuple[Phase3PreparedAttackBindingFacts, ...]:
+    """Collect only same-observation prepared bindings from existing adapters."""
+    results_tuple = tuple(results)
+    current_attack_results = tuple(
+        result
+        for result in results_tuple
+        if (
+            getattr(getattr(result, "option", None), "type", None)
+            == OptionType.ATTACK
+            and getattr(getattr(result, "option", None), "attackId", None)
+            is not None
+        )
+    )
+    bindings: List[Phase3PreparedAttackBindingFacts] = []
+    for result in results_tuple:
+        option = getattr(result, "option", None)
+        option_type = getattr(option, "type", None)
+        if option_type == OptionType.ATTACH:
+            attached_card_id = board.option_card(option)
+            attached_card_data = (
+                board.data(attached_card_id)
+                if attached_card_id is not None
+                else None
+            )
+            attached_card_type = getattr(attached_card_data, "cardType", None)
+            if attached_card_type == CardType.BASIC_ENERGY:
+                decision = (
+                    CandidateProjectionEvaluator
+                    .active_basic_energy_attach_p6_input_facts(
+                        board,
+                        result,
+                    )
+                )
+                bindings.append(phase3_prepared_attack_binding_facts(
+                    "active_basic_energy_attach",
+                    board,
+                    result,
+                    board,
+                    decision,
+                ))
+            elif attached_card_type == CardType.TOOL:
+                for attack_result in current_attack_results:
+                    decision = (
+                        CandidateProjectionEvaluator
+                        .static_hp_tool_attach_p6_input_facts(
+                            board,
+                            result,
+                            attack_result,
+                        )
+                    )
+                    bindings.append(phase3_prepared_attack_binding_facts(
+                        "static_hp_tool_attach",
+                        board,
+                        result,
+                        board,
+                        decision,
+                    ))
+        elif option_type == OptionType.EVOLVE:
+            attack_facts = tuple(
+                board.active_evolution_attack_facts(option)
+            )
+            if not attack_facts:
+                attack_facts = (None,)
+            for attack_fact in attack_facts:
+                decision = (
+                    CandidateProjectionEvaluator
+                    .active_evolution_attack_p6_input_facts(
+                        board,
+                        result,
+                        attack_fact,
+                    )
+                )
+                bindings.append(phase3_prepared_attack_binding_facts(
+                    "active_evolution_attack",
+                    board,
+                    result,
+                    board,
+                    decision,
+                ))
+    return tuple(bindings)
+
+
+
+def same_observation_prepared_attack_bindings(
+    board: BoardView,
+    results: Sequence[SimulationResult],
+) -> Tuple[Phase3PreparedAttackBindingFacts, ...]:
+    """Reuse the existing safe adapter collector without ranking."""
+    return phase5_same_observation_prepared_bindings(board, results)
+
+
+_ACTION_LINE_PREPARATION_TYPES = frozenset({
+    OptionType.ATTACH,
+    OptionType.EVOLVE,
+    OptionType.PLAY,
+    OptionType.ABILITY,
+    OptionType.RETREAT,
+})
+
+
+def _action_line_origin_metadata(
+    board: BoardView,
+    result: SimulationResult,
+) -> Tuple[Any, Optional[int], Optional[int], Optional[int]]:
+    option = getattr(result, "option", None)
+    option_type = getattr(option, "type", None)
+    try:
+        option_card_id = board.option_card(option)
+    except (AttributeError, TypeError, ValueError, IndexError):
+        option_card_id = getattr(option, "cardId", None)
+        if type(option_card_id) is not int:
+            option_card_id = getattr(option, "card_id", None)
+    target = None
+    try:
+        target = board.option_target(option)
+    except (AttributeError, TypeError, ValueError, IndexError):
+        target = getattr(option, "target", None)
+    target_card_id: Optional[int] = None
+    if target is not None:
+        try:
+            target_card_id = board.pid(target)
+        except (AttributeError, TypeError, ValueError, IndexError):
+            raw_target_id = getattr(target, "id", None)
+            if type(raw_target_id) is int:
+                target_card_id = raw_target_id
+    target_serial = getattr(target, "serial", None)
+    return option_type, option_card_id, target_card_id, target_serial
+
+
+def _action_line_same_origin_selection(
+    candidates: Sequence[DirectAttackShadowCandidate],
+) -> Tuple[
+    ActionLineBestAttackState,
+    Optional[DirectAttackShadowCandidate],
+    Tuple[DirectAttackShadowCandidate, ...],
+    Tuple[ActionLineAttackComparisonFacts, ...],
+    int,
+    str,
+]:
+    exact_groups: Dict[
+        Tuple[Any, ...],
+        List[DirectAttackShadowCandidate],
+    ] = {}
+    for candidate in candidates:
+        exact_groups.setdefault(
+            (candidate.attack_id, candidate.facts),
+            [],
+        ).append(candidate)
+    representatives = tuple(group[0] for group in exact_groups.values())
+    duplicate_count = len(tuple(candidates)) - len(representatives)
+    if not representatives:
+        return (
+            ActionLineBestAttackState.UNSUPPORTED,
+            None,
+            (),
+            (),
+            duplicate_count,
+            "action_line_no_reachable_attack",
+        )
+    if len(representatives) == 1:
+        candidate = representatives[0]
+        if (
+            classify_direct_attack_candidate(candidate.facts)
+            == DirectAttackCandidateState.OVERALL_UNSUPPORTED
+        ):
+            return (
+                ActionLineBestAttackState.UNSUPPORTED,
+                None,
+                representatives,
+                (),
+                duplicate_count,
+                candidate.facts.unsupported_reason
+                or "action_line_attack_outcome_unsupported",
+            )
+        return (
+            ActionLineBestAttackState.SELECTED,
+            candidate,
+            representatives,
+            (),
+            duplicate_count,
+            "single_same_origin_attack",
+        )
+
+    reindexed = tuple(
+        replace(candidate, option_index=index)
+        for index, candidate in enumerate(representatives)
+    )
+    raw_comparisons = tuple(
+        compare_direct_attack_candidates(left, right)
+        for left, right in combinations(reindexed, 2)
+    )
+    comparisons = tuple(
+        ActionLineAttackComparisonFacts(
+            left_candidate_ordinal=comparison.left_option_index,
+            right_candidate_ordinal=comparison.right_option_index,
+            left_attack_id=representatives[
+                comparison.left_option_index
+            ].attack_id,
+            right_attack_id=representatives[
+                comparison.right_option_index
+            ].attack_id,
+            relation=comparison.relation,
+            reason=comparison.reason,
+            left_state=comparison.left_state,
+            right_state=comparison.right_state,
+        )
+        for comparison in raw_comparisons
+    )
+    winner = unique_direct_attack_shadow_winner(
+        reindexed,
+        raw_comparisons,
+    )
+    if winner is not None:
+        selected = representatives[winner.option_index]
+        return (
+            ActionLineBestAttackState.SELECTED,
+            selected,
+            representatives,
+            comparisons,
+            duplicate_count,
+            "unique_same_origin_best_attack",
+        )
+    if raw_comparisons and all(
+        comparison.relation == DirectAttackComparison.EQUIVALENT
+        for comparison in raw_comparisons
+    ):
+        return (
+            ActionLineBestAttackState.TIE,
+            None,
+            representatives,
+            comparisons,
+            duplicate_count,
+            "same_origin_attack_tie",
+        )
+    return (
+        ActionLineBestAttackState.INCOMPARABLE,
+        None,
+        representatives,
+        comparisons,
+        duplicate_count,
+        "same_origin_attack_incomparable",
+    )
+
+
+def action_line_outcome_facts(
+    board: BoardView,
+    results: Sequence[SimulationResult],
+    prepared_bindings: Optional[
+        Sequence[Phase3PreparedAttackBindingFacts]
+    ] = None,
+) -> Tuple[ActionLineOutcomeFacts, ...]:
+    """Build facts only; never compare or rank different Action origins."""
+    results_tuple = tuple(results)
+    bindings = tuple(
+        same_observation_prepared_attack_bindings(board, results_tuple)
+        if prepared_bindings is None
+        else prepared_bindings
+    )
+    bindings_by_origin: Dict[
+        int,
+        List[Phase3PreparedAttackBindingFacts],
+    ] = {}
+    for binding in bindings:
+        if type(binding.origin_option_index) is int:
+            bindings_by_origin.setdefault(
+                binding.origin_option_index,
+                [],
+            ).append(binding)
+
+    lines: List[ActionLineOutcomeFacts] = []
+    for result in results_tuple:
+        option_type = getattr(getattr(result, "option", None), "type", None)
+        if option_type not in _ACTION_LINE_PREPARATION_TYPES:
+            continue
+        origin_bindings = tuple(bindings_by_origin.get(result.index, ()))
+        (
+            origin_option_type,
+            origin_option_card_id,
+            origin_target_card_id,
+            origin_target_serial,
+        ) = _action_line_origin_metadata(board, result)
+        if not origin_bindings:
+            lines.append(ActionLineOutcomeFacts(
+                origin_option_index=result.index,
+                origin_option_type=origin_option_type,
+                origin_option_card_id=origin_option_card_id,
+                origin_target_card_id=origin_target_card_id,
+                origin_target_serial=origin_target_serial,
+                adapter_names=(),
+                prepared_bindings=(),
+                attack_candidates=(),
+                comparisons=(),
+                best_attack=None,
+                best_attack_id=None,
+                outcome_facts=None,
+                phase3_state=None,
+                virtual_state_exact=False,
+                supported=False,
+                selection_state=ActionLineBestAttackState.UNSUPPORTED,
+                unsupported_reason="action_line_safe_adapter_unavailable",
+                reasons=("action_line_safe_adapter_unavailable",),
+            ))
+            continue
+
+        adapter_names = tuple(dict.fromkeys(
+            binding.adapter for binding in origin_bindings
+        ))
+        if len(adapter_names) != 1:
+            lines.append(ActionLineOutcomeFacts(
+                origin_option_index=result.index,
+                origin_option_type=origin_option_type,
+                origin_option_card_id=origin_option_card_id,
+                origin_target_card_id=origin_target_card_id,
+                origin_target_serial=origin_target_serial,
+                adapter_names=adapter_names,
+                prepared_bindings=origin_bindings,
+                attack_candidates=tuple(
+                    binding.candidate
+                    for binding in origin_bindings
+                    if binding.candidate is not None
+                ),
+                comparisons=(),
+                best_attack=None,
+                best_attack_id=None,
+                outcome_facts=None,
+                phase3_state=None,
+                virtual_state_exact=False,
+                supported=False,
+                selection_state=ActionLineBestAttackState.UNSUPPORTED,
+                unsupported_reason="action_line_origin_adapter_conflict",
+                reasons=("action_line_origin_adapter_conflict",),
+            ))
+            continue
+
+        raw_candidates = tuple(
+            binding.candidate
+            for binding in origin_bindings
+            if binding.candidate is not None
+        )
+        (
+            selection_state,
+            best_attack,
+            candidates,
+            comparisons,
+            duplicate_count,
+            selection_reason,
+        ) = _action_line_same_origin_selection(raw_candidates)
+        supported = selection_state != ActionLineBestAttackState.UNSUPPORTED
+        phase3_state = (
+            classify_direct_attack_candidate(best_attack.facts)
+            if best_attack is not None
+            else None
+        )
+        lines.append(ActionLineOutcomeFacts(
+            origin_option_index=result.index,
+            origin_option_type=origin_option_type,
+            origin_option_card_id=origin_option_card_id,
+            origin_target_card_id=origin_target_card_id,
+            origin_target_serial=origin_target_serial,
+            adapter_names=adapter_names,
+            prepared_bindings=origin_bindings,
+            attack_candidates=candidates,
+            comparisons=comparisons,
+            best_attack=best_attack,
+            best_attack_id=(
+                best_attack.attack_id if best_attack is not None else None
+            ),
+            outcome_facts=(
+                best_attack.facts if best_attack is not None else None
+            ),
+            phase3_state=phase3_state,
+            virtual_state_exact=bool(
+                candidates
+                and all(
+                    binding.supported
+                    for binding in origin_bindings
+                    if binding.candidate in candidates
+                )
+            ),
+            supported=supported,
+            selection_state=selection_state,
+            duplicate_candidate_count=duplicate_count,
+            unsupported_reason=(None if supported else selection_reason),
+            reasons=(selection_reason,),
+        ))
+    return tuple(lines)
+
+
+def _current_action_line_origin() -> ActionLineOriginFacts:
+    return ActionLineOriginFacts(
+        kind=ActionLineOriginKind.CURRENT_BOARD,
+        option_index=None,
+    )
+
+
+def _prepared_action_line_origin(
+    line: ActionLineOutcomeFacts,
+) -> ActionLineOriginFacts:
+    return ActionLineOriginFacts(
+        kind=ActionLineOriginKind.PREPARED_ACTION,
+        option_index=line.origin_option_index,
+        option_type=line.origin_option_type,
+        option_card_id=line.origin_option_card_id,
+        target_card_id=line.origin_target_card_id,
+        target_serial=line.origin_target_serial,
+        adapter_names=line.adapter_names,
+    )
+
+
+def current_action_line_outcome_facts(
+    board: BoardView,
+    results: Sequence[SimulationResult],
+    current_facts: Optional[CurrentDirectAttackCandidateFacts] = None,
+) -> CurrentActionLineOutcomeFacts:
+    """Build the current-board ATTACK Line without ranking options."""
+    current = (
+        current_direct_attack_candidate_facts(board, results)
+        if current_facts is None
+        else current_facts
+    )
+    (
+        selection_state,
+        best_attack,
+        candidates,
+        comparisons,
+        duplicate_count,
+        selection_reason,
+    ) = _action_line_same_origin_selection(current.candidates)
+    supported = selection_state != ActionLineBestAttackState.UNSUPPORTED
+    return CurrentActionLineOutcomeFacts(
+        origin=_current_action_line_origin(),
+        attack_candidates=candidates,
+        comparisons=comparisons,
+        best_attack=best_attack,
+        best_attack_id=(
+            best_attack.attack_id if best_attack is not None else None
+        ),
+        outcome_facts=(
+            best_attack.facts if best_attack is not None else None
+        ),
+        phase3_state=(
+            classify_direct_attack_candidate(best_attack.facts)
+            if best_attack is not None
+            else None
+        ),
+        state_exact=bool(candidates) and not current.blocked_reasons,
+        supported=supported,
+        selection_state=selection_state,
+        duplicate_candidate_count=duplicate_count,
+        unsupported_reason=(None if supported else selection_reason),
+        blocked_reasons=current.blocked_reasons,
+        reasons=(selection_reason,) + current.blocked_reasons,
+    )
+
+
+
+def _active_position_current_result_for_candidate(
+    board: BoardView,
+    results: Sequence[SimulationResult],
+    candidate: DirectAttackShadowCandidate,
+) -> Tuple[Optional[SimulationResult], Optional[str]]:
+    matches = tuple(
+        result
+        for result in results
+        if result.index == candidate.option_index
+        and getattr(result.option, "type", None) == OptionType.ATTACK
+        and getattr(result.option, "attackId", None) == candidate.attack_id
+        and _result_option_is_current(board, result)
+    )
+    if len(matches) != 1:
+        return None, "active_position_current_attack_identity_unresolved"
+    return matches[0], None
+
+
+def _active_position_attack_decision_input_facts(
+    board: BoardView,
+    result: SimulationResult,
+    *,
+    allow_counterline_recovery: bool = False,
+) -> Tuple[
+    P6AttackDecisionInputFacts,
+    CandidateProjectionFacts,
+    Optional[bool],
+    Optional[str],
+]:
+    projection = CandidateProjectionEvaluator.project_facts(board, result)
+    decision = CandidateProjectionEvaluator.direct_attack_p6_input_facts(
+        board,
+        result,
+        projection,
+    )
+    if decision.supported:
+        return decision, projection, projection.projected_active_changed, None
+    if (
+        not allow_counterline_recovery
+        or decision.unsupported_reason != "public_damage_effect_unclassified"
+        or projection.unsupported_reason != "public_damage_effect_unclassified"
+    ):
+        return decision, projection, None, decision.unsupported_reason
+
+    active = getattr(board, "active", None)
+    opponent = getattr(board, "opp_active", None)
+    active_tools = tuple(getattr(active, "tools", ()) or ()) if active is not None else ()
+    tool_ids = tuple(int(getattr(tool, "id", -1)) for tool in active_tools)
+    tool_serials = tuple(getattr(tool, "serial", None) for tool in active_tools)
+    active_energy = tuple(getattr(active, "energyCards", ()) or ()) if active is not None else ()
+    energy_serials = tuple(getattr(card, "serial", None) for card in active_energy)
+    if (
+        active is None
+        or opponent is None
+        or type(getattr(active, "serial", None)) is not int
+        or type(getattr(opponent, "serial", None)) is not int
+        or DELUXE_BOMB not in tool_ids
+        or any(type(serial) is not int for serial in tool_serials)
+        or len(set(tool_serials)) != len(tool_serials)
+        or any(type(serial) is not int for serial in energy_serials)
+        or len(set(energy_serials)) != len(energy_serials)
+        or not result.outcome.supported
+        or projection.option_type != OptionType.ATTACK
+        or projection.attack_id != getattr(result.option, "attackId", None)
+    ):
+        return decision, projection, None, decision.unsupported_reason
+
+    projection = replace(
+        projection,
+        projected_active_card_id=board.pid(active),
+        projected_active_serial=getattr(active, "serial", None),
+        projected_active_hp=hp_left(active),
+        projected_active_max_hp=max_hp(active),
+        projected_active_energy_tokens=tuple(board.energy_tokens(active)),
+        projected_active_tool_ids=tool_ids,
+        projected_active_changed=False,
+        projected_opponent_active_hp=max(
+            0,
+            hp_left(opponent) - max(0, safe_int(result.outcome.damage)),
+        ),
+        terminal_win=bool(result.outcome.wins_game),
+        opponent_active_ko=bool(result.outcome.knockout),
+    )
+    our_active = projected_active_public_facts(
+        board,
+        active,
+        status_owner=getattr(board, "me", None),
+        projected_card_id=projection.projected_active_card_id,
+        projected_serial=projection.projected_active_serial,
+        projected_hp=projection.projected_active_hp,
+        projected_max_hp=projection.projected_active_max_hp,
+        projected_energy_tokens=projection.projected_active_energy_tokens,
+        projected_tool_ids=projection.projected_active_tool_ids,
+    )
+    opponent_after = None
+    if not projection.opponent_active_ko and not projection.terminal_win:
+        opponent_after = projected_active_public_facts(
+            board,
+            opponent,
+            status_owner=getattr(board, "opp", None),
+            projected_hp=projection.projected_opponent_active_hp,
+        )
+    recovered = P6AttackDecisionInputFacts(
+        supported=True,
+        decision_option_index=result.index,
+        attack_id=projection.attack_id,
+        combat_result_exact=True,
+        confirmed_damage=max(0, safe_int(result.outcome.damage)),
+        opponent_active_ko=bool(result.outcome.knockout),
+        immediate_prizes_taken=max(0, safe_int(result.outcome.prizes_taken)),
+        candidate_wins_game=bool(result.outcome.wins_game),
+        our_active=our_active,
+        opponent_active_after_attack=opponent_after,
+        projected_bench_unchanged=True,
+        unsupported_reason=None,
+    )
+    return (
+        recovered,
+        projection,
+        projection.projected_active_changed,
+        "active_position_reply_reaction_projection_recovered",
+    )
+
+
+
+
+
+
+def _active_position_counterline_kind(
+    attack_fact: Stage2b4CounterlineAttackFacts,
+) -> Stage2b4CounterlineRouteKind:
+    bruxish = attack_fact.bruxish_trigger_confirmed
+    bomb = attack_fact.deluxe_bomb_trigger_confirmed
+    if bruxish is False and bomb is False:
+        return Stage2b4CounterlineRouteKind.NONE
+    if bruxish is False and bomb is True:
+        return Stage2b4CounterlineRouteKind.DELUXE_BOMB_ONLY
+    if bruxish is True and bomb is False:
+        return Stage2b4CounterlineRouteKind.BRUXISH_ONLY
+    if (
+        bruxish is True
+        and bomb is True
+        and attack_fact.combined_damage_counters == 15
+        and attack_fact.combined_damage_amount == 150
+    ):
+        return Stage2b4CounterlineRouteKind.DELUXE_BOMB_AND_BRUXISH
+    return Stage2b4CounterlineRouteKind.UNRESOLVED
+
+
+def _active_position_counterline_incoming_damage(
+    integrated: Stage2b4IntegratedCounterlineFacts,
+    attack_fact: Stage2b4CounterlineAttackFacts,
+) -> Optional[int]:
+    values: List[int] = []
+    key = (
+        attack_fact.attack_id,
+        attack_fact.opponent_active_id,
+        attack_fact.opponent_active_serial,
+    )
+    for fact in integrated.bruxish_facts.attack_facts:
+        if (fact.attack_id, fact.opponent_active_id, fact.opponent_active_serial) == key:
+            if fact.confirmed_incoming_damage is not None:
+                values.append(int(fact.confirmed_incoming_damage))
+    for fact in integrated.deluxe_bomb_facts.attack_facts:
+        if (fact.attack_id, fact.opponent_active_id, fact.opponent_active_serial) == key:
+            if fact.confirmed_incoming_damage is not None:
+                values.append(int(fact.confirmed_incoming_damage))
+    if not values:
+        return None
+    return values[0] if len(set(values)) == 1 else None
+
+
+def _active_position_drednaw_followup_error(
+    board: BoardView,
+    attack_fact: Stage2b4CounterlineAttackFacts,
+) -> Optional[str]:
+    if attack_fact.drednaw_followup_supported is not True:
+        return None
+    if (
+        type(attack_fact.drednaw_serial) is not int
+        or attack_fact.drednaw_hard_crunch_damage is None
+    ):
+        return "active_position_drednaw_followup_identity_unresolved"
+    matches = tuple(
+        pokemon
+        for pokemon in tuple(getattr(board, "bench", ()) or ())
+        if getattr(pokemon, "serial", None) == attack_fact.drednaw_serial
+        and board.pid(pokemon) == DREDNAW
+    )
+    if len(matches) != 1:
+        return "active_position_drednaw_followup_identity_unresolved"
+    return None
+
+
+def _active_position_current_attack_line_base(
+    *,
+    origin: ActionLineOriginFacts,
+    candidate: DirectAttackShadowCandidate,
+    decision: Optional[P6AttackDecisionInputFacts],
+    current_active_card_id: Optional[int],
+    current_active_serial: Optional[int],
+    projected_active_card_id: Optional[int],
+    projected_active_serial: Optional[int],
+    projected_opponent_active_card_id: Optional[int],
+    projected_opponent_active_serial: Optional[int],
+    projected_opponent_active_hp: Optional[int],
+    current_active_preserved: Optional[bool],
+    terminal_win: Optional[bool],
+    opponent_active_ko: Optional[bool],
+    reply_required: Optional[bool],
+    counterline_kind: Stage2b4CounterlineRouteKind,
+    supported: bool,
+    exact: bool,
+    reason: Optional[str],
+    counterline_recovery_applied: bool = False,
+    integrated: Optional[Stage2b4IntegratedCounterlineFacts] = None,
+    attack_fact: Optional[Stage2b4CounterlineAttackFacts] = None,
+    incoming_damage: Optional[int] = None,
+) -> ActivePositionCurrentAttackLineFacts:
+    return ActivePositionCurrentAttackLineFacts(
+        origin=origin,
+        current_active_card_id=current_active_card_id,
+        current_active_serial=current_active_serial,
+        attack_option_index=candidate.option_index,
+        attack_id=candidate.attack_id,
+        attack_candidate=candidate,
+        p6_input_facts=decision,
+        generic_outcome_facts=candidate.facts,
+        counterline_recovery_applied=counterline_recovery_applied,
+        projected_active_card_id=projected_active_card_id,
+        projected_active_serial=projected_active_serial,
+        projected_opponent_active_card_id=projected_opponent_active_card_id,
+        projected_opponent_active_serial=projected_opponent_active_serial,
+        projected_opponent_active_hp=projected_opponent_active_hp,
+        current_active_preserved=current_active_preserved,
+        terminal_win=terminal_win,
+        opponent_active_ko=opponent_active_ko,
+        reply_required=reply_required,
+        counterline_kind=counterline_kind,
+        incoming_damage=incoming_damage,
+        integrated_counterline_facts=integrated,
+        counterline_attack_facts=attack_fact,
+        supported=supported,
+        exact=exact,
+        unsupported_reason=reason,
+        reasons=("active_position_current_attack_line",)
+        + ((reason,) if reason else ()),
+    )
+
+
+def _active_position_current_attack_lines(
+    board: BoardView,
+    result: SimulationResult,
+    candidate: DirectAttackShadowCandidate,
+    *,
+    allow_counterline_recovery: bool = False,
+) -> Tuple[ActivePositionCurrentAttackLineFacts, ...]:
+    origin = _current_action_line_origin()
+    active = getattr(board, "active", None)
+    active_card_id = None if active is None else board.pid(active)
+    active_serial = None if active is None else getattr(active, "serial", None)
+    decision, projection_facts, projected_active_changed, decision_note = (
+        _active_position_attack_decision_input_facts(
+            board,
+            result,
+            allow_counterline_recovery=allow_counterline_recovery,
+        )
+    )
+    recovery_applied = (
+        decision_note == "active_position_reply_reaction_projection_recovered"
+    )
+    if recovery_applied and projection_facts.supported:
+        raise ValueError("active_position_recovery_changed_generic_projection_support")
+    projected_active_card_id = (
+        None if decision.our_active is None else decision.our_active.card_id
+    )
+    projected_active_serial = (
+        None if decision.our_active is None else decision.our_active.serial
+    )
+    projected_opp_card_id = (
+        None
+        if decision.opponent_active_after_attack is None
+        else decision.opponent_active_after_attack.card_id
+    )
+    projected_opp_serial = (
+        None
+        if decision.opponent_active_after_attack is None
+        else decision.opponent_active_after_attack.serial
+    )
+    projected_opp_hp = (
+        None
+        if decision.opponent_active_after_attack is None
+        else decision.opponent_active_after_attack.hp
+    )
+    preserved = (
+        None
+        if active_card_id is None
+        or type(active_serial) is not int
+        or projected_active_card_id is None
+        or projected_active_serial is None
+        else active_card_id == projected_active_card_id
+        and active_serial == projected_active_serial
+        and projected_active_changed is False
+    )
+    if not decision.supported:
+        limitation = decision.unsupported_reason
+        reason = (
+            "active_position_current_attack_does_not_preserve_active"
+            if limitation in {
+                "attack_switch_effect_unmodeled",
+                "attack_active_leaves_play_unmodeled",
+            }
+            else limitation or "active_position_projected_active_identity_unresolved"
+        )
+        return (
+            _active_position_current_attack_line_base(
+                origin=origin,
+                candidate=candidate,
+                decision=decision,
+                counterline_recovery_applied=recovery_applied,
+                current_active_card_id=active_card_id,
+                current_active_serial=active_serial,
+                projected_active_card_id=projected_active_card_id,
+                projected_active_serial=projected_active_serial,
+                projected_opponent_active_card_id=projected_opp_card_id,
+                projected_opponent_active_serial=projected_opp_serial,
+                projected_opponent_active_hp=projected_opp_hp,
+                current_active_preserved=preserved,
+                terminal_win=decision.candidate_wins_game,
+                opponent_active_ko=decision.opponent_active_ko,
+                reply_required=None,
+                counterline_kind=Stage2b4CounterlineRouteKind.UNRESOLVED,
+                supported=False,
+                exact=False,
+                reason=reason,
+            ),
+        )
+    if (
+        active_card_id is None
+        or type(active_serial) is not int
+        or projected_active_card_id is None
+        or type(projected_active_serial) is not int
+    ):
+        return (
+            _active_position_current_attack_line_base(
+                origin=origin,
+                candidate=candidate,
+                decision=decision,
+                counterline_recovery_applied=recovery_applied,
+                current_active_card_id=active_card_id,
+                current_active_serial=active_serial,
+                projected_active_card_id=projected_active_card_id,
+                projected_active_serial=projected_active_serial,
+                projected_opponent_active_card_id=projected_opp_card_id,
+                projected_opponent_active_serial=projected_opp_serial,
+                projected_opponent_active_hp=projected_opp_hp,
+                current_active_preserved=None,
+                terminal_win=decision.candidate_wins_game,
+                opponent_active_ko=decision.opponent_active_ko,
+                reply_required=None,
+                counterline_kind=Stage2b4CounterlineRouteKind.UNRESOLVED,
+                supported=False,
+                exact=False,
+                reason="active_position_projected_active_identity_unresolved",
+            ),
+        )
+    if preserved is not True:
+        return (
+            _active_position_current_attack_line_base(
+                origin=origin,
+                candidate=candidate,
+                decision=decision,
+                counterline_recovery_applied=recovery_applied,
+                current_active_card_id=active_card_id,
+                current_active_serial=active_serial,
+                projected_active_card_id=projected_active_card_id,
+                projected_active_serial=projected_active_serial,
+                projected_opponent_active_card_id=projected_opp_card_id,
+                projected_opponent_active_serial=projected_opp_serial,
+                projected_opponent_active_hp=projected_opp_hp,
+                current_active_preserved=preserved,
+                terminal_win=decision.candidate_wins_game,
+                opponent_active_ko=decision.opponent_active_ko,
+                reply_required=None,
+                counterline_kind=Stage2b4CounterlineRouteKind.UNRESOLVED,
+                supported=False,
+                exact=False,
+                reason="active_position_current_attack_does_not_preserve_active",
+            ),
+        )
+    if decision.candidate_wins_game is True:
+        return (
+            _active_position_current_attack_line_base(
+                origin=origin,
+                candidate=candidate,
+                decision=decision,
+                counterline_recovery_applied=recovery_applied,
+                current_active_card_id=active_card_id,
+                current_active_serial=active_serial,
+                projected_active_card_id=projected_active_card_id,
+                projected_active_serial=projected_active_serial,
+                projected_opponent_active_card_id=None,
+                projected_opponent_active_serial=None,
+                projected_opponent_active_hp=None,
+                current_active_preserved=True,
+                terminal_win=True,
+                opponent_active_ko=decision.opponent_active_ko,
+                reply_required=False,
+                counterline_kind=Stage2b4CounterlineRouteKind.NONE,
+                supported=True,
+                exact=True,
+                reason=None,
+            ),
+        )
+    if decision.opponent_active_ko is True:
+        return (
+            _active_position_current_attack_line_base(
+                origin=origin,
+                candidate=candidate,
+                decision=decision,
+                counterline_recovery_applied=recovery_applied,
+                current_active_card_id=active_card_id,
+                current_active_serial=active_serial,
+                projected_active_card_id=projected_active_card_id,
+                projected_active_serial=projected_active_serial,
+                projected_opponent_active_card_id=None,
+                projected_opponent_active_serial=None,
+                projected_opponent_active_hp=0,
+                current_active_preserved=True,
+                terminal_win=False,
+                opponent_active_ko=True,
+                reply_required=None,
+                counterline_kind=Stage2b4CounterlineRouteKind.UNRESOLVED,
+                supported=False,
+                exact=False,
+                reason="active_position_opponent_promotion_required",
+            ),
+        )
+    opponent = getattr(board, "opp_active", None)
+    opponent_damage_amount = (
+        0
+        if opponent is None or decision.opponent_active_after_attack is None
+        else max(0, hp_left(opponent) - decision.opponent_active_after_attack.hp)
+    )
+    projected_board, board_reason = _stage2b4_project_board(
+        board,
+        opponent_damage_amount=opponent_damage_amount,
+    )
+    if projected_board is None:
+        return (
+            _active_position_current_attack_line_base(
+                origin=origin,
+                candidate=candidate,
+                decision=decision,
+                counterline_recovery_applied=recovery_applied,
+                current_active_card_id=active_card_id,
+                current_active_serial=active_serial,
+                projected_active_card_id=projected_active_card_id,
+                projected_active_serial=projected_active_serial,
+                projected_opponent_active_card_id=projected_opp_card_id,
+                projected_opponent_active_serial=projected_opp_serial,
+                projected_opponent_active_hp=projected_opp_hp,
+                current_active_preserved=True,
+                terminal_win=False,
+                opponent_active_ko=False,
+                reply_required=None,
+                counterline_kind=Stage2b4CounterlineRouteKind.UNRESOLVED,
+                supported=False,
+                exact=False,
+                reason=board_reason,
+            ),
+        )
+    projected_our = projected_active_public_facts(
+        projected_board,
+        getattr(projected_board, "active", None),
+        status_owner=getattr(projected_board, "me", None),
+    )
+    projected_opponent = projected_active_public_facts(
+        projected_board,
+        getattr(projected_board, "opp_active", None),
+        status_owner=getattr(projected_board, "opp", None),
+    )
+    if (
+        projected_our != decision.our_active
+        or projected_opponent != decision.opponent_active_after_attack
+    ):
+        return (
+            _active_position_current_attack_line_base(
+                origin=origin,
+                candidate=candidate,
+                decision=decision,
+                counterline_recovery_applied=recovery_applied,
+                current_active_card_id=active_card_id,
+                current_active_serial=active_serial,
+                projected_active_card_id=projected_active_card_id,
+                projected_active_serial=projected_active_serial,
+                projected_opponent_active_card_id=projected_opp_card_id,
+                projected_opponent_active_serial=projected_opp_serial,
+                projected_opponent_active_hp=projected_opp_hp,
+                current_active_preserved=True,
+                terminal_win=False,
+                opponent_active_ko=False,
+                reply_required=None,
+                counterline_kind=Stage2b4CounterlineRouteKind.UNRESOLVED,
+                supported=False,
+                exact=False,
+                reason="active_position_shared_projection_mismatch",
+            ),
+        )
+    integrated = stage2b4_integrated_counterline_facts(
+        projected_board,
+        route_enumeration_complete=True,
+    )
+    public_reply_facts = tuple(
+        OpponentPublicThreatEvaluator(
+            projected_board,
+            projected_our_active=decision.our_active,
+        )._attack_facts_from_public_active(
+            decision.opponent_active_after_attack,
+            ThreatEvidenceKind.CERTAIN,
+            True,
+        )
+    )
+    integrated_by_key = {
+        (fact.attack_id, fact.opponent_active_id, fact.opponent_active_serial): fact
+        for fact in integrated.attack_facts
+    }
+    usable = tuple(
+        fact for fact in public_reply_facts if fact.can_attack_with_current_energy
+    )
+    uncertain = tuple(
+        fact
+        for fact in public_reply_facts
+        if not fact.can_attack_with_current_energy and fact.unsupported_reason
+    )
+    if not usable and not uncertain:
+        return (
+            _active_position_current_attack_line_base(
+                origin=origin,
+                candidate=candidate,
+                decision=decision,
+                counterline_recovery_applied=recovery_applied,
+                current_active_card_id=active_card_id,
+                current_active_serial=active_serial,
+                projected_active_card_id=projected_active_card_id,
+                projected_active_serial=projected_active_serial,
+                projected_opponent_active_card_id=projected_opp_card_id,
+                projected_opponent_active_serial=projected_opp_serial,
+                projected_opponent_active_hp=projected_opp_hp,
+                current_active_preserved=True,
+                terminal_win=False,
+                opponent_active_ko=False,
+                reply_required=False,
+                counterline_kind=Stage2b4CounterlineRouteKind.NONE,
+                supported=True,
+                exact=True,
+                reason=None,
+                integrated=integrated,
+            ),
+        )
+    lines: List[ActivePositionCurrentAttackLineFacts] = []
+    active_has_bomb = DELUXE_BOMB in tuple(
+        int(getattr(tool, "id", -1))
+        for tool in tuple(getattr(projected_board.active, "tools", ()) or ())
+    )
+    active_is_bruxish = projected_active_card_id == BRUXISH
+    for public_fact in usable + uncertain:
+        key = (
+            public_fact.attack_id,
+            public_fact.attacker_card_id,
+            public_fact.attacker_serial,
+        )
+        attack_fact = integrated_by_key.get(key)
+        if attack_fact is None and not active_has_bomb and not active_is_bruxish:
+            incoming_damage = public_fact.estimated_damage
+            holder_ko = (
+                None
+                if incoming_damage is None or decision.our_active is None
+                else int(incoming_damage) >= int(decision.our_active.hp)
+            )
+            attack_fact = Stage2b4CounterlineAttackFacts(
+                supported=public_fact.unsupported_reason is None,
+                can_attack_with_current_energy=public_fact.can_attack_with_current_energy,
+                attack_id=public_fact.attack_id,
+                opponent_active_id=public_fact.attacker_card_id,
+                opponent_active_serial=public_fact.attacker_serial,
+                holder_id=projected_active_card_id,
+                holder_serial=projected_active_serial,
+                holder_is_bruxish=False,
+                bruxish_trigger_confirmed=False,
+                deluxe_bomb_trigger_confirmed=False,
+                bruxish_damage_counters=0,
+                deluxe_bomb_damage_counters=0,
+                combined_damage_counters=0,
+                combined_damage_amount=0,
+                attacker_damage_before=(
+                    None if projected_board.opp_active is None
+                    else damage_on(projected_board.opp_active)
+                ),
+                attacker_damage_after=(
+                    None if projected_board.opp_active is None
+                    else damage_on(projected_board.opp_active)
+                ),
+                holder_knocked_out=holder_ko,
+                attacker_knocked_out=False if incoming_damage is not None else None,
+                attacker_remains_active=True if incoming_damage is not None else None,
+                hard_crunch_bonus_after_counterline=False if incoming_damage is not None else None,
+                drednaw_followup_supported=False if incoming_damage is not None else None,
+                drednaw_serial=None,
+                drednaw_hard_crunch_payable=None,
+                drednaw_hard_crunch_damage=None,
+                simultaneous_knockout=False if holder_ko is not None else None,
+                unsupported_reason=public_fact.unsupported_reason,
+                reasons=("active_position_no_counterline_reply",)
+                + ((public_fact.unsupported_reason,) if public_fact.unsupported_reason else ()),
+            )
+        kind = (
+            Stage2b4CounterlineRouteKind.UNRESOLVED
+            if attack_fact is None
+            else _active_position_counterline_kind(attack_fact)
+        )
+        identity_ok = bool(
+            attack_fact is not None
+            and attack_fact.holder_id == projected_active_card_id
+            and attack_fact.holder_serial == projected_active_serial
+            and attack_fact.opponent_active_id == projected_opp_card_id
+            and attack_fact.opponent_active_serial == projected_opp_serial
+        )
+        incoming_damage = (
+            public_fact.estimated_damage
+            if attack_fact is None
+            else _active_position_counterline_incoming_damage(integrated, attack_fact)
+            if active_has_bomb or active_is_bruxish
+            else public_fact.estimated_damage
+        )
+        drednaw_reason = (
+            None
+            if attack_fact is None
+            else _active_position_drednaw_followup_error(projected_board, attack_fact)
+        )
+        public_reason = public_fact.unsupported_reason
+        if (
+            public_reason in {
+                "public_tool_damage_effect_unknown",
+                "public_damage_effect_unclassified",
+            }
+            and attack_fact is not None
+            and incoming_damage is not None
+        ):
+            public_reason = None
+        reason = None
+        if public_reason is not None:
+            reason = public_reason
+        elif attack_fact is None:
+            reason = "active_position_counterline_trigger_unresolved"
+        elif not identity_ok:
+            reason = "active_position_counterline_identity_mismatch"
+        elif incoming_damage is None:
+            reason = attack_fact.unsupported_reason or "active_position_opponent_reply_damage_unresolved"
+        elif kind == Stage2b4CounterlineRouteKind.UNRESOLVED:
+            reason = attack_fact.unsupported_reason or "active_position_counterline_trigger_unresolved"
+        elif (
+            not attack_fact.supported
+            and attack_fact.unsupported_reason
+            not in _STAGE2B4_COUNTERLINE_FOLLOWUP_LIMITATION_REASONS
+        ):
+            reason = attack_fact.unsupported_reason or "active_position_counterline_reply_unsupported"
+        elif drednaw_reason is not None:
+            reason = drednaw_reason
+        supported = reason is None
+        lines.append(
+            _active_position_current_attack_line_base(
+                origin=origin,
+                candidate=candidate,
+                decision=decision,
+                counterline_recovery_applied=recovery_applied,
+                current_active_card_id=active_card_id,
+                current_active_serial=active_serial,
+                projected_active_card_id=projected_active_card_id,
+                projected_active_serial=projected_active_serial,
+                projected_opponent_active_card_id=projected_opp_card_id,
+                projected_opponent_active_serial=projected_opp_serial,
+                projected_opponent_active_hp=projected_opp_hp,
+                current_active_preserved=True,
+                terminal_win=False,
+                opponent_active_ko=False,
+                reply_required=True,
+                counterline_kind=(kind if supported else Stage2b4CounterlineRouteKind.UNRESOLVED),
+                supported=supported,
+                exact=supported,
+                reason=reason,
+                integrated=integrated,
+                attack_fact=attack_fact,
+                incoming_damage=incoming_damage,
+            )
+        )
+    return tuple(lines)
+
+
+def active_position_current_line_facts(
+    board: BoardView,
+    results: Sequence[SimulationResult],
+    current_line: Optional[CurrentActionLineOutcomeFacts] = None,
+) -> ActivePositionCurrentLineCollectionFacts:
+    """Construct fact-only Current Active stay Lines without ranking actions."""
+    current = (
+        current_action_line_outcome_facts(board, results)
+        if current_line is None
+        else current_line
+    )
+    active = getattr(board, "active", None)
+    active_card_id = None if active is None else board.pid(active)
+    active_serial = None if active is None else getattr(active, "serial", None)
+    if current.selection_state == ActionLineBestAttackState.INCOMPARABLE:
+        reason = current.unsupported_reason or "active_position_current_attack_incomparable"
+        return ActivePositionCurrentLineCollectionFacts(
+            current_action_line=current,
+            current_active_card_id=active_card_id,
+            current_active_serial=active_serial,
+            selection_state=current.selection_state,
+            candidate_lines=(),
+            supported=False,
+            exact=False,
+            unsupported_reason=reason,
+            reasons=("active_position_current_line_collection", reason),
+        )
+    recoverable_single = bool(
+        current.selection_state == ActionLineBestAttackState.UNSUPPORTED
+        and current.unsupported_reason == "public_damage_effect_unclassified"
+        and len(current.attack_candidates) == 1
+        and not current.attack_candidates[0].facts.supported
+        and current.attack_candidates[0].facts.unsupported_reason
+        == "public_damage_effect_unclassified"
+    )
+    if current.selection_state == ActionLineBestAttackState.UNSUPPORTED and not recoverable_single:
+        reason = (
+            "active_position_current_attack_required"
+            if not current.attack_candidates
+            else current.unsupported_reason or "active_position_current_attack_required"
+        )
+        return ActivePositionCurrentLineCollectionFacts(
+            current_action_line=current,
+            current_active_card_id=active_card_id,
+            current_active_serial=active_serial,
+            selection_state=current.selection_state,
+            candidate_lines=(),
+            supported=False,
+            exact=False,
+            unsupported_reason=reason,
+            reasons=("active_position_current_line_collection", reason),
+        )
+    candidates = (
+        current.attack_candidates
+        if recoverable_single
+        else _action_line_comparison_candidates(
+            current.selection_state,
+            current.best_attack,
+            current.attack_candidates,
+        )
+    )
+    if not candidates:
+        reason = "active_position_current_attack_required"
+        return ActivePositionCurrentLineCollectionFacts(
+            current_action_line=current,
+            current_active_card_id=active_card_id,
+            current_active_serial=active_serial,
+            selection_state=current.selection_state,
+            candidate_lines=(),
+            supported=False,
+            exact=False,
+            unsupported_reason=reason,
+            reasons=("active_position_current_line_collection", reason),
+        )
+    lines: List[ActivePositionCurrentAttackLineFacts] = []
+    identity_reasons: List[str] = []
+    for candidate in candidates:
+        result, reason = _active_position_current_result_for_candidate(
+            board, results, candidate
+        )
+        if result is None:
+            identity_reasons.append(reason or "active_position_current_attack_identity_unresolved")
+            continue
+        lines.extend(
+            _active_position_current_attack_lines(
+                board,
+                result,
+                candidate,
+                allow_counterline_recovery=recoverable_single,
+            )
+        )
+    if identity_reasons or not lines:
+        reason = identity_reasons[0] if identity_reasons else "active_position_current_attack_required"
+        return ActivePositionCurrentLineCollectionFacts(
+            current_action_line=current,
+            current_active_card_id=active_card_id,
+            current_active_serial=active_serial,
+            selection_state=current.selection_state,
+            candidate_lines=tuple(lines),
+            supported=False,
+            exact=False,
+            unsupported_reason=reason,
+            reasons=("active_position_current_line_collection",) + tuple(identity_reasons),
+        )
+    supported = all(line.supported for line in lines)
+    exact = (
+        supported
+        and (current.state_exact or recoverable_single)
+        and all(line.exact for line in lines)
+    )
+    reason = next(
+        (line.unsupported_reason for line in lines if line.unsupported_reason),
+        None,
+    )
+    return ActivePositionCurrentLineCollectionFacts(
+        current_action_line=current,
+        current_active_card_id=active_card_id,
+        current_active_serial=active_serial,
+        selection_state=current.selection_state,
+        candidate_lines=tuple(lines),
+        supported=supported,
+        exact=exact,
+        unsupported_reason=reason,
+        reasons=("active_position_current_line_collection",)
+        + ((reason,) if reason else ()),
+    )
+
+
+
+def deluxe_bomb_resource_preservation_facts(
+    current_position: ActivePositionCurrentLineCollectionFacts,
+    bomb_line: Stage2b4CounterlineActionLineFacts,
+    sibling_routes: Sequence[Stage2b4CounterlineActionLineFacts],
+) -> DeluxeBombResourcePreservationFacts:
+    """Prove only that a new Deluxe Bomb is redundant for the same confirmed counter-KO."""
+    bomb_steps = tuple(
+        step for step in bomb_line.action_steps if step.option_card_id == DELUXE_BOMB
+    )
+    reason: Optional[str] = None
+    if not bomb_line.supported:
+        reason = bomb_line.unsupported_reason or "deluxe_bomb_preservation_bomb_line_unsupported"
+    elif not bomb_line.exact:
+        reason = "deluxe_bomb_preservation_bomb_line_not_exact"
+    elif bomb_steps and any(
+        not step.identity_exact or not step.legality_exact for step in bomb_steps
+    ):
+        reason = "deluxe_bomb_preservation_bomb_commitment_not_exact"
+    elif bomb_steps and any(
+        not step.current_observation_option and not step.projected_followup_action
+        for step in bomb_steps
+    ):
+        reason = "deluxe_bomb_preservation_bomb_commitment_origin_unresolved"
+
+    if reason is not None:
+        return DeluxeBombResourcePreservationFacts(
+            bomb_line=bomb_line,
+            matching_current_lines=(),
+            matching_non_bomb_routes=(),
+            new_bomb_commitment=None,
+            preservation_required=None,
+            supported=False,
+            exact=False,
+            unsupported_reason=reason,
+            reasons=("deluxe_bomb_resource_preservation", reason),
+        )
+
+    new_bomb_commitment = bool(bomb_steps)
+    if not new_bomb_commitment:
+        return DeluxeBombResourcePreservationFacts(
+            bomb_line=bomb_line,
+            matching_current_lines=(),
+            matching_non_bomb_routes=(),
+            new_bomb_commitment=False,
+            preservation_required=None,
+            supported=True,
+            exact=True,
+            unsupported_reason=None,
+            reasons=(
+                "deluxe_bomb_resource_preservation",
+                "no_new_deluxe_bomb_commitment",
+            ),
+        )
+
+    bomb_attack_matches = tuple(
+        fact
+        for fact in tuple(getattr(bomb_line.integrated_facts, "attack_facts", ()) or ())
+        if fact.attack_id == bomb_line.opponent_attack_id
+        and fact.opponent_active_id == bomb_line.opponent_attacker_card_id
+        and fact.opponent_active_serial == bomb_line.opponent_attacker_serial
+        and fact.holder_id == bomb_line.holder_card_id
+        and fact.holder_serial == bomb_line.holder_serial
+    )
+    if len(bomb_attack_matches) != 1:
+        reason = "deluxe_bomb_preservation_bomb_attack_identity_unresolved"
+        return DeluxeBombResourcePreservationFacts(
+            bomb_line=bomb_line,
+            matching_current_lines=(),
+            matching_non_bomb_routes=(),
+            new_bomb_commitment=True,
+            preservation_required=None,
+            supported=False,
+            exact=False,
+            unsupported_reason=reason,
+            reasons=("deluxe_bomb_resource_preservation", reason),
+        )
+    bomb_attack = bomb_attack_matches[0]
+    if bomb_attack.deluxe_bomb_trigger_confirmed is not True:
+        return DeluxeBombResourcePreservationFacts(
+            bomb_line=bomb_line,
+            matching_current_lines=(),
+            matching_non_bomb_routes=(),
+            new_bomb_commitment=True,
+            preservation_required=None,
+            supported=True,
+            exact=True,
+            unsupported_reason=None,
+            reasons=(
+                "deluxe_bomb_resource_preservation",
+                "deluxe_bomb_trigger_not_confirmed",
+            ),
+        )
+    if bomb_attack.attacker_knocked_out is not True:
+        return DeluxeBombResourcePreservationFacts(
+            bomb_line=bomb_line,
+            matching_current_lines=(),
+            matching_non_bomb_routes=(),
+            new_bomb_commitment=True,
+            preservation_required=None,
+            supported=True,
+            exact=True,
+            unsupported_reason=None,
+            reasons=(
+                "deluxe_bomb_resource_preservation",
+                "confirmed_attacker_ko_not_established",
+            ),
+        )
+
+    matching_current_lines = []
+    if current_position.supported and current_position.exact:
+        for line in current_position.candidate_lines:
+            reference = line.counterline_attack_facts
+            if not line.supported or not line.exact or reference is None:
+                continue
+            if (
+                reference.holder_id != bomb_attack.holder_id
+                or reference.holder_serial != bomb_attack.holder_serial
+                or reference.opponent_active_id != bomb_attack.opponent_active_id
+                or reference.opponent_active_serial != bomb_attack.opponent_active_serial
+                or reference.attack_id != bomb_attack.attack_id
+                or reference.attacker_knocked_out is not True
+                or reference.holder_knocked_out != bomb_attack.holder_knocked_out
+                or reference.simultaneous_knockout != bomb_attack.simultaneous_knockout
+                or reference.drednaw_followup_supported != bomb_attack.drednaw_followup_supported
+                or reference.drednaw_serial != bomb_attack.drednaw_serial
+                or reference.drednaw_hard_crunch_damage != bomb_attack.drednaw_hard_crunch_damage
+            ):
+                continue
+            matching_current_lines.append(line)
+
+    matching_non_bomb_routes = []
+    for route in sibling_routes:
+        if route is bomb_line or not route.supported or not route.exact:
+            continue
+        route_bomb_steps = tuple(
+            step for step in route.action_steps if step.option_card_id == DELUXE_BOMB
+        )
+        if route_bomb_steps:
+            continue
+        route_attack_matches = tuple(
+            fact
+            for fact in tuple(getattr(route.integrated_facts, "attack_facts", ()) or ())
+            if fact.attack_id == route.opponent_attack_id
+            and fact.opponent_active_id == route.opponent_attacker_card_id
+            and fact.opponent_active_serial == route.opponent_attacker_serial
+            and fact.holder_id == route.holder_card_id
+            and fact.holder_serial == route.holder_serial
+        )
+        if len(route_attack_matches) != 1:
+            continue
+        reference = route_attack_matches[0]
+        if (
+            reference.holder_id != bomb_attack.holder_id
+            or reference.holder_serial != bomb_attack.holder_serial
+            or reference.opponent_active_id != bomb_attack.opponent_active_id
+            or reference.opponent_active_serial != bomb_attack.opponent_active_serial
+            or reference.attack_id != bomb_attack.attack_id
+            or reference.attacker_knocked_out is not True
+            or reference.holder_knocked_out != bomb_attack.holder_knocked_out
+            or reference.simultaneous_knockout != bomb_attack.simultaneous_knockout
+            or reference.drednaw_followup_supported != bomb_attack.drednaw_followup_supported
+            or reference.drednaw_serial != bomb_attack.drednaw_serial
+            or reference.drednaw_hard_crunch_damage != bomb_attack.drednaw_hard_crunch_damage
+        ):
+            continue
+        matching_non_bomb_routes.append(route)
+
+    preservation_required = True if matching_current_lines or matching_non_bomb_routes else None
+    return DeluxeBombResourcePreservationFacts(
+        bomb_line=bomb_line,
+        matching_current_lines=tuple(matching_current_lines),
+        matching_non_bomb_routes=tuple(matching_non_bomb_routes),
+        new_bomb_commitment=True,
+        preservation_required=preservation_required,
+        supported=True,
+        exact=True,
+        unsupported_reason=None,
+        reasons=(
+            "deluxe_bomb_resource_preservation",
+            "exact_new_deluxe_bomb_commitment",
+        )
+        + (
+            ("confirmed_counter_ko_without_new_bomb",)
+            if preservation_required is True
+            else ("matching_exact_non_bomb_reference_not_proven",)
+        ),
+    )
+
+
+def active_position_transition_commitment_facts(
+    board: BoardView,
+    results: Sequence[SimulationResult],
+    transition: ActiveBenchTransitionFacts,
+    current_position: Optional[ActivePositionCurrentLineCollectionFacts] = None,
+) -> ActivePositionTransitionCommitmentFacts:
+    """Relate an exact Current Stay baseline to one exact self-transition."""
+    current = (
+        active_position_current_line_facts(board, results)
+        if current_position is None
+        else current_position
+    )
+    binding = transition.origin_binding
+    old_active = transition.old_active
+    new_active = transition.new_active
+    reason: Optional[str] = None
+
+    if current.selection_state == ActionLineBestAttackState.INCOMPARABLE:
+        reason = "active_position_commitment_current_position_incomparable"
+    elif not current.supported:
+        reason = (
+            current.unsupported_reason
+            or "active_position_commitment_current_position_unsupported"
+        )
+    elif not current.exact:
+        reason = "active_position_commitment_current_position_not_exact"
+    elif not current.candidate_lines:
+        reason = "active_position_commitment_current_stay_candidate_missing"
+    elif any(not line.supported for line in current.candidate_lines):
+        reason = "active_position_commitment_current_stay_candidate_unsupported"
+    elif any(not line.exact for line in current.candidate_lines):
+        reason = "active_position_commitment_current_stay_candidate_not_exact"
+    elif not transition.supported:
+        reason = (
+            transition.unsupported_reason
+            or "active_position_commitment_transition_unsupported"
+        )
+    elif not transition.transition_exact:
+        reason = "active_position_commitment_transition_not_exact"
+    elif not transition.status_exact:
+        reason = "active_position_commitment_transition_status_not_exact"
+    elif not binding.supported or not binding.binding_exact or binding.origin is None:
+        reason = "active_position_commitment_transition_origin_unresolved"
+    elif binding.origin == ActiveBenchTransitionOrigin.BOSS_FORCED_SWITCH:
+        reason = "active_position_commitment_forced_transition_not_applicable"
+    elif binding.origin not in {
+        ActiveBenchTransitionOrigin.RETREAT,
+        ActiveBenchTransitionOrigin.SURFING_BEACH,
+        ActiveBenchTransitionOrigin.SUGURI,
+    }:
+        reason = "active_position_commitment_transition_origin_not_applicable"
+    elif (
+        old_active is None
+        or type(current.current_active_card_id) is not int
+        or type(current.current_active_serial) is not int
+        or type(old_active.card_id) is not int
+        or type(old_active.serial) is not int
+    ):
+        reason = "active_position_commitment_current_active_identity_unresolved"
+    elif (
+        current.current_active_card_id != old_active.card_id
+        or current.current_active_serial != old_active.serial
+    ):
+        reason = "active_position_commitment_current_active_mismatch"
+    elif (
+        new_active is None
+        or type(new_active.card_id) is not int
+        or type(new_active.serial) is not int
+        or type(transition.target_card_id) is not int
+        or type(transition.target_serial) is not int
+    ):
+        reason = "active_position_commitment_transition_target_identity_unresolved"
+    elif (
+        transition.target_card_id != new_active.card_id
+        or transition.target_serial != new_active.serial
+    ):
+        reason = "active_position_commitment_transition_target_identity_mismatch"
+    elif old_active.serial == new_active.serial:
+        reason = "active_position_commitment_same_active_pseudo_transition"
+
+    if reason is not None:
+        return ActivePositionTransitionCommitmentFacts(
+            current_position=current,
+            transition=transition,
+            strict_superiority_required=None,
+            supported=False,
+            exact=False,
+            unsupported_reason=reason,
+            reasons=("active_position_transition_commitment", reason),
+        )
+
+    return ActivePositionTransitionCommitmentFacts(
+        current_position=current,
+        transition=transition,
+        strict_superiority_required=True,
+        supported=True,
+        exact=True,
+        unsupported_reason=None,
+        reasons=(
+            "active_position_transition_commitment",
+            "exact_current_stay_baseline",
+            "exact_self_initiated_active_transition",
+            "strict_superiority_proof_required",
+        ),
+    )
+
+
+def drednaw_defensive_action_line_facts(
+    strategy: DrednawHighPowerStrategyFacts,
+    current_position: ActivePositionCurrentLineCollectionFacts,
+    transitions: Sequence[ActiveBenchTransitionFacts],
+) -> Tuple[DrednawDefensiveActionLineFacts, ...]:
+    """Adapt existing Drednaw defensive facts into disconnected ActionLine candidates."""
+    transition_facts = tuple(transitions)
+    combat_lines = tuple(strategy.combat_lines)
+    serial_counts: Dict[int, int] = {}
+    for combat_line in combat_lines:
+        serial = combat_line.drednaw_serial
+        if type(serial) is int:
+            serial_counts[serial] = serial_counts.get(serial, 0) + 1
+
+    output: List[DrednawDefensiveActionLineFacts] = []
+    for combat_line in combat_lines:
+        readiness = combat_line.readiness
+        serial = combat_line.drednaw_serial
+        if type(serial) is not int:
+            continue
+        attacks = tuple(combat_line.attack_facts)
+        if not attacks:
+            continue
+
+        paths: List[Tuple[ActionLineOriginFacts, Optional[ActiveBenchTransitionFacts], Optional[str]]] = []
+        if readiness.active:
+            origin = ActionLineOriginFacts(
+                kind=ActionLineOriginKind.CURRENT_BOARD,
+                option_index=None,
+                target_card_id=DREDNAW,
+                target_serial=serial,
+                adapter_names=("drednaw_defensive_action_line",),
+            )
+            path_reason = None
+            if (
+                current_position.current_active_card_id != DREDNAW
+                or current_position.current_active_serial != serial
+            ):
+                path_reason = "drednaw_defensive_current_active_identity_mismatch"
+            paths.append((origin, None, path_reason))
+        elif readiness.bench:
+            matching_transitions = tuple(
+                transition
+                for transition in transition_facts
+                if transition.target_serial == serial
+                or (transition.new_active is not None and transition.new_active.serial == serial)
+            )
+            if not matching_transitions:
+                origin = ActionLineOriginFacts(
+                    kind=ActionLineOriginKind.PREPARED_ACTION,
+                    option_index=None,
+                    target_card_id=DREDNAW,
+                    target_serial=serial,
+                    adapter_names=("drednaw_defensive_action_line",),
+                )
+                paths.append((origin, None, "drednaw_defensive_exact_transition_missing"))
+            for transition in matching_transitions:
+                binding = transition.origin_binding
+                origin = ActionLineOriginFacts(
+                    kind=ActionLineOriginKind.PREPARED_ACTION,
+                    option_index=binding.origin_decision_option_index,
+                    option_type=binding.origin_option_type,
+                    option_card_id=binding.origin_option_card_id,
+                    target_card_id=DREDNAW,
+                    target_serial=serial,
+                    adapter_names=("drednaw_defensive_action_line",),
+                )
+                path_reason: Optional[str] = None
+                if not transition.supported:
+                    path_reason = transition.unsupported_reason or "drednaw_defensive_transition_unsupported"
+                elif not transition.transition_exact:
+                    path_reason = "drednaw_defensive_transition_not_exact"
+                elif not transition.status_exact:
+                    path_reason = "drednaw_defensive_transition_status_not_exact"
+                elif (
+                    not binding.supported
+                    or not binding.binding_exact
+                    or binding.origin not in {
+                        ActiveBenchTransitionOrigin.RETREAT,
+                        ActiveBenchTransitionOrigin.SURFING_BEACH,
+                        ActiveBenchTransitionOrigin.SUGURI,
+                    }
+                ):
+                    path_reason = "drednaw_defensive_transition_origin_not_applicable"
+                elif (
+                    transition.new_active is None
+                    or transition.target_card_id != DREDNAW
+                    or transition.new_active.card_id != DREDNAW
+                    or transition.target_serial != serial
+                    or transition.new_active.serial != serial
+                ):
+                    path_reason = "drednaw_defensive_transition_target_identity_mismatch"
+                elif (
+                    transition.old_active is None
+                    or transition.old_active.card_id != current_position.current_active_card_id
+                    or transition.old_active.serial != current_position.current_active_serial
+                ):
+                    path_reason = "drednaw_defensive_transition_old_active_identity_mismatch"
+                paths.append((origin, transition, path_reason))
+        else:
+            origin = ActionLineOriginFacts(
+                kind=ActionLineOriginKind.CURRENT_BOARD,
+                option_index=None,
+                target_card_id=DREDNAW,
+                target_serial=serial,
+                adapter_names=("drednaw_defensive_action_line",),
+            )
+            paths.append((origin, None, "drednaw_defensive_position_identity_unresolved"))
+
+        for origin, transition, path_reason in paths:
+            for attack in attacks:
+                reason = (
+                    "drednaw_defensive_duplicate_serial_ambiguity"
+                    if serial_counts.get(serial, 0) != 1
+                    else path_reason
+                )
+                if reason is None and (
+                    type(strategy.opponent_active_id) is not int
+                    or type(strategy.opponent_active_serial) is not int
+                ):
+                    reason = "drednaw_defensive_opponent_identity_unresolved"
+                elif reason is None and readiness.unsupported_reason is not None:
+                    reason = readiness.unsupported_reason
+                elif reason is None and readiness.drednaw_serial != serial:
+                    reason = "drednaw_defensive_readiness_identity_mismatch"
+                elif reason is None and readiness.hard_crunch_payable is not True:
+                    reason = (
+                        "drednaw_defensive_hard_crunch_payability_unknown"
+                        if readiness.hard_crunch_payable is None
+                        else "drednaw_defensive_hard_crunch_not_payable"
+                    )
+                elif reason is None and type(readiness.hard_crunch_damage_now) is not int:
+                    reason = "drednaw_defensive_hard_crunch_damage_unresolved"
+                elif reason is None and attack.target_drednaw_serial != serial:
+                    reason = "drednaw_defensive_attack_target_identity_mismatch"
+                elif reason is None and type(attack.attack_id) is not int:
+                    reason = "drednaw_defensive_opponent_attack_identity_unresolved"
+                elif reason is None and attack.unsupported_reason is not None:
+                    reason = attack.unsupported_reason
+                elif reason is None and type(attack.confirmed_incoming_damage) is not int:
+                    reason = "drednaw_defensive_incoming_damage_unresolved"
+                elif reason is None and attack.can_attack_with_current_energy is not True:
+                    reason = "drednaw_defensive_opponent_attack_not_currently_usable"
+                elif reason is None and attack.high_power_attack_confirmed is not True:
+                    reason = (
+                        "drednaw_defensive_high_power_attack_unknown"
+                        if attack.high_power_attack_confirmed is None
+                        else "drednaw_defensive_high_power_attack_not_confirmed"
+                    )
+                elif reason is None and attack.damage_effect_ignore is True:
+                    reason = "drednaw_defensive_impervious_shell_bypassed"
+                elif reason is None and attack.impervious_shell_effective is not True:
+                    reason = (
+                        "drednaw_defensive_impervious_shell_unknown"
+                        if attack.impervious_shell_effective is None
+                        else "drednaw_defensive_impervious_shell_not_effective"
+                    )
+
+                output.append(
+                    DrednawDefensiveActionLineFacts(
+                        strategy=strategy,
+                        origin=origin,
+                        combat_line=combat_line,
+                        transition=transition,
+                        drednaw_serial=serial,
+                        opponent_attack=attack,
+                        supported=reason is None,
+                        exact=reason is None,
+                        unsupported_reason=reason,
+                        reasons=(
+                            "drednaw_defensive_action_line",
+                            "existing_drednaw_combat_fact_reused",
+                            "current_active_drednaw" if transition is None and readiness.active
+                            else "exact_self_initiated_drednaw_transition",
+                        ) + (() if reason is None else (reason,)),
+                    )
+                )
+    return tuple(output)
+
+
+
+def phase3_strategic_action_line_comparison_matrix_facts(
+    current_position: ActivePositionCurrentLineCollectionFacts,
+    counterline_collections: Sequence[Stage2b4CounterlineActionLineCollectionFacts],
+    drednaw_lines: Sequence[DrednawDefensiveActionLineFacts],
+    bomb_preservations: Sequence[DeluxeBombResourcePreservationFacts] = (),
+    stage2c_lines: Sequence["Stage2cStrategicActionLineFacts"] = (),
+) -> Tuple[Phase3StrategicActionLineComparisonFacts, ...]:
+    """Build the disconnected strategic relation matrix; never select a winner."""
+    current_lines = tuple(current_position.candidate_lines)
+    counterlines = tuple(
+        route
+        for collection in tuple(counterline_collections)
+        for route in tuple(collection.routes)
+    )
+    defensive_lines = tuple(drednaw_lines)
+    strategic_stage2c_lines = tuple(stage2c_lines)
+    preservations = tuple(bomb_preservations)
+
+    def line_origin(line: Any) -> ActionLineOriginFacts:
+        if isinstance(line, ActivePositionCurrentAttackLineFacts):
+            return line.origin
+        if isinstance(line, DrednawDefensiveActionLineFacts):
+            return line.origin
+        if isinstance(line, Stage2cStrategicActionLineFacts):
+            return ActionLineOriginFacts(
+                kind=ActionLineOriginKind.PREPARED_ACTION,
+                option_index=line.origin_option_index,
+                option_type=line.origin_option_type,
+                option_card_id=line.origin_option_card_id,
+                target_card_id=line.origin_target_card_id,
+                target_serial=line.origin_target_serial,
+                adapter_names=("stage2c_strategic_action_line",),
+            )
+        return ActionLineOriginFacts(
+            kind=ActionLineOriginKind.PREPARED_ACTION,
+            option_index=line.origin_option_index,
+            option_type=line.origin_option_type,
+            option_card_id=line.origin_option_card_id,
+            target_card_id=line.origin_target_card_id,
+            target_serial=line.origin_target_serial,
+            adapter_names=("stage2b4_counterline_action_line",),
+        )
+
+    def opponent_identity(line: Any) -> Tuple[Optional[int], Optional[int], Optional[int]]:
+        if isinstance(line, ActivePositionCurrentAttackLineFacts):
+            reply = line.counterline_attack_facts
+            if reply is None:
+                return None, None, None
+            return reply.opponent_active_id, reply.opponent_active_serial, reply.attack_id
+        if isinstance(line, Stage2b4CounterlineActionLineFacts):
+            return (
+                line.opponent_attacker_card_id,
+                line.opponent_attacker_serial,
+                line.opponent_attack_id,
+            )
+        if isinstance(line, DrednawDefensiveActionLineFacts):
+            return (
+                line.strategy.opponent_active_id,
+                line.strategy.opponent_active_serial,
+                line.opponent_attack.attack_id,
+            )
+        identities = []
+        for current_line in line.current_attack_lines:
+            identity = opponent_identity(current_line)
+            if any(type(value) is not int for value in identity):
+                return None, None, None
+            if identity not in identities:
+                identities.append(identity)
+        return identities[0] if len(identities) == 1 else (None, None, None)
+
+    def stage2c_current_identity(
+        line: ActivePositionCurrentAttackLineFacts,
+    ) -> Tuple[Optional[int], Optional[int], Optional[int], Optional[int]]:
+        return (
+            line.current_active_card_id,
+            line.current_active_serial,
+            line.attack_option_index,
+            line.attack_id,
+        )
+
+    def stage2c_matching_current_line(
+        stage2c: Stage2cStrategicActionLineFacts,
+        current: ActivePositionCurrentAttackLineFacts,
+    ) -> Tuple[Optional[ActivePositionCurrentAttackLineFacts], Optional[str]]:
+        target = stage2c_current_identity(current)
+        if any(type(value) is not int for value in target):
+            return None, "stage2c_current_attack_identity_unresolved"
+        matches = tuple(
+            candidate
+            for candidate in stage2c.current_attack_lines
+            if candidate.supported
+            and candidate.exact
+            and stage2c_current_identity(candidate) == target
+        )
+        if len(matches) == 0:
+            return None, "stage2c_matching_current_line_missing"
+        if len(matches) != 1:
+            return None, "stage2c_matching_current_line_ambiguous"
+        current_scenario = opponent_identity(current)
+        matching_scenario = opponent_identity(matches[0])
+        if any(
+            type(value) is not int
+            for value in current_scenario + matching_scenario
+        ):
+            return None, "stage2c_matching_current_opponent_scenario_unresolved"
+        if current_scenario != matching_scenario:
+            return None, "stage2c_matching_current_opponent_scenario_mismatch"
+        return matches[0], None
+
+    def stage2c_lines_for_scenario(
+        stage2c: Stage2cStrategicActionLineFacts,
+        scenario: Tuple[Optional[int], Optional[int], Optional[int]],
+    ) -> Tuple[Tuple[ActivePositionCurrentAttackLineFacts, ...], Optional[str]]:
+        if any(type(value) is not int for value in scenario):
+            return (), "stage2c_opponent_scenario_unresolved"
+        matches = []
+        for current_line in stage2c.current_attack_lines:
+            if not current_line.supported or not current_line.exact:
+                return (), "stage2c_current_line_unsupported_or_inexact"
+            identity = opponent_identity(current_line)
+            if any(type(value) is not int for value in identity):
+                return (), "stage2c_opponent_scenario_unresolved"
+            if identity == scenario:
+                matches.append(current_line)
+        if len(matches) == 0:
+            return (), "stage2c_opponent_scenario_mismatch"
+        if len(matches) != 1:
+            return tuple(matches), "stage2c_opponent_scenario_ambiguous"
+        return tuple(matches), None
+
+    def pair_opponent_identity(
+        left: Any,
+        right: Any,
+    ) -> Tuple[Tuple[Optional[int], Optional[int], Optional[int]], Optional[str]]:
+        left_stage2c = isinstance(left, Stage2cStrategicActionLineFacts)
+        right_stage2c = isinstance(right, Stage2cStrategicActionLineFacts)
+        if not left_stage2c and not right_stage2c:
+            left_identity = opponent_identity(left)
+            right_identity = opponent_identity(right)
+            if any(type(value) is not int for value in left_identity + right_identity):
+                return (None, None, None), "strategic_opponent_attack_identity_unresolved"
+            if left_identity != right_identity:
+                return (None, None, None), "strategic_opponent_attack_identity_mismatch"
+            return left_identity, None
+
+        if left_stage2c and right_stage2c:
+            left_scenarios = []
+            right_scenarios = []
+            for stage2c, output in ((left, left_scenarios), (right, right_scenarios)):
+                for current_line in stage2c.current_attack_lines:
+                    if not current_line.supported or not current_line.exact:
+                        return (None, None, None), "stage2c_current_line_unsupported_or_inexact"
+                    identity = opponent_identity(current_line)
+                    if any(type(value) is not int for value in identity):
+                        return (None, None, None), "stage2c_opponent_scenario_unresolved"
+                    if identity not in output:
+                        output.append(identity)
+            shared = tuple(identity for identity in left_scenarios if identity in right_scenarios)
+            if len(shared) == 0:
+                return (None, None, None), "stage2c_shared_opponent_scenario_missing"
+            if len(shared) != 1:
+                return (None, None, None), "stage2c_shared_opponent_scenario_ambiguous"
+            return shared[0], None
+
+        stage2c = left if left_stage2c else right
+        other = right if left_stage2c else left
+        if isinstance(other, ActivePositionCurrentAttackLineFacts):
+            _, reason = stage2c_matching_current_line(stage2c, other)
+            if reason is not None:
+                return (None, None, None), reason
+            return opponent_identity(other), None
+
+        other_identity = opponent_identity(other)
+        _, reason = stage2c_lines_for_scenario(stage2c, other_identity)
+        if reason is not None:
+            return (None, None, None), reason
+        return other_identity, None
+
+    def fail_closed(
+        left: Any,
+        right: Any,
+        reason: str,
+        comparison_reason: DirectAttackComparisonReason = DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+    ) -> Phase3StrategicActionLineComparisonFacts:
+        shared, _ = pair_opponent_identity(left, right)
+        return Phase3StrategicActionLineComparisonFacts(
+            left_origin=line_origin(left),
+            right_origin=line_origin(right),
+            left_line=left,
+            right_line=right,
+            opponent_attacker_card_id=shared[0],
+            opponent_attacker_serial=shared[1],
+            opponent_attack_id=shared[2],
+            relation=DirectAttackComparison.INCOMPARABLE,
+            reason=comparison_reason,
+            supported=False,
+            exact=False,
+            unsupported_reason=reason,
+            reasons=("phase3_strategic_action_line_comparison", reason),
+        )
+
+    def exact_result(
+        left: Any,
+        right: Any,
+        relation: DirectAttackComparison,
+        reason: DirectAttackComparisonReason,
+        *extra_reasons: str,
+    ) -> Phase3StrategicActionLineComparisonFacts:
+        shared, _ = pair_opponent_identity(left, right)
+        return Phase3StrategicActionLineComparisonFacts(
+            left_origin=line_origin(left),
+            right_origin=line_origin(right),
+            left_line=left,
+            right_line=right,
+            opponent_attacker_card_id=shared[0],
+            opponent_attacker_serial=shared[1],
+            opponent_attack_id=shared[2],
+            relation=relation,
+            reason=reason,
+            supported=True,
+            exact=True,
+            unsupported_reason=None,
+            reasons=("phase3_strategic_action_line_comparison",) + tuple(extra_reasons),
+        )
+
+    def is_line_exact(line: Any) -> bool:
+        if isinstance(line, ActivePositionCurrentAttackLineFacts):
+            return (
+                current_position.supported
+                and current_position.exact
+                and current_position.selection_state
+                not in {ActionLineBestAttackState.UNSUPPORTED, ActionLineBestAttackState.INCOMPARABLE}
+                and line.supported
+                and line.exact
+            )
+        return bool(line.supported and line.exact)
+
+    def current_terminal_win(line: ActivePositionCurrentAttackLineFacts) -> bool:
+        return line.terminal_win is True
+
+    def current_confirmed_reply_loss(line: ActivePositionCurrentAttackLineFacts) -> bool:
+        outcome = line.generic_outcome_facts
+        reply = line.counterline_attack_facts
+        return bool(
+            outcome is not None
+            and getattr(outcome, "supported", False) is True
+            and outcome.confirmed_loss is True
+            and outcome.confirmed_reply_ko is True
+            and reply is not None
+            and reply.supported
+            and reply.holder_knocked_out is True
+            and type(reply.opponent_active_id) is int
+            and type(reply.opponent_active_serial) is int
+            and type(reply.attack_id) is int
+        )
+
+    def preservation_direction(left: Any, right: Any) -> int:
+        for preservation in preservations:
+            if (
+                not preservation.supported
+                or not preservation.exact
+                or preservation.preservation_required is not True
+            ):
+                continue
+            references = tuple(preservation.matching_current_lines) + tuple(
+                preservation.matching_non_bomb_routes
+            )
+            if preservation.bomb_line == left and any(reference == right for reference in references):
+                return -1
+            if preservation.bomb_line == right and any(reference == left for reference in references):
+                return 1
+        return 0
+
+    def counter_resource_signature(line: Stage2b4CounterlineActionLineFacts) -> Tuple[Any, ...]:
+        return (
+            line.action_kind,
+            line.route_kind,
+            line.route_origin,
+            line.origin_option_type,
+            line.origin_option_card_id,
+            line.origin_target_card_id,
+            line.origin_target_serial,
+            line.action_count,
+            line.remaining_actions,
+            tuple(
+                (
+                    step.option_type,
+                    step.option_card_id,
+                    step.option_effect_id,
+                    step.target_card_id,
+                    step.target_serial,
+                    step.route_origin,
+                    step.current_observation_option,
+                    step.projected_followup_action,
+                    step.identity_exact,
+                    step.legality_exact,
+                )
+                for step in line.action_steps
+            ),
+        )
+
+    def compare_counterlines(
+        left: Stage2b4CounterlineActionLineFacts,
+        right: Stage2b4CounterlineActionLineFacts,
+    ) -> Phase3StrategicActionLineComparisonFacts:
+        if any(
+            type(value) is not int
+            for value in (
+                left.holder_card_id,
+                left.holder_serial,
+                right.holder_card_id,
+                right.holder_serial,
+            )
+        ):
+            return fail_closed(left, right, "strategic_counterline_holder_identity_unresolved")
+        if (
+            left.holder_card_id != right.holder_card_id
+            or left.holder_serial != right.holder_serial
+        ):
+            return fail_closed(left, right, "strategic_counterline_holder_identity_mismatch")
+        primary_values = (
+            left.attacker_knocked_out,
+            right.attacker_knocked_out,
+            left.holder_knocked_out,
+            right.holder_knocked_out,
+            left.holder_survives,
+            right.holder_survives,
+            left.simultaneous_knockout,
+            right.simultaneous_knockout,
+        )
+        if any(type(value) is not bool for value in primary_values):
+            return fail_closed(left, right, "strategic_counterline_primary_outcome_inexact")
+        if (
+            left.holder_knocked_out == left.holder_survives
+            or right.holder_knocked_out == right.holder_survives
+        ):
+            return fail_closed(left, right, "strategic_counterline_holder_state_inconsistent")
+
+        directions: List[int] = []
+        if left.attacker_knocked_out != right.attacker_knocked_out:
+            directions.append(1 if left.attacker_knocked_out else -1)
+        if left.holder_survives != right.holder_survives:
+            directions.append(1 if left.holder_survives else -1)
+
+        primary_equal = (
+            left.attacker_knocked_out == right.attacker_knocked_out
+            and left.holder_survives == right.holder_survives
+        )
+        if primary_equal and left.simultaneous_knockout != right.simultaneous_knockout:
+            return exact_result(
+                left,
+                right,
+                DirectAttackComparison.INCOMPARABLE,
+                DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+                "counterline_simultaneous_ko_state_differs",
+            )
+
+        if primary_equal:
+            left_follow = left.drednaw_followup_supported
+            right_follow = right.drednaw_followup_supported
+            if type(left_follow) is not bool or type(right_follow) is not bool:
+                return fail_closed(left, right, "strategic_counterline_followup_inexact")
+            if left_follow != right_follow:
+                directions.append(1 if left_follow else -1)
+            elif left_follow:
+                if (
+                    type(left.drednaw_serial) is not int
+                    or type(right.drednaw_serial) is not int
+                    or type(left.drednaw_hard_crunch_damage) is not int
+                    or type(right.drednaw_hard_crunch_damage) is not int
+                ):
+                    return fail_closed(left, right, "strategic_counterline_followup_identity_inexact")
+                if left.drednaw_serial != right.drednaw_serial:
+                    return exact_result(
+                        left,
+                        right,
+                        DirectAttackComparison.INCOMPARABLE,
+                        DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+                        "different_drednaw_followup_identity",
+                    )
+                if left.drednaw_hard_crunch_damage != right.drednaw_hard_crunch_damage:
+                    directions.append(
+                        1 if left.drednaw_hard_crunch_damage > right.drednaw_hard_crunch_damage else -1
+                    )
+        preservation = preservation_direction(left, right)
+        if primary_equal and not directions and preservation:
+            return exact_result(
+                left,
+                right,
+                DirectAttackComparison.LEFT_BETTER if preservation > 0 else DirectAttackComparison.RIGHT_BETTER,
+                DirectAttackComparisonReason.SAFE_DOMINANCE,
+                "deluxe_bomb_resource_preservation",
+                "redundant_new_bomb_commitment",
+            )
+
+        if primary_equal:
+            if type(left.counter_damage_amount) is not int or type(right.counter_damage_amount) is not int:
+                return fail_closed(left, right, "strategic_counterline_damage_inexact")
+            if left.counter_damage_amount != right.counter_damage_amount:
+                directions.append(1 if left.counter_damage_amount > right.counter_damage_amount else -1)
+
+        distinct = set(directions)
+        if distinct == {1, -1}:
+            return exact_result(
+                left,
+                right,
+                DirectAttackComparison.INCOMPARABLE,
+                DirectAttackComparisonReason.CONFLICTING_ADVANTAGES,
+                "counterline_conflicting_advantages",
+            )
+        if distinct == {1}:
+            if preservation < 0:
+                return exact_result(
+                    left,
+                    right,
+                    DirectAttackComparison.INCOMPARABLE,
+                    DirectAttackComparisonReason.CONFLICTING_ADVANTAGES,
+                    "counterline_combat_vs_bomb_resource_tradeoff",
+                )
+            return exact_result(
+                left, right, DirectAttackComparison.LEFT_BETTER,
+                DirectAttackComparisonReason.SAFE_DOMINANCE,
+                "counterline_safe_dominance",
+            )
+        if distinct == {-1}:
+            if preservation > 0:
+                return exact_result(
+                    left,
+                    right,
+                    DirectAttackComparison.INCOMPARABLE,
+                    DirectAttackComparisonReason.CONFLICTING_ADVANTAGES,
+                    "counterline_combat_vs_bomb_resource_tradeoff",
+                )
+            return exact_result(
+                left, right, DirectAttackComparison.RIGHT_BETTER,
+                DirectAttackComparisonReason.SAFE_DOMINANCE,
+                "counterline_safe_dominance",
+            )
+
+        if counter_resource_signature(left) != counter_resource_signature(right):
+            return exact_result(
+                left,
+                right,
+                DirectAttackComparison.INCOMPARABLE,
+                DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+                "counterline_resource_identity_differs",
+            )
+        return exact_result(
+            left,
+            right,
+            DirectAttackComparison.EQUIVALENT,
+            DirectAttackComparisonReason.SAME_CANONICAL_OUTCOME,
+            "counterline_exact_outcome_equivalent",
+        )
+
+    def drednaw_cost_class(line: DrednawDefensiveActionLineFacts) -> Any:
+        if line.transition is None:
+            return "CURRENT_ACTIVE"
+        binding = line.transition.origin_binding
+        if (
+            not binding.supported
+            or not binding.binding_exact
+            or binding.origin not in {
+                ActiveBenchTransitionOrigin.RETREAT,
+                ActiveBenchTransitionOrigin.SURFING_BEACH,
+                ActiveBenchTransitionOrigin.SUGURI,
+            }
+        ):
+            return None
+        return binding.origin
+
+    def compare_drednaw(
+        left: DrednawDefensiveActionLineFacts,
+        right: DrednawDefensiveActionLineFacts,
+    ) -> Phase3StrategicActionLineComparisonFacts:
+        left_class = drednaw_cost_class(left)
+        right_class = drednaw_cost_class(right)
+        if left_class is None or right_class is None:
+            return fail_closed(left, right, "strategic_drednaw_transition_cost_class_inexact")
+        if left_class != right_class:
+            return exact_result(
+                left,
+                right,
+                DirectAttackComparison.INCOMPARABLE,
+                DirectAttackComparisonReason.CONFLICTING_ADVANTAGES,
+                "drednaw_transition_cost_class_tradeoff",
+            )
+        left_damage = left.combat_line.readiness.hard_crunch_damage_now
+        right_damage = right.combat_line.readiness.hard_crunch_damage_now
+        if type(left_damage) is not int or type(right_damage) is not int:
+            return fail_closed(left, right, "strategic_drednaw_hard_crunch_damage_inexact")
+        if left_damage > right_damage:
+            return exact_result(
+                left, right, DirectAttackComparison.LEFT_BETTER,
+                DirectAttackComparisonReason.SAFE_DOMINANCE,
+                "drednaw_same_cost_class_higher_hard_crunch",
+            )
+        if right_damage > left_damage:
+            return exact_result(
+                left, right, DirectAttackComparison.RIGHT_BETTER,
+                DirectAttackComparisonReason.SAFE_DOMINANCE,
+                "drednaw_same_cost_class_higher_hard_crunch",
+            )
+        if left.drednaw_serial != right.drednaw_serial:
+            return exact_result(
+                left,
+                right,
+                DirectAttackComparison.INCOMPARABLE,
+                DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+                "drednaw_identity_difference_unmodeled",
+            )
+        return exact_result(
+            left,
+            right,
+            DirectAttackComparison.EQUIVALENT,
+            DirectAttackComparisonReason.SAME_CANONICAL_OUTCOME,
+            "drednaw_same_cost_class_same_hard_crunch",
+        )
+
+    def compare_current_stage2c(
+        left: Any,
+        right: Any,
+        current: ActivePositionCurrentAttackLineFacts,
+        stage2c: Stage2cStrategicActionLineFacts,
+        *,
+        left_current: bool,
+    ) -> Phase3StrategicActionLineComparisonFacts:
+        matching_current, matching_reason = stage2c_matching_current_line(stage2c, current)
+        if matching_reason is not None or matching_current is None:
+            return fail_closed(
+                left,
+                right,
+                matching_reason or "stage2c_matching_current_line_unresolved",
+            )
+
+        if stage2c.action_line_kind == Stage2cStrategicActionLineKind.SAFE_PRE_KO_BASIC_PLAY:
+            continuation_identity_preserved = bool(
+                type(current.attack_option_index) is int
+                and type(current.attack_id) is int
+                and (current.attack_option_index, current.attack_id)
+                in tuple(zip(
+                    stage2c.continuation_attack_option_indices,
+                    stage2c.continuation_attack_ids,
+                ))
+            )
+            safe_dominance = bool(
+                type(stage2c.origin_option_index) is int
+                and stage2c.origin_option_type == OptionType.PLAY
+                and type(stage2c.origin_option_card_id) is int
+                and stage2c.continuation_confirmed is True
+                and stage2c.attack_preserved_after_origin is True
+                and stage2c.current_attack_is_nonwinning_ko is True
+                and stage2c.current_direct_win_exists is False
+                and stage2c.bench_count_before == 0
+                and type(stage2c.bench_space_before) is int
+                and stage2c.bench_space_before > 0
+                and stage2c.bench_slot_consumed is True
+                and current.terminal_win is False
+                and current.opponent_active_ko is True
+                and matching_current.terminal_win is False
+                and matching_current.opponent_active_ko is True
+                and continuation_identity_preserved
+            )
+            if safe_dominance:
+                return exact_result(
+                    left,
+                    right,
+                    DirectAttackComparison.RIGHT_BETTER
+                    if left_current
+                    else DirectAttackComparison.LEFT_BETTER,
+                    DirectAttackComparisonReason.SAFE_DOMINANCE,
+                    "stage2c_safe_pre_ko_preserved_ko_with_board_out_buffer",
+                )
+            return exact_result(
+                left,
+                right,
+                DirectAttackComparison.INCOMPARABLE,
+                DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+                "stage2c_safe_pre_ko_safe_dominance_not_proven",
+            )
+
+        if stage2c.action_line_kind == Stage2cStrategicActionLineKind.HAND_BASIC_DEPLOYMENT:
+            continuation_identity_preserved = bool(
+                type(current.attack_option_index) is int
+                and type(current.attack_id) is int
+                and (current.attack_option_index, current.attack_id)
+                in tuple(zip(
+                    stage2c.continuation_attack_option_indices,
+                    stage2c.continuation_attack_ids,
+                ))
+            )
+            chewtle_role = bool(
+                stage2c.origin_option_card_id == CHEWTLE
+                and stage2c.same_card_in_play_count == 0
+                and stage2c.duplicate_deployment is False
+                and type(stage2c.accessible_drednaw_line_count) is int
+                and stage2c.accessible_drednaw_line_count > 0
+                and (
+                    stage2c.chewtle_drednaw_in_hand is True
+                    or stage2c.drednaw_remaining_possible is True
+                )
+            )
+            bruxish_role = bool(
+                stage2c.origin_option_card_id == BRUXISH
+                and stage2c.bruxish_already_in_play is False
+                and stage2c.bruxish_counterattack_contract_supported is True
+                and stage2c.bruxish_counterline_role_live is True
+            )
+            last_slot_ambiguous = bool(
+                stage2c.bench_space_before == 1
+                and stage2c.other_legal_basic_option_indices
+            )
+            current_scenario = opponent_identity(current)
+            blocking_evolution = any(
+                evolution is not stage2c
+                and evolution.action_line_kind
+                == Stage2cStrategicActionLineKind.EVOLUTION_CONTINUATION
+                and evolution.supported
+                and evolution.exact
+                and evolution.evolution_relation_exact is True
+                and pair_opponent_identity(current, evolution)[1] is None
+                and opponent_identity(evolution) == current_scenario
+                for evolution in strategic_stage2c_lines
+            )
+            hand_dominance = bool(
+                type(stage2c.origin_option_index) is int
+                and stage2c.origin_option_type == OptionType.PLAY
+                and type(stage2c.origin_option_card_id) is int
+                and stage2c.continuation_confirmed is True
+                and stage2c.attack_preserved_after_origin is True
+                and stage2c.current_direct_win_exists is False
+                and stage2c.current_direct_knockout_exists is False
+                and stage2c.current_non_ko_attack_exists is True
+                and type(stage2c.bench_space_before) is int
+                and stage2c.bench_space_before > 0
+                and stage2c.bench_slot_consumed is True
+                and current.terminal_win is False
+                and current.opponent_active_ko is False
+                and matching_current.terminal_win is False
+                and matching_current.opponent_active_ko is False
+                and continuation_identity_preserved
+                and (chewtle_role or bruxish_role)
+                and not last_slot_ambiguous
+                and not blocking_evolution
+                and stage2c.blocking_high_value_evolution_exists is False
+            )
+            if hand_dominance:
+                return exact_result(
+                    left,
+                    right,
+                    DirectAttackComparison.RIGHT_BETTER
+                    if left_current
+                    else DirectAttackComparison.LEFT_BETTER,
+                    DirectAttackComparisonReason.SAFE_DOMINANCE,
+                    "stage2c_hand_basic_preserved_nonko_with_exact_development_role",
+                )
+            return exact_result(
+                left,
+                right,
+                DirectAttackComparison.INCOMPARABLE,
+                DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+                "stage2c_hand_basic_safe_dominance_not_proven",
+            )
+
+        if stage2c.action_line_kind == Stage2cStrategicActionLineKind.EVOLUTION_CONTINUATION:
+            continuation_identity_preserved = bool(
+                type(current.attack_option_index) is int
+                and type(current.attack_id) is int
+                and (current.attack_option_index, current.attack_id)
+                in tuple(zip(
+                    stage2c.continuation_attack_option_indices,
+                    stage2c.continuation_attack_ids,
+                ))
+            )
+            evolution_dominance = bool(
+                type(stage2c.origin_option_index) is int
+                and stage2c.origin_option_type == OptionType.EVOLVE
+                and type(stage2c.origin_option_card_id) is int
+                and type(stage2c.origin_target_card_id) is int
+                and type(stage2c.origin_target_serial) is int
+                and stage2c.evolution_relation_exact is True
+                and stage2c.continuation_confirmed is True
+                and stage2c.attack_preserved_after_origin is True
+                and stage2c.current_direct_win_exists is False
+                and stage2c.current_direct_knockout_exists is False
+                and stage2c.current_non_ko_attack_exists is True
+                and current.terminal_win is False
+                and current.opponent_active_ko is False
+                and matching_current.terminal_win is False
+                and matching_current.opponent_active_ko is False
+                and continuation_identity_preserved
+            )
+            if evolution_dominance:
+                return exact_result(
+                    left,
+                    right,
+                    DirectAttackComparison.RIGHT_BETTER
+                    if left_current
+                    else DirectAttackComparison.LEFT_BETTER,
+                    DirectAttackComparisonReason.SAFE_DOMINANCE,
+                    "stage2c_evolution_preserved_nonko_with_exact_line_progression",
+                )
+            return exact_result(
+                left,
+                right,
+                DirectAttackComparison.INCOMPARABLE,
+                DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+                "stage2c_evolution_safe_dominance_not_proven",
+            )
+
+        return exact_result(
+            left,
+            right,
+            DirectAttackComparison.INCOMPARABLE,
+            DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+            "stage2c_unknown_action_line_kind",
+        )
+
+    def compare_pair(left: Any, right: Any) -> Phase3StrategicActionLineComparisonFacts:
+        if not is_line_exact(left):
+            return fail_closed(
+                left,
+                right,
+                getattr(left, "unsupported_reason", None) or "left_strategic_line_unsupported_or_inexact",
+                DirectAttackComparisonReason.OVERALL_UNSUPPORTED,
+            )
+        if not is_line_exact(right):
+            return fail_closed(
+                left,
+                right,
+                getattr(right, "unsupported_reason", None) or "right_strategic_line_unsupported_or_inexact",
+                DirectAttackComparisonReason.OVERALL_UNSUPPORTED,
+            )
+
+        left_current = isinstance(left, ActivePositionCurrentAttackLineFacts)
+        right_current = isinstance(right, ActivePositionCurrentAttackLineFacts)
+        if left_current and current_terminal_win(left):
+            return exact_result(
+                left, right, DirectAttackComparison.LEFT_BETTER,
+                DirectAttackComparisonReason.LEFT_IMMEDIATE_WIN,
+                "current_terminal_win",
+            )
+        if right_current and current_terminal_win(right):
+            return exact_result(
+                left, right, DirectAttackComparison.RIGHT_BETTER,
+                DirectAttackComparisonReason.RIGHT_IMMEDIATE_WIN,
+                "current_terminal_win",
+            )
+
+        shared_identity, identity_reason = pair_opponent_identity(left, right)
+        if identity_reason is not None:
+            return fail_closed(left, right, identity_reason)
+        if any(type(value) is not int for value in shared_identity):
+            return fail_closed(left, right, "strategic_opponent_attack_identity_unresolved")
+
+        if left_current or right_current:
+            current = left if left_current else right
+            strategic = right if left_current else left
+            confirmed_reply_loss = current_confirmed_reply_loss(current)
+            if confirmed_reply_loss:
+                avoids = False
+                if isinstance(strategic, Stage2b4CounterlineActionLineFacts):
+                    avoids = strategic.holder_survives is True
+                elif isinstance(strategic, DrednawDefensiveActionLineFacts):
+                    avoids = True
+                if avoids:
+                    if left_current:
+                        return exact_result(
+                            left,
+                            right,
+                            DirectAttackComparison.RIGHT_BETTER,
+                            DirectAttackComparisonReason.RIGHT_AVOIDS_CONFIRMED_LOSS,
+                            "exact_confirmed_loss_avoidance",
+                        )
+                    return exact_result(
+                        left,
+                        right,
+                        DirectAttackComparison.LEFT_BETTER,
+                        DirectAttackComparisonReason.LEFT_AVOIDS_CONFIRMED_LOSS,
+                        "exact_confirmed_loss_avoidance",
+                    )
+                if (
+                    isinstance(strategic, Stage2cStrategicActionLineFacts)
+                    and strategic.action_line_kind
+                    == Stage2cStrategicActionLineKind.HAND_BASIC_DEPLOYMENT
+                    and strategic.origin_option_card_id == BRUXISH
+                ):
+                    return exact_result(
+                        left,
+                        right,
+                        DirectAttackComparison.INCOMPARABLE,
+                        DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+                        "stage2c_bruxish_confirmed_reply_loss_not_proven_avoided",
+                    )
+            if not confirmed_reply_loss:
+                preservation = preservation_direction(left, right)
+                if preservation:
+                    return exact_result(
+                        left,
+                        right,
+                        DirectAttackComparison.LEFT_BETTER
+                        if preservation > 0
+                        else DirectAttackComparison.RIGHT_BETTER,
+                        DirectAttackComparisonReason.SAFE_DOMINANCE,
+                        "deluxe_bomb_resource_preservation",
+                        "redundant_new_bomb_commitment",
+                    )
+            if isinstance(strategic, Stage2cStrategicActionLineFacts):
+                return compare_current_stage2c(
+                    left,
+                    right,
+                    current,
+                    strategic,
+                    left_current=left_current,
+                )
+            if isinstance(strategic, Stage2b4CounterlineActionLineFacts):
+                current_reply = current.counterline_attack_facts
+                if current_reply is None:
+                    return fail_closed(
+                        left, right, "current_counterline_composite_missing"
+                    )
+
+                current_primary = (
+                    current_reply.attacker_knocked_out,
+                    current_reply.holder_knocked_out,
+                    current_reply.simultaneous_knockout,
+                )
+                strategic_primary = (
+                    strategic.attacker_knocked_out,
+                    strategic.holder_knocked_out,
+                    strategic.simultaneous_knockout,
+                )
+                if any(
+                    type(value) is not bool
+                    for value in current_primary + strategic_primary
+                ) or type(strategic.holder_survives) is not bool:
+                    return fail_closed(
+                        left, right, "current_counterline_primary_outcome_inexact"
+                    )
+                if strategic.holder_knocked_out == strategic.holder_survives:
+                    return fail_closed(
+                        left, right, "current_counterline_holder_state_inconsistent"
+                    )
+
+                current_survives = not current_reply.holder_knocked_out
+                current_better = []
+                strategic_better = []
+                if current_reply.attacker_knocked_out != strategic.attacker_knocked_out:
+                    if current_reply.attacker_knocked_out:
+                        current_better.append("attacker_knockout")
+                    else:
+                        strategic_better.append("attacker_knockout")
+                if current_survives != strategic.holder_survives:
+                    if current_survives:
+                        current_better.append("holder_survival")
+                    else:
+                        strategic_better.append("holder_survival")
+
+                primary_differs = bool(current_better or strategic_better)
+                if primary_differs and (
+                    strategic.action_count < 1
+                    or len(strategic.action_steps) != strategic.action_count
+                    or any(
+                        not step.identity_exact or not step.legality_exact
+                        for step in strategic.action_steps
+                    )
+                ):
+                    return exact_result(
+                        left,
+                        right,
+                        DirectAttackComparison.INCOMPARABLE,
+                        DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+                        "current_counterline_action_identity_missing_for_primary_change",
+                    )
+
+                if current_better and strategic_better:
+                    return exact_result(
+                        left,
+                        right,
+                        DirectAttackComparison.INCOMPARABLE,
+                        DirectAttackComparisonReason.CONFLICTING_ADVANTAGES,
+                        "current_counterline_primary_conflict",
+                    )
+
+                strategic_has_new_bomb = any(
+                    step.option_card_id == DELUXE_BOMB
+                    for step in strategic.action_steps
+                )
+                self_transition_origins = {
+                    ActiveBenchTransitionOrigin.RETREAT,
+                    ActiveBenchTransitionOrigin.SURFING_BEACH,
+                    ActiveBenchTransitionOrigin.SUGURI,
+                }
+                strategic_transition = (
+                    strategic.route_origin
+                    if strategic.route_origin in self_transition_origins
+                    else next(
+                        (
+                            step.route_origin
+                            for step in strategic.action_steps
+                            if step.route_origin in self_transition_origins
+                        ),
+                        None,
+                    )
+                )
+                strategic_has_transition_commitment = strategic_transition is not None
+                strategic_has_supporter_commitment = (
+                    strategic_transition == ActiveBenchTransitionOrigin.SUGURI
+                    or any(step.option_card_id == SUGURI for step in strategic.action_steps)
+                )
+                strategic_has_resource_commitment = (
+                    strategic_has_new_bomb
+                    or strategic_has_transition_commitment
+                    or strategic_has_supporter_commitment
+                )
+
+                if current_better:
+                    return exact_result(
+                        left,
+                        right,
+                        DirectAttackComparison.LEFT_BETTER
+                        if left_current
+                        else DirectAttackComparison.RIGHT_BETTER,
+                        DirectAttackComparisonReason.SAFE_DOMINANCE,
+                        "current_counterline_primary_safe_dominance",
+                        *(f"current_primary_{item}" for item in current_better),
+                    )
+                if strategic_better:
+                    if strategic_has_new_bomb:
+                        return exact_result(
+                            left,
+                            right,
+                            DirectAttackComparison.INCOMPARABLE,
+                            DirectAttackComparisonReason.CONFLICTING_ADVANTAGES,
+                            "current_counterline_primary_vs_bomb_resource_tradeoff",
+                        )
+                    return exact_result(
+                        left,
+                        right,
+                        DirectAttackComparison.RIGHT_BETTER
+                        if left_current
+                        else DirectAttackComparison.LEFT_BETTER,
+                        DirectAttackComparisonReason.SAFE_DOMINANCE,
+                        "current_counterline_primary_safe_dominance",
+                        *(f"strategic_primary_{item}" for item in strategic_better),
+                    )
+
+                if (
+                    current_reply.simultaneous_knockout
+                    != strategic.simultaneous_knockout
+                ):
+                    return exact_result(
+                        left,
+                        right,
+                        DirectAttackComparison.INCOMPARABLE,
+                        DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+                        "current_counterline_simultaneous_ko_state_differs",
+                    )
+
+                current_follow = current_reply.drednaw_followup_supported
+                strategic_follow = strategic.drednaw_followup_supported
+                if type(current_follow) is not bool or type(strategic_follow) is not bool:
+                    return fail_closed(
+                        left, right, "current_counterline_drednaw_followup_inexact"
+                    )
+                if current_follow != strategic_follow:
+                    if strategic_has_resource_commitment and strategic_follow:
+                        return exact_result(
+                            left,
+                            right,
+                            DirectAttackComparison.INCOMPARABLE,
+                            DirectAttackComparisonReason.CONFLICTING_ADVANTAGES,
+                            "current_counterline_continuation_resource_tradeoff",
+                        )
+                    relation = (
+                        DirectAttackComparison.RIGHT_BETTER
+                        if strategic_follow == left_current
+                        else DirectAttackComparison.LEFT_BETTER
+                    )
+                    return exact_result(
+                        left,
+                        right,
+                        relation,
+                        DirectAttackComparisonReason.SAFE_DOMINANCE,
+                        "current_counterline_drednaw_followup_safe_dominance",
+                    )
+
+                if current_follow:
+                    current_drednaw = (
+                        current_reply.drednaw_serial,
+                        current_reply.drednaw_hard_crunch_damage,
+                    )
+                    strategic_drednaw = (
+                        strategic.drednaw_serial,
+                        strategic.drednaw_hard_crunch_damage,
+                    )
+                    if any(
+                        type(value) is not int
+                        for value in current_drednaw + strategic_drednaw
+                    ):
+                        return fail_closed(
+                            left, right, "current_counterline_drednaw_identity_or_damage_inexact"
+                        )
+                    if current_reply.drednaw_serial != strategic.drednaw_serial:
+                        return exact_result(
+                            left,
+                            right,
+                            DirectAttackComparison.INCOMPARABLE,
+                            DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+                            "current_counterline_drednaw_identity_mismatch",
+                        )
+                    if (
+                        current_reply.drednaw_hard_crunch_damage
+                        != strategic.drednaw_hard_crunch_damage
+                    ):
+                        if (
+                            strategic_has_resource_commitment
+                            and strategic.drednaw_hard_crunch_damage
+                            > current_reply.drednaw_hard_crunch_damage
+                        ):
+                            return exact_result(
+                                left,
+                                right,
+                                DirectAttackComparison.INCOMPARABLE,
+                                DirectAttackComparisonReason.CONFLICTING_ADVANTAGES,
+                                "current_counterline_continuation_resource_tradeoff",
+                            )
+                        strategic_damage_better = (
+                            strategic.drednaw_hard_crunch_damage
+                            > current_reply.drednaw_hard_crunch_damage
+                        )
+                        return exact_result(
+                            left,
+                            right,
+                            (
+                                (
+                                    DirectAttackComparison.RIGHT_BETTER
+                                    if left_current
+                                    else DirectAttackComparison.LEFT_BETTER
+                                )
+                                if strategic_damage_better
+                                else (
+                                    DirectAttackComparison.LEFT_BETTER
+                                    if left_current
+                                    else DirectAttackComparison.RIGHT_BETTER
+                                )
+                            ),
+                            DirectAttackComparisonReason.SAFE_DOMINANCE,
+                            "current_counterline_same_drednaw_continuation_damage",
+                        )
+
+                current_holder = (current_reply.holder_id, current_reply.holder_serial)
+                strategic_holder = (strategic.holder_card_id, strategic.holder_serial)
+                current_counter_damage = current_reply.combined_damage_amount
+                strategic_counter_damage = strategic.counter_damage_amount
+                if any(
+                    type(value) is not int
+                    for value in current_holder + strategic_holder
+                ):
+                    return fail_closed(
+                        left, right, "current_counterline_holder_identity_unresolved"
+                    )
+                if current_holder != strategic_holder:
+                    return exact_result(
+                        left,
+                        right,
+                        DirectAttackComparison.INCOMPARABLE,
+                        DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+                        "current_counterline_holder_identity_differs",
+                    )
+                if (
+                    type(current_counter_damage) is not int
+                    or type(strategic_counter_damage) is not int
+                ):
+                    return fail_closed(
+                        left, right, "current_counterline_counter_damage_inexact"
+                    )
+
+                if strategic_has_resource_commitment:
+                    return exact_result(
+                        left,
+                        right,
+                        DirectAttackComparison.INCOMPARABLE,
+                        DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+                        (
+                            "current_counterline_bomb_resource_tradeoff"
+                            if strategic_has_new_bomb
+                            else "current_counterline_transition_commitment_tradeoff"
+                        ),
+                    )
+                if current_counter_damage > strategic_counter_damage:
+                    return exact_result(
+                        left,
+                        right,
+                        DirectAttackComparison.LEFT_BETTER
+                        if left_current
+                        else DirectAttackComparison.RIGHT_BETTER,
+                        DirectAttackComparisonReason.SAFE_DOMINANCE,
+                        "current_counterline_same_horizon_counter_damage",
+                    )
+                if strategic_counter_damage > current_counter_damage:
+                    return exact_result(
+                        left,
+                        right,
+                        DirectAttackComparison.RIGHT_BETTER
+                        if left_current
+                        else DirectAttackComparison.LEFT_BETTER,
+                        DirectAttackComparisonReason.SAFE_DOMINANCE,
+                        "current_counterline_same_horizon_counter_damage",
+                    )
+                return exact_result(
+                    left,
+                    right,
+                    DirectAttackComparison.EQUIVALENT,
+                    DirectAttackComparisonReason.SAME_CANONICAL_OUTCOME,
+                    "current_counterline_exact_composite_equivalent",
+                )
+
+            return exact_result(
+                left,
+                right,
+                DirectAttackComparison.INCOMPARABLE,
+                DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+                "current_strategic_horizon_tradeoff",
+            )
+
+        if (
+            isinstance(left, Stage2b4CounterlineActionLineFacts)
+            and isinstance(right, Stage2b4CounterlineActionLineFacts)
+        ):
+            return compare_counterlines(left, right)
+        if (
+            isinstance(left, DrednawDefensiveActionLineFacts)
+            and isinstance(right, DrednawDefensiveActionLineFacts)
+        ):
+            return compare_drednaw(left, right)
+        left_stage2c = isinstance(left, Stage2cStrategicActionLineFacts)
+        right_stage2c = isinstance(right, Stage2cStrategicActionLineFacts)
+        if left_stage2c and right_stage2c:
+            return exact_result(
+                left,
+                right,
+                DirectAttackComparison.INCOMPARABLE,
+                DirectAttackComparisonReason.CONFLICTING_ADVANTAGES,
+                "stage2c_vs_stage2c_strategic_tradeoff",
+            )
+        if left_stage2c or right_stage2c:
+            other = right if left_stage2c else left
+            return exact_result(
+                left,
+                right,
+                DirectAttackComparison.INCOMPARABLE,
+                DirectAttackComparisonReason.CONFLICTING_ADVANTAGES,
+                (
+                    "stage2c_vs_counterline_strategic_tradeoff"
+                    if isinstance(other, Stage2b4CounterlineActionLineFacts)
+                    else "stage2c_vs_drednaw_strategic_tradeoff"
+                ),
+            )
+        return exact_result(
+            left,
+            right,
+            DirectAttackComparison.INCOMPARABLE,
+            DirectAttackComparisonReason.CONFLICTING_ADVANTAGES,
+            "counterline_vs_drednaw_tradeoff",
+        )
+
+    output: List[Phase3StrategicActionLineComparisonFacts] = []
+    for current in current_lines:
+        for counterline in counterlines:
+            output.append(compare_pair(current, counterline))
+        for drednaw in defensive_lines:
+            output.append(compare_pair(current, drednaw))
+        for stage2c in strategic_stage2c_lines:
+            output.append(compare_pair(current, stage2c))
+    for left, right in combinations(counterlines, 2):
+        output.append(compare_pair(left, right))
+    for counterline in counterlines:
+        for drednaw in defensive_lines:
+            output.append(compare_pair(counterline, drednaw))
+        for stage2c in strategic_stage2c_lines:
+            output.append(compare_pair(counterline, stage2c))
+    for left, right in combinations(defensive_lines, 2):
+        output.append(compare_pair(left, right))
+    for drednaw in defensive_lines:
+        for stage2c in strategic_stage2c_lines:
+            output.append(compare_pair(drednaw, stage2c))
+    for left, right in combinations(strategic_stage2c_lines, 2):
+        output.append(compare_pair(left, right))
+    return tuple(output)
+
+
+def _action_line_comparison_candidates(
+    selection_state: ActionLineBestAttackState,
+    best_attack: Optional[DirectAttackShadowCandidate],
+    candidates: Sequence[DirectAttackShadowCandidate],
+) -> Tuple[DirectAttackShadowCandidate, ...]:
+    if selection_state == ActionLineBestAttackState.SELECTED:
+        return (best_attack,) if best_attack is not None else ()
+    if selection_state == ActionLineBestAttackState.TIE:
+        return tuple(candidates)
+    return ()
+
+
+def _cross_origin_action_line_comparison(
+    *,
+    left_origin: ActionLineOriginFacts,
+    right_origin: ActionLineOriginFacts,
+    left_selection_state: ActionLineBestAttackState,
+    right_selection_state: ActionLineBestAttackState,
+    left_best_attack: Optional[DirectAttackShadowCandidate],
+    right_best_attack: Optional[DirectAttackShadowCandidate],
+    left_candidates: Sequence[DirectAttackShadowCandidate],
+    right_candidates: Sequence[DirectAttackShadowCandidate],
+    left_supported: bool,
+    right_supported: bool,
+    left_exact: bool,
+    right_exact: bool,
+    left_unsupported_reason: Optional[str],
+    right_unsupported_reason: Optional[str],
+) -> CrossOriginActionLineComparisonFacts:
+    def blocked(
+        reason: str,
+        comparison_reason: DirectAttackComparisonReason,
+    ) -> CrossOriginActionLineComparisonFacts:
+        return CrossOriginActionLineComparisonFacts(
+            left_origin=left_origin,
+            right_origin=right_origin,
+            left_selection_state=left_selection_state,
+            right_selection_state=right_selection_state,
+            left_attack_candidates=(),
+            right_attack_candidates=(),
+            candidate_comparisons=(),
+            relation=DirectAttackComparison.INCOMPARABLE,
+            reason=comparison_reason,
+            pairwise_reasons=(),
+            supported=False,
+            exact=False,
+            unsupported_reason=reason,
+        )
+
+    if not left_supported:
+        return blocked(
+            left_unsupported_reason or "left_action_line_unsupported",
+            DirectAttackComparisonReason.OVERALL_UNSUPPORTED,
+        )
+    if not right_supported:
+        return blocked(
+            right_unsupported_reason or "right_action_line_unsupported",
+            DirectAttackComparisonReason.OVERALL_UNSUPPORTED,
+        )
+    if left_selection_state == ActionLineBestAttackState.INCOMPARABLE:
+        return blocked(
+            "left_action_line_best_incomparable",
+            DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+        )
+    if right_selection_state == ActionLineBestAttackState.INCOMPARABLE:
+        return blocked(
+            "right_action_line_best_incomparable",
+            DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+        )
+    if not left_exact:
+        return blocked(
+            "left_action_line_candidate_set_not_exact",
+            DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+        )
+    if not right_exact:
+        return blocked(
+            "right_action_line_candidate_set_not_exact",
+            DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+        )
+
+    left_set = _action_line_comparison_candidates(
+        left_selection_state,
+        left_best_attack,
+        left_candidates,
+    )
+    right_set = _action_line_comparison_candidates(
+        right_selection_state,
+        right_best_attack,
+        right_candidates,
+    )
+    if not left_set or not right_set:
+        return blocked(
+            "cross_origin_action_line_candidate_set_missing",
+            DirectAttackComparisonReason.INSUFFICIENT_INFORMATION,
+        )
+
+    candidate_comparisons = tuple(
+        CrossOriginActionLineCandidateComparisonFacts(
+            left_candidate=left_candidate,
+            right_candidate=right_candidate,
+            result=compare_direct_attack_candidates(
+                left_candidate,
+                right_candidate,
+            ),
+        )
+        for left_candidate in left_set
+        for right_candidate in right_set
+    )
+    relations = {
+        item.result.relation for item in candidate_comparisons
+    }
+    pairwise_reasons = tuple(
+        item.result.reason for item in candidate_comparisons
+    )
+    if len(relations) != 1:
+        return CrossOriginActionLineComparisonFacts(
+            left_origin=left_origin,
+            right_origin=right_origin,
+            left_selection_state=left_selection_state,
+            right_selection_state=right_selection_state,
+            left_attack_candidates=left_set,
+            right_attack_candidates=right_set,
+            candidate_comparisons=candidate_comparisons,
+            relation=DirectAttackComparison.INCOMPARABLE,
+            reason=DirectAttackComparisonReason.CONFLICTING_ADVANTAGES,
+            pairwise_reasons=pairwise_reasons,
+            supported=True,
+            exact=False,
+            unsupported_reason=None,
+        )
+
+    relation = next(iter(relations))
+    distinct_reasons = tuple(dict.fromkeys(pairwise_reasons))
+    if len(distinct_reasons) == 1:
+        aggregate_reason = distinct_reasons[0]
+    elif relation in {
+        DirectAttackComparison.LEFT_BETTER,
+        DirectAttackComparison.RIGHT_BETTER,
+    }:
+        aggregate_reason = DirectAttackComparisonReason.SAFE_DOMINANCE
+    elif relation == DirectAttackComparison.EQUIVALENT:
+        aggregate_reason = (
+            DirectAttackComparisonReason.SAME_CANONICAL_OUTCOME
+        )
+    else:
+        aggregate_reason = (
+            DirectAttackComparisonReason.INSUFFICIENT_INFORMATION
+        )
+    return CrossOriginActionLineComparisonFacts(
+        left_origin=left_origin,
+        right_origin=right_origin,
+        left_selection_state=left_selection_state,
+        right_selection_state=right_selection_state,
+        left_attack_candidates=left_set,
+        right_attack_candidates=right_set,
+        candidate_comparisons=candidate_comparisons,
+        relation=relation,
+        reason=aggregate_reason,
+        pairwise_reasons=pairwise_reasons,
+        supported=True,
+        exact=True,
+        unsupported_reason=None,
+    )
+
+
+def phase3_action_line_comparison_foundation_facts(
+    board: BoardView,
+    results: Sequence[SimulationResult],
+    prepared_bindings: Optional[
+        Sequence[Phase3PreparedAttackBindingFacts]
+    ] = None,
+    current_line: Optional[CurrentActionLineOutcomeFacts] = None,
+    prepared_lines: Optional[Sequence[ActionLineOutcomeFacts]] = None,
+) -> Phase3ActionLineComparisonFoundationFacts:
+    """Build a relation matrix only; never select a cross-origin winner."""
+    results_tuple = tuple(results)
+    current = (
+        current_action_line_outcome_facts(board, results_tuple)
+        if current_line is None
+        else current_line
+    )
+    prepared = tuple(
+        action_line_outcome_facts(
+            board,
+            results_tuple,
+            prepared_bindings,
+        )
+        if prepared_lines is None
+        else prepared_lines
+    )
+
+    def compare_current_prepared(
+        line: ActionLineOutcomeFacts,
+    ) -> CrossOriginActionLineComparisonFacts:
+        return _cross_origin_action_line_comparison(
+            left_origin=current.origin,
+            right_origin=_prepared_action_line_origin(line),
+            left_selection_state=current.selection_state,
+            right_selection_state=line.selection_state,
+            left_best_attack=current.best_attack,
+            right_best_attack=line.best_attack,
+            left_candidates=current.attack_candidates,
+            right_candidates=line.attack_candidates,
+            left_supported=current.supported,
+            right_supported=line.supported,
+            left_exact=current.state_exact,
+            right_exact=line.virtual_state_exact,
+            left_unsupported_reason=current.unsupported_reason,
+            right_unsupported_reason=line.unsupported_reason,
+        )
+
+    def compare_prepared(
+        left: ActionLineOutcomeFacts,
+        right: ActionLineOutcomeFacts,
+    ) -> CrossOriginActionLineComparisonFacts:
+        return _cross_origin_action_line_comparison(
+            left_origin=_prepared_action_line_origin(left),
+            right_origin=_prepared_action_line_origin(right),
+            left_selection_state=left.selection_state,
+            right_selection_state=right.selection_state,
+            left_best_attack=left.best_attack,
+            right_best_attack=right.best_attack,
+            left_candidates=left.attack_candidates,
+            right_candidates=right.attack_candidates,
+            left_supported=left.supported,
+            right_supported=right.supported,
+            left_exact=left.virtual_state_exact,
+            right_exact=right.virtual_state_exact,
+            left_unsupported_reason=left.unsupported_reason,
+            right_unsupported_reason=right.unsupported_reason,
+        )
+
+    comparisons = tuple(
+        compare_current_prepared(line) for line in prepared
+    ) + tuple(
+        compare_prepared(left, right)
+        for left, right in combinations(prepared, 2)
+    )
+    return Phase3ActionLineComparisonFoundationFacts(
+        current_line=current,
+        prepared_lines=prepared,
+        comparisons=comparisons,
+    )
+
+
+
+def _phase5_prepared_outcome_key(
+    candidate: DirectAttackShadowCandidate,
+) -> Tuple[Any, ...]:
+    return (candidate.attack_id, candidate.facts)
+
+
+def _phase5_select_prepared_candidate(
+    candidates: Sequence[DirectAttackShadowCandidate],
+) -> Tuple[Optional[DirectAttackShadowCandidate], str]:
+    """Select with the existing comparator; never invent a new score."""
+    exact_groups: Dict[Tuple[Any, ...], List[DirectAttackShadowCandidate]] = {}
+    for candidate in candidates:
+        exact_groups.setdefault(
+            _phase5_prepared_outcome_key(candidate),
+            [],
+        ).append(candidate)
+    representatives = tuple(group[0] for group in exact_groups.values())
+    if not representatives:
+        return None, "no_eligible_prepared_candidate"
+    if len(representatives) == 1:
+        return representatives[0], "single_prepared_outcome"
+
+    reindexed = tuple(
+        replace(candidate, option_index=index)
+        for index, candidate in enumerate(representatives)
+    )
+    comparisons = tuple(
+        compare_direct_attack_candidates(left, right)
+        for left, right in combinations(reindexed, 2)
+    )
+    if comparisons and all(
+        comparison.relation == DirectAttackComparison.EQUIVALENT
+        for comparison in comparisons
+    ):
+        return representatives[0], "prepared_outcomes_equivalent"
+    winner = unique_direct_attack_shadow_winner(
+        reindexed,
+        comparisons,
+    )
+    if winner is None:
+        return None, "prepared_winner_unresolved"
+    return representatives[winner.option_index], "unique_prepared_winner"
+
+
+def phase5_confirmed_live_facts(
+    board: BoardView,
+    results: Sequence[SimulationResult],
+    prepared_bindings: Optional[
+        Sequence[Phase3PreparedAttackBindingFacts]
+    ] = None,
+) -> Phase5ConfirmedLiveFacts:
+    bindings = tuple(
+        phase5_same_observation_prepared_bindings(board, results)
+        if prepared_bindings is None
+        else prepared_bindings
+    )
+    phase3_facts = phase3_direct_attack_shadow_facts(
+        board,
+        results,
+        bindings,
+    )
+    current_candidates = phase3_facts.current_candidates
+    current_identity_reasons = tuple(
+        reason
+        for reason in phase3_facts.blocked_reasons
+        if reason in {
+            "current_attack_option_not_current",
+            "current_attack_option_index_mismatch",
+        }
+    )
+
+    def no_op(reason: str) -> Phase5ConfirmedLiveFacts:
+        return Phase5ConfirmedLiveFacts(
+            supported=False,
+            current_candidates=current_candidates,
+            prepared_bindings=bindings,
+            phase3_facts=phase3_facts,
+            eligible_origins=(),
+            selected_origin_indices=(),
+            selected_candidate=None,
+            live_applied=False,
+            no_op_reason=reason,
+            reasons=(reason,),
+        )
+
+    if not current_candidates:
+        return no_op("current_direct_attack_required")
+    if current_identity_reasons:
+        return no_op("current_direct_attack_identity_blocked")
+    current_states = tuple(
+        classify_direct_attack_candidate(candidate.facts)
+        for candidate in current_candidates
+    )
+    if any(
+        state != DirectAttackCandidateState.FULLY_KNOWN
+        for state in current_states
+    ):
+        return no_op("current_direct_attack_not_fully_known")
+    if any(
+        candidate.facts.candidate_wins_game is True
+        for candidate in current_candidates
+    ):
+        return no_op("current_direct_win_preserved")
+    if any(
+        candidate.facts.opponent_active_ko is True
+        for candidate in current_candidates
+    ):
+        return no_op("current_direct_knockout_preserved")
+    if any(
+        (candidate.facts.immediate_prizes_taken or 0) > 0
+        for candidate in current_candidates
+    ):
+        return no_op("current_direct_prize_gain_preserved")
+
+    bindings_by_origin: Dict[int, List[Phase3PreparedAttackBindingFacts]] = {}
+    for binding in phase3_facts.prepared_bindings:
+        if type(binding.origin_option_index) is int:
+            bindings_by_origin.setdefault(
+                binding.origin_option_index,
+                [],
+            ).append(binding)
+
+    origin_facts: List[Phase5ConfirmedPreparedOriginFacts] = []
+    for origin_option_index in sorted(bindings_by_origin):
+        origin_bindings = tuple(bindings_by_origin[origin_option_index])
+        adapter_names = tuple(sorted({
+            binding.adapter for binding in origin_bindings
+        }))
+        origin_comparisons = tuple(
+            comparison
+            for comparison in phase3_facts.comparisons
+            if (
+                comparison.prepared_binding.origin_option_index
+                == origin_option_index
+            )
+        )
+        reasons: List[str] = []
+        prepared_candidates = tuple(
+            binding.candidate
+            for binding in origin_bindings
+            if binding.candidate is not None
+        )
+        if origin_option_index in phase3_facts.origin_conflicts:
+            origin_facts.append(Phase5ConfirmedPreparedOriginFacts(
+                origin_option_index=origin_option_index,
+                adapter_names=adapter_names,
+                prepared_candidates=prepared_candidates,
+                selected_candidate=None,
+                current_comparisons=origin_comparisons,
+                eligible=False,
+                unsupported_reason="prepared_origin_adapter_conflict",
+                reasons=("prepared_origin_adapter_conflict",),
+            ))
+            continue
+        if (
+            origin_option_index
+            in phase3_facts.multiple_prepared_attack_origins
+        ):
+            origin_facts.append(Phase5ConfirmedPreparedOriginFacts(
+                origin_option_index=origin_option_index,
+                adapter_names=adapter_names,
+                prepared_candidates=prepared_candidates,
+                selected_candidate=None,
+                current_comparisons=origin_comparisons,
+                eligible=False,
+                unsupported_reason="multiple_prepared_attacks_same_origin",
+                reasons=("multiple_prepared_attacks_same_origin",),
+            ))
+            continue
+        if len(adapter_names) != 1:
+            origin_facts.append(Phase5ConfirmedPreparedOriginFacts(
+                origin_option_index=origin_option_index,
+                adapter_names=adapter_names,
+                prepared_candidates=prepared_candidates,
+                selected_candidate=None,
+                current_comparisons=origin_comparisons,
+                eligible=False,
+                unsupported_reason="prepared_origin_adapter_conflict",
+                reasons=("prepared_origin_adapter_conflict",),
+            ))
+            continue
+
+        eligible_candidates: List[DirectAttackShadowCandidate] = []
+        for binding in origin_bindings:
+            candidate = binding.candidate
+            if (
+                not binding.supported
+                or candidate is None
+                or classify_direct_attack_candidate(candidate.facts)
+                not in {
+                    DirectAttackCandidateState.FULLY_KNOWN,
+                    DirectAttackCandidateState.TERMINAL_WIN,
+                }
+            ):
+                continue
+            comparisons = tuple(
+                comparison
+                for comparison in origin_comparisons
+                if comparison.prepared_binding == binding
+            )
+            if len(comparisons) != len(current_candidates):
+                continue
+            relations = tuple(
+                comparison.result.relation
+                for comparison in comparisons
+            )
+            if (
+                all(
+                    relation in {
+                        DirectAttackComparison.RIGHT_BETTER,
+                        DirectAttackComparison.EQUIVALENT,
+                    }
+                    for relation in relations
+                )
+                and DirectAttackComparison.RIGHT_BETTER in relations
+            ):
+                eligible_candidates.append(candidate)
+
+        selected_candidate, selection_reason = (
+            _phase5_select_prepared_candidate(eligible_candidates)
+        )
+        if selected_candidate is None:
+            reasons.append(selection_reason)
+        else:
+            reasons.extend(("strict_safe_dominance", selection_reason))
+        origin_facts.append(Phase5ConfirmedPreparedOriginFacts(
+            origin_option_index=origin_option_index,
+            adapter_names=adapter_names,
+            prepared_candidates=prepared_candidates,
+            selected_candidate=selected_candidate,
+            current_comparisons=origin_comparisons,
+            eligible=selected_candidate is not None,
+            unsupported_reason=(
+                None if selected_candidate is not None else selection_reason
+            ),
+            reasons=tuple(reasons),
+        ))
+
+    eligible_origins = tuple(
+        facts for facts in origin_facts if facts.eligible
+    )
+    if not eligible_origins:
+        return replace(
+            no_op("no_confirmed_right_better_origin"),
+            eligible_origins=tuple(origin_facts),
+        )
+
+    origins_by_outcome: Dict[
+        Tuple[Any, ...],
+        List[Phase5ConfirmedPreparedOriginFacts],
+    ] = {}
+    for origin in eligible_origins:
+        origins_by_outcome.setdefault(
+            _phase5_prepared_outcome_key(origin.selected_candidate),
+            [],
+        ).append(origin)
+    outcome_representatives = tuple(
+        origin_group[0].selected_candidate
+        for origin_group in origins_by_outcome.values()
+    )
+    selected_candidate, global_reason = (
+        _phase5_select_prepared_candidate(outcome_representatives)
+    )
+    if selected_candidate is None:
+        return Phase5ConfirmedLiveFacts(
+            supported=False,
+            current_candidates=current_candidates,
+            prepared_bindings=bindings,
+            phase3_facts=phase3_facts,
+            eligible_origins=tuple(origin_facts),
+            selected_origin_indices=(),
+            selected_candidate=None,
+            live_applied=False,
+            no_op_reason="global_prepared_winner_unresolved",
+            reasons=(global_reason,),
+        )
+    selected_key = _phase5_prepared_outcome_key(selected_candidate)
+    if global_reason == "prepared_outcomes_equivalent":
+        selected_origin_indices = tuple(sorted(
+            origin.origin_option_index
+            for origin in eligible_origins
+        ))
+    else:
+        selected_origin_indices = tuple(sorted(
+            origin.origin_option_index
+            for origin in origins_by_outcome[selected_key]
+        ))
+    return Phase5ConfirmedLiveFacts(
+        supported=True,
+        current_candidates=current_candidates,
+        prepared_bindings=bindings,
+        phase3_facts=phase3_facts,
+        eligible_origins=tuple(origin_facts),
+        selected_origin_indices=selected_origin_indices,
+        selected_candidate=selected_candidate,
+        live_applied=False,
+        no_op_reason=None,
+        reasons=("confirmed_phase3_right_better", global_reason),
+    )
+
+
+def apply_phase5_confirmed_live_results(
+    board: BoardView,
+    results: Sequence[SimulationResult],
+) -> Tuple[Tuple[SimulationResult, ...], Phase5ConfirmedLiveFacts]:
+    facts = phase5_confirmed_live_facts(board, results)
+    if not facts.supported or facts.selected_candidate is None:
+        return tuple(results), facts
+
+    prepared = facts.selected_candidate.facts
+    terminal_prepared = bool(
+        prepared.candidate_wins_game is True
+        or prepared.opponent_active_ko is True
+        or (prepared.immediate_prizes_taken or 0) > 0
+    )
+    target_tier = (
+        TIER_PRESERVE_WIN_OR_KO_PREP
+        if terminal_prepared
+        else TIER_HIGH_VALUE_PREP
+    )
+    target_immediate = (
+        prepared.immediate_prizes_taken or 0
+        if terminal_prepared
+        else 0
+    )
+    target_pressure = prepared.confirmed_damage or 0
+    selected_indices = set(facts.selected_origin_indices)
+    changed = False
+    updated: List[SimulationResult] = []
+    for result in results:
+        if result.index not in selected_indices:
+            updated.append(result)
+            continue
+        current_score = result.action_score
+        if current_score.tier > target_tier:
+            updated.append(result)
+            continue
+        if (
+            current_score.tier == target_tier
+            and (current_score.immediate, current_score.pressure)
+            >= (target_immediate, target_pressure)
+        ):
+            updated.append(result)
+            continue
+        updated.append(replace(
+            result,
+            action_score=replace(
+                current_score,
+                tier=target_tier,
+                immediate=target_immediate,
+                pressure=target_pressure,
+            ),
+        ))
+        changed = True
+    return tuple(updated), replace(facts, live_applied=changed)
+
+
+
+def _stage2c_phase5_actionable_origin_index(
+    board: BoardView,
+    results: Sequence[SimulationResult],
+    line: "Stage2cStrategicActionLineFacts",
+) -> Tuple[Optional[int], Optional[str]]:
+    """Bind one Stage2c strategic line to exactly one current SimulationResult."""
+    index = line.origin_option_index
+    if type(index) is not int:
+        return None, "strategic_live_stage2c_origin_identity_unresolved"
+    matches = tuple(
+        result
+        for result in results
+        if type(result.index) is int and result.index == index
+    )
+    if len(matches) != 1:
+        return None, "strategic_live_origin_not_current_result"
+    option = matches[0].option
+    if (
+        line.origin_option_type is not None
+        and getattr(option, "type", None) != line.origin_option_type
+    ):
+        return None, "strategic_live_stage2c_origin_identity_mismatch"
+    if line.origin_option_card_id is not None:
+        actual_card_id = board.option_card(option)
+        if actual_card_id != line.origin_option_card_id:
+            return None, "strategic_live_stage2c_origin_identity_mismatch"
+    if (
+        line.origin_target_card_id is not None
+        or line.origin_target_serial is not None
+    ):
+        target = board.option_target(option)
+        if target is None:
+            return None, "strategic_live_stage2c_origin_identity_mismatch"
+        if (
+            line.origin_target_card_id is not None
+            and board.pid(target) != line.origin_target_card_id
+        ):
+            return None, "strategic_live_stage2c_origin_identity_mismatch"
+        if (
+            line.origin_target_serial is not None
+            and getattr(target, "serial", None) != line.origin_target_serial
+        ):
+            return None, "strategic_live_stage2c_origin_identity_mismatch"
+    return index, None
+
+def phase5_strategic_live_facts(
+    board: BoardView,
+    results: Sequence[SimulationResult],
+    policy: Any,
+    *,
+    current_position: Optional[ActivePositionCurrentLineCollectionFacts] = None,
+    counterline_collections: Optional[
+        Sequence[Stage2b4CounterlineActionLineCollectionFacts]
+    ] = None,
+    drednaw_lines: Optional[Sequence[DrednawDefensiveActionLineFacts]] = None,
+    bomb_preservations: Optional[
+        Sequence[DeluxeBombResourcePreservationFacts]
+    ] = None,
+    comparisons: Optional[
+        Sequence[Phase3StrategicActionLineComparisonFacts]
+    ] = None,
+    stage2c_lines: Optional[
+        Sequence["Stage2cStrategicActionLineFacts"]
+    ] = None,
+) -> Phase5StrategicLiveFacts:
+    """Connect only exact Strategic Phase3 dominance to current-action origins."""
+    source_results = tuple(results)
+    current = (
+        active_position_current_line_facts(board, source_results)
+        if current_position is None
+        else current_position
+    )
+    counter_collections = tuple(
+        stage2b4_counterline_action_line_collections(policy)
+        if counterline_collections is None
+        else counterline_collections
+    )
+    if drednaw_lines is None:
+        strategy = drednaw_high_power_strategy_facts(board)
+        defensive_lines = tuple(
+            drednaw_defensive_action_line_facts(strategy, current, ())
+        )
+    else:
+        defensive_lines = tuple(drednaw_lines)
+    if bomb_preservations is None:
+        preservation_facts: List[DeluxeBombResourcePreservationFacts] = []
+        for collection in counter_collections:
+            siblings = tuple(collection.routes)
+            for route in siblings:
+                if not any(
+                    step.option_card_id == DELUXE_BOMB
+                    for step in route.action_steps
+                ):
+                    continue
+                preservation_facts.append(
+                    deluxe_bomb_resource_preservation_facts(
+                        current,
+                        route,
+                        siblings,
+                    )
+                )
+        preservations = tuple(preservation_facts)
+    else:
+        preservations = tuple(bomb_preservations)
+
+    if stage2c_lines is not None:
+        strategic_stage2c_lines = tuple(stage2c_lines)
+    elif comparisons is not None:
+        extracted_stage2c_lines: List[Stage2cStrategicActionLineFacts] = []
+        seen_stage2c_line_ids: set[int] = set()
+        for comparison in comparisons:
+            for candidate_line in (comparison.left_line, comparison.right_line):
+                if not isinstance(candidate_line, Stage2cStrategicActionLineFacts):
+                    continue
+                candidate_identity = id(candidate_line)
+                if candidate_identity in seen_stage2c_line_ids:
+                    continue
+                seen_stage2c_line_ids.add(candidate_identity)
+                extracted_stage2c_lines.append(candidate_line)
+        strategic_stage2c_lines = tuple(extracted_stage2c_lines)
+    else:
+        stage2c_collection = stage2c_strategic_action_line_collection_facts(
+            policy,
+            source_results,
+            current_position=current,
+            counterline_collections=counter_collections,
+        )
+        strategic_stage2c_lines = tuple(stage2c_collection.lines)
+
+    matrix = tuple(
+        phase3_strategic_action_line_comparison_matrix_facts(
+            current,
+            counter_collections,
+            defensive_lines,
+            preservations,
+            strategic_stage2c_lines,
+        )
+        if comparisons is None
+        else comparisons
+    )
+
+    def no_op(
+        reason: str,
+        *,
+        eligible: Sequence[int] = (),
+        blocked: Sequence[int] = (),
+    ) -> Phase5StrategicLiveFacts:
+        return Phase5StrategicLiveFacts(
+            current_position=current,
+            counterline_collections=counter_collections,
+            drednaw_lines=defensive_lines,
+            comparisons=matrix,
+            eligible_origin_indices=tuple(eligible),
+            selected_origin_indices=(),
+            blocked_origin_indices=tuple(blocked),
+            supported=False,
+            live_applied=False,
+            no_op_reason=reason,
+            reasons=("phase5_strategic_live", reason),
+        )
+
+    if (
+        not current.supported
+        or not current.exact
+        or not current.candidate_lines
+    ):
+        return no_op("strategic_live_current_position_not_exact")
+    if any(
+        not line.supported or not line.exact
+        for line in current.candidate_lines
+    ):
+        return no_op("strategic_live_current_candidate_not_exact")
+    if any(line.terminal_win is True for line in current.candidate_lines):
+        return no_op("strategic_live_current_terminal_win_preserved")
+
+    result_counts: Dict[int, int] = {}
+    for result in source_results:
+        if type(result.index) is int:
+            result_counts[result.index] = result_counts.get(result.index, 0) + 1
+
+    def scenario_identity(line: Any) -> Optional[Tuple[int, int, int]]:
+        if isinstance(line, ActivePositionCurrentAttackLineFacts):
+            reply = line.counterline_attack_facts
+            values = (
+                None if reply is None else reply.opponent_active_id,
+                None if reply is None else reply.opponent_active_serial,
+                None if reply is None else reply.attack_id,
+            )
+        elif isinstance(line, Stage2b4CounterlineActionLineFacts):
+            values = (
+                line.opponent_attacker_card_id,
+                line.opponent_attacker_serial,
+                line.opponent_attack_id,
+            )
+        elif isinstance(line, DrednawDefensiveActionLineFacts):
+            values = (
+                line.strategy.opponent_active_id,
+                line.strategy.opponent_active_serial,
+                line.opponent_attack.attack_id,
+            )
+        elif isinstance(line, Stage2cStrategicActionLineFacts):
+            exact_current_lines = tuple(
+                current_line
+                for current_line in line.current_attack_lines
+                if current_line.supported and current_line.exact
+            )
+            if not exact_current_lines:
+                return None
+            scenarios = tuple(
+                scenario_identity(current_line)
+                for current_line in exact_current_lines
+            )
+            if any(scenario is None for scenario in scenarios):
+                return None
+            unique_scenarios = tuple(dict.fromkeys(scenarios))
+            if len(unique_scenarios) != 1:
+                return None
+            return unique_scenarios[0]
+        else:
+            return None
+        if not all(type(value) is int for value in values):
+            return None
+        return values  # type: ignore[return-value]
+
+    def stage2c_safe_rank_payload(
+        line: Stage2cStrategicActionLineFacts,
+    ) -> Optional[Tuple[int, int]]:
+        if (
+            not line.supported
+            or not line.exact
+            or line.action_line_kind
+            != Stage2cStrategicActionLineKind.SAFE_PRE_KO_BASIC_PLAY
+            or line.continuation_confirmed is not True
+            or line.attack_preserved_after_origin is not True
+            or line.current_attack_is_nonwinning_ko is not True
+            or line.current_direct_win_exists is not False
+            or not line.current_attack_lines
+        ):
+            return None
+        payloads: List[Tuple[int, int]] = []
+        for current_line in line.current_attack_lines:
+            outcome = current_line.generic_outcome_facts
+            if (
+                not current_line.supported
+                or not current_line.exact
+                or current_line.terminal_win is not False
+                or current_line.opponent_active_ko is not True
+                or outcome is None
+                or not outcome.supported
+                or outcome.candidate_wins_game is not False
+                or outcome.opponent_active_ko is not True
+                or type(outcome.immediate_prizes_taken) is not int
+                or type(outcome.confirmed_damage) is not int
+            ):
+                return None
+            payloads.append(
+                (
+                    outcome.immediate_prizes_taken,
+                    outcome.confirmed_damage,
+                )
+            )
+        unique_payloads = tuple(dict.fromkeys(payloads))
+        if len(unique_payloads) != 1:
+            return None
+        return unique_payloads[0]
+
+    result_by_index = {
+        result.index: result
+        for result in source_results
+        if type(result.index) is int and result_counts.get(result.index, 0) == 1
+    }
+
+    def actionable_origin_index(
+        line: Any,
+    ) -> Tuple[Optional[int], Optional[str]]:
+        if isinstance(line, Stage2b4CounterlineActionLineFacts):
+            index = line.origin_option_index
+            if type(index) is not int:
+                return None, "strategic_live_origin_identity_unresolved"
+        elif isinstance(line, DrednawDefensiveActionLineFacts):
+            if line.origin.kind == ActionLineOriginKind.CURRENT_BOARD:
+                return None, "strategic_live_current_board_non_actionable"
+            if line.origin.kind != ActionLineOriginKind.PREPARED_ACTION:
+                return None, "strategic_live_origin_identity_unresolved"
+            origin_index = line.origin.option_index
+            transition_index: Optional[int] = None
+            if line.transition is not None:
+                binding = line.transition.origin_binding
+                if not binding.supported or not binding.binding_exact:
+                    return None, "strategic_live_drednaw_transition_origin_inexact"
+                transition_index = binding.origin_decision_option_index
+            known_indices = tuple(
+                value
+                for value in (origin_index, transition_index)
+                if type(value) is int
+            )
+            if not known_indices:
+                return None, "strategic_live_drednaw_origin_unresolved"
+            if len(set(known_indices)) != 1:
+                return None, "strategic_live_origin_identity_mismatch"
+            index = known_indices[0]
+        elif isinstance(line, Stage2cStrategicActionLineFacts):
+            index, stage2c_origin_reason = _stage2c_phase5_actionable_origin_index(
+                board,
+                source_results,
+                line,
+            )
+            if index is None:
+                return None, stage2c_origin_reason
+            if (
+                line.action_line_kind
+                == Stage2cStrategicActionLineKind.SAFE_PRE_KO_BASIC_PLAY
+                and stage2c_safe_rank_payload(line) is None
+            ):
+                return None, "strategic_live_stage2c_rank_payload_unresolved"
+        else:
+            return None, "strategic_live_non_actionable_line"
+        if result_counts.get(index, 0) != 1:
+            return None, "strategic_live_origin_not_current_result"
+        return index, None
+
+    strategic_lines = tuple(
+        route
+        for collection in counter_collections
+        for route in collection.routes
+    ) + defensive_lines + strategic_stage2c_lines
+    origin_lines: Dict[int, List[Any]] = {}
+    blocked_indices: List[int] = []
+    for line in strategic_lines:
+        index, origin_reason = actionable_origin_index(line)
+        if index is None:
+            if (
+                origin_reason == "strategic_live_origin_identity_mismatch"
+                and isinstance(line, DrednawDefensiveActionLineFacts)
+            ):
+                for candidate in (
+                    line.origin.option_index,
+                    None
+                    if line.transition is None
+                    else line.transition.origin_binding.origin_decision_option_index,
+                ):
+                    if type(candidate) is int and candidate not in blocked_indices:
+                        blocked_indices.append(candidate)
+            elif isinstance(line, Stage2cStrategicActionLineFacts):
+                candidate = line.origin_option_index
+                if type(candidate) is int and candidate not in blocked_indices:
+                    blocked_indices.append(candidate)
+            continue
+        origin_lines.setdefault(index, []).append(line)
+
+    def comparison_for_pair(
+        left_line: Any,
+        right_line: Any,
+    ) -> Tuple[Phase3StrategicActionLineComparisonFacts, ...]:
+        return tuple(
+            comparison
+            for comparison in matrix
+            if (
+                comparison.left_line is left_line
+                and comparison.right_line is right_line
+            )
+            or (
+                comparison.left_line is right_line
+                and comparison.right_line is left_line
+            )
+        )
+
+    def relation_from_line(
+        comparison: Phase3StrategicActionLineComparisonFacts,
+        line: Any,
+    ) -> Optional[DirectAttackComparison]:
+        if not comparison.supported or not comparison.exact:
+            return None
+        if comparison.left_line is line:
+            return comparison.relation
+        if comparison.right_line is line:
+            if comparison.relation == DirectAttackComparison.LEFT_BETTER:
+                return DirectAttackComparison.RIGHT_BETTER
+            if comparison.relation == DirectAttackComparison.RIGHT_BETTER:
+                return DirectAttackComparison.LEFT_BETTER
+            return comparison.relation
+        return None
+
+    current_scenarios = tuple(
+        scenario_identity(line) for line in current.candidate_lines
+    )
+    if any(scenario is None for scenario in current_scenarios):
+        return no_op(
+            "strategic_live_current_scenario_identity_unresolved",
+            blocked=blocked_indices,
+        )
+
+    current_drednaw_baselines = tuple(
+        line
+        for line in defensive_lines
+        if (
+            line.supported
+            and line.exact
+            and line.origin.kind == ActionLineOriginKind.CURRENT_BOARD
+            and scenario_identity(line) is not None
+        )
+    )
+
+    eligible_indices: List[int] = []
+    for origin_index, lines_for_origin in origin_lines.items():
+        exact_lines = tuple(
+            line
+            for line in lines_for_origin
+            if line.supported and line.exact and scenario_identity(line) is not None
+        )
+        if not exact_lines:
+            continue
+        strict_better = False
+        origin_safe = True
+        for current_line in current.candidate_lines:
+            scenario = scenario_identity(current_line)
+            candidates = tuple(
+                line for line in exact_lines if scenario_identity(line) == scenario
+            )
+            covered = False
+            for strategic_line in candidates:
+                for comparison in comparison_for_pair(current_line, strategic_line):
+                    relation = relation_from_line(comparison, strategic_line)
+                    if relation in {
+                        DirectAttackComparison.LEFT_BETTER,
+                        DirectAttackComparison.EQUIVALENT,
+                    }:
+                        covered = True
+                        strict_better = strict_better or (
+                            relation == DirectAttackComparison.LEFT_BETTER
+                        )
+                        break
+                if covered:
+                    break
+            if not covered:
+                origin_safe = False
+                break
+        if not origin_safe or not strict_better:
+            continue
+
+        baseline_safe = True
+        for baseline in current_drednaw_baselines:
+            scenario = scenario_identity(baseline)
+            candidates = tuple(
+                line for line in exact_lines if scenario_identity(line) == scenario
+            )
+            no_worse = False
+            for strategic_line in candidates:
+                if strategic_line is baseline:
+                    no_worse = True
+                    break
+                for comparison in comparison_for_pair(baseline, strategic_line):
+                    relation = relation_from_line(comparison, strategic_line)
+                    if relation in {
+                        DirectAttackComparison.LEFT_BETTER,
+                        DirectAttackComparison.EQUIVALENT,
+                    }:
+                        no_worse = True
+                        break
+                if no_worse:
+                    break
+            if not no_worse:
+                baseline_safe = False
+                break
+        if baseline_safe:
+            eligible_indices.append(origin_index)
+
+    eligible_tuple = tuple(eligible_indices)
+    if not eligible_tuple:
+        return no_op(
+            "no_safe_strategic_origin",
+            blocked=blocked_indices,
+        )
+    if len(eligible_tuple) == 1:
+        return Phase5StrategicLiveFacts(
+            current_position=current,
+            counterline_collections=counter_collections,
+            drednaw_lines=defensive_lines,
+            comparisons=matrix,
+            eligible_origin_indices=eligible_tuple,
+            selected_origin_indices=eligible_tuple,
+            blocked_origin_indices=tuple(blocked_indices),
+            supported=True,
+            live_applied=False,
+            no_op_reason=None,
+            reasons=(
+                "phase5_strategic_live",
+                "unique_safe_strategic_origin",
+            ),
+        )
+
+    scenarios = tuple(dict.fromkeys(current_scenarios))
+
+    def origin_pair_relation(left_index: int, right_index: int) -> str:
+        left_lines = tuple(
+            line
+            for line in origin_lines[left_index]
+            if line.supported and line.exact
+        )
+        right_lines = tuple(
+            line
+            for line in origin_lines[right_index]
+            if line.supported and line.exact
+        )
+        any_strict_left = False
+        any_strict_right = False
+        all_left_no_worse = True
+        all_right_no_worse = True
+        for scenario in scenarios:
+            scenario_comparisons: List[
+                Tuple[Phase3StrategicActionLineComparisonFacts, Any, Any]
+            ] = []
+            for left_line in left_lines:
+                if scenario_identity(left_line) != scenario:
+                    continue
+                for right_line in right_lines:
+                    if scenario_identity(right_line) != scenario:
+                        continue
+                    for comparison in comparison_for_pair(left_line, right_line):
+                        scenario_comparisons.append(
+                            (comparison, left_line, right_line)
+                        )
+            if not scenario_comparisons:
+                return "CONFLICT"
+            for comparison, left_line, right_line in scenario_comparisons:
+                left_relation = relation_from_line(comparison, left_line)
+                right_relation = relation_from_line(comparison, right_line)
+                if left_relation not in {
+                    DirectAttackComparison.LEFT_BETTER,
+                    DirectAttackComparison.EQUIVALENT,
+                }:
+                    all_left_no_worse = False
+                if right_relation not in {
+                    DirectAttackComparison.LEFT_BETTER,
+                    DirectAttackComparison.EQUIVALENT,
+                }:
+                    all_right_no_worse = False
+                any_strict_left = any_strict_left or (
+                    left_relation == DirectAttackComparison.LEFT_BETTER
+                )
+                any_strict_right = any_strict_right or (
+                    right_relation == DirectAttackComparison.LEFT_BETTER
+                )
+        if all_left_no_worse and any_strict_left:
+            return "LEFT_BETTER"
+        if all_right_no_worse and any_strict_right:
+            return "RIGHT_BETTER"
+        if all_left_no_worse and all_right_no_worse:
+            return "EQUIVALENT"
+        return "CONFLICT"
+
+    pair_relations: Dict[Tuple[int, int], str] = {}
+    for left_pos, left_index in enumerate(eligible_tuple):
+        for right_index in eligible_tuple[left_pos + 1:]:
+            pair_relations[(left_index, right_index)] = origin_pair_relation(
+                left_index,
+                right_index,
+            )
+
+    def relation_for_origin(left_index: int, right_index: int) -> str:
+        if left_index == right_index:
+            return "EQUIVALENT"
+        if (left_index, right_index) in pair_relations:
+            return pair_relations[(left_index, right_index)]
+        relation = pair_relations.get((right_index, left_index), "CONFLICT")
+        if relation == "LEFT_BETTER":
+            return "RIGHT_BETTER"
+        if relation == "RIGHT_BETTER":
+            return "LEFT_BETTER"
+        return relation
+
+    winners = tuple(
+        origin_index
+        for origin_index in eligible_tuple
+        if all(
+            relation_for_origin(origin_index, other) in {
+                "LEFT_BETTER",
+                "EQUIVALENT",
+            }
+            for other in eligible_tuple
+            if other != origin_index
+        )
+    )
+    if not winners:
+        safe_frontier_lines: Dict[
+            int, Tuple[Stage2cStrategicActionLineFacts, ...]
+        ] = {}
+        safe_frontier_payloads: Dict[int, Tuple[int, int]] = {}
+        safe_frontier_valid = True
+        for origin_index in eligible_tuple:
+            safe_lines = tuple(
+                line
+                for line in origin_lines[origin_index]
+                if (
+                    isinstance(line, Stage2cStrategicActionLineFacts)
+                    and line.supported
+                    and line.exact
+                    and line.action_line_kind
+                    == Stage2cStrategicActionLineKind.SAFE_PRE_KO_BASIC_PLAY
+                    and _stage2c_phase5_actionable_origin_index(
+                        board,
+                        source_results,
+                        line,
+                    )[0]
+                    == origin_index
+                    and scenario_identity(line) is not None
+                    and stage2c_safe_rank_payload(line) is not None
+                )
+            )
+            if not safe_lines:
+                safe_frontier_valid = False
+                break
+
+            strict_better = False
+            for current_line in current.candidate_lines:
+                scenario = scenario_identity(current_line)
+                covered = False
+                for safe_line in safe_lines:
+                    if scenario_identity(safe_line) != scenario:
+                        continue
+                    for comparison in comparison_for_pair(current_line, safe_line):
+                        relation = relation_from_line(comparison, safe_line)
+                        if relation in {
+                            DirectAttackComparison.LEFT_BETTER,
+                            DirectAttackComparison.EQUIVALENT,
+                        }:
+                            covered = True
+                            strict_better = strict_better or (
+                                relation == DirectAttackComparison.LEFT_BETTER
+                            )
+                            break
+                    if covered:
+                        break
+                if not covered:
+                    safe_frontier_valid = False
+                    break
+            if not safe_frontier_valid or not strict_better:
+                safe_frontier_valid = False
+                break
+
+            payloads = tuple(dict.fromkeys(
+                stage2c_safe_rank_payload(line)
+                for line in safe_lines
+            ))
+            if (
+                len(payloads) != 1
+                or payloads[0] is None
+            ):
+                safe_frontier_valid = False
+                break
+            safe_frontier_lines[origin_index] = safe_lines
+            safe_frontier_payloads[origin_index] = payloads[0]
+
+        if safe_frontier_valid:
+            frontier_payloads = tuple(dict.fromkeys(
+                safe_frontier_payloads[index]
+                for index in eligible_tuple
+            ))
+            if len(frontier_payloads) != 1:
+                safe_frontier_valid = False
+
+        if safe_frontier_valid:
+            for left_pos, left_index in enumerate(eligible_tuple):
+                for right_index in eligible_tuple[left_pos + 1:]:
+                    left_lines = safe_frontier_lines[left_index]
+                    right_lines = safe_frontier_lines[right_index]
+                    for scenario in scenarios:
+                        sibling_relations: List[DirectAttackComparison] = []
+                        for left_line in left_lines:
+                            if scenario_identity(left_line) != scenario:
+                                continue
+                            for right_line in right_lines:
+                                if scenario_identity(right_line) != scenario:
+                                    continue
+                                for comparison in comparison_for_pair(
+                                    left_line,
+                                    right_line,
+                                ):
+                                    left_relation = relation_from_line(
+                                        comparison,
+                                        left_line,
+                                    )
+                                    if left_relation is not None:
+                                        sibling_relations.append(left_relation)
+                        if (
+                            not sibling_relations
+                            or any(
+                                relation not in {
+                                    DirectAttackComparison.EQUIVALENT,
+                                    DirectAttackComparison.INCOMPARABLE,
+                                }
+                                for relation in sibling_relations
+                            )
+                        ):
+                            safe_frontier_valid = False
+                            break
+                    if not safe_frontier_valid:
+                        break
+                if not safe_frontier_valid:
+                    break
+
+        if safe_frontier_valid:
+            return Phase5StrategicLiveFacts(
+                current_position=current,
+                counterline_collections=counter_collections,
+                drednaw_lines=defensive_lines,
+                comparisons=matrix,
+                eligible_origin_indices=eligible_tuple,
+                selected_origin_indices=eligible_tuple,
+                blocked_origin_indices=tuple(blocked_indices),
+                supported=True,
+                live_applied=False,
+                no_op_reason=None,
+                reasons=(
+                    "phase5_strategic_live",
+                    "safe_pre_ko_multi_origin_frontier",
+                ),
+            )
+
+        hand_frontier_lines: Dict[
+            int, Tuple[Stage2cStrategicActionLineFacts, ...]
+        ] = {}
+        hand_frontier_valid = True
+        for origin_index in eligible_tuple:
+            hand_lines = tuple(
+                line
+                for line in origin_lines[origin_index]
+                if (
+                    isinstance(line, Stage2cStrategicActionLineFacts)
+                    and line.supported
+                    and line.exact
+                    and line.action_line_kind
+                    == Stage2cStrategicActionLineKind.HAND_BASIC_DEPLOYMENT
+                    and _stage2c_phase5_actionable_origin_index(
+                        board, source_results, line
+                    )[0]
+                    == origin_index
+                    and scenario_identity(line) is not None
+                    and type(line.bench_space_before) is int
+                    and line.bench_space_before > 1
+                )
+            )
+            if not hand_lines:
+                hand_frontier_valid = False
+                break
+
+            strict_better = False
+            for current_line in current.candidate_lines:
+                scenario = scenario_identity(current_line)
+                covered = False
+                for hand_line in hand_lines:
+                    if scenario_identity(hand_line) != scenario:
+                        continue
+                    for comparison in comparison_for_pair(current_line, hand_line):
+                        relation = relation_from_line(comparison, hand_line)
+                        if relation in {
+                            DirectAttackComparison.LEFT_BETTER,
+                            DirectAttackComparison.EQUIVALENT,
+                        }:
+                            covered = True
+                            strict_better = strict_better or (
+                                relation == DirectAttackComparison.LEFT_BETTER
+                            )
+                            break
+                    if covered:
+                        break
+                if not covered:
+                    hand_frontier_valid = False
+                    break
+            if not hand_frontier_valid or not strict_better:
+                hand_frontier_valid = False
+                break
+            hand_frontier_lines[origin_index] = hand_lines
+
+        if hand_frontier_valid:
+            for left_pos, left_index in enumerate(eligible_tuple):
+                for right_index in eligible_tuple[left_pos + 1:]:
+                    left_lines = hand_frontier_lines[left_index]
+                    right_lines = hand_frontier_lines[right_index]
+                    for scenario in scenarios:
+                        sibling_relations: List[DirectAttackComparison] = []
+                        for left_line in left_lines:
+                            if scenario_identity(left_line) != scenario:
+                                continue
+                            for right_line in right_lines:
+                                if scenario_identity(right_line) != scenario:
+                                    continue
+                                for comparison in comparison_for_pair(
+                                    left_line, right_line
+                                ):
+                                    left_relation = relation_from_line(
+                                        comparison, left_line
+                                    )
+                                    if left_relation is not None:
+                                        sibling_relations.append(left_relation)
+                        if (
+                            not sibling_relations
+                            or any(
+                                relation not in {
+                                    DirectAttackComparison.EQUIVALENT,
+                                    DirectAttackComparison.INCOMPARABLE,
+                                }
+                                for relation in sibling_relations
+                            )
+                        ):
+                            hand_frontier_valid = False
+                            break
+                    if not hand_frontier_valid:
+                        break
+                if not hand_frontier_valid:
+                    break
+
+        if hand_frontier_valid:
+            return Phase5StrategicLiveFacts(
+                current_position=current,
+                counterline_collections=counter_collections,
+                drednaw_lines=defensive_lines,
+                comparisons=matrix,
+                eligible_origin_indices=eligible_tuple,
+                selected_origin_indices=eligible_tuple,
+                blocked_origin_indices=tuple(blocked_indices),
+                supported=True,
+                live_applied=False,
+                no_op_reason=None,
+                reasons=(
+                    "phase5_strategic_live",
+                    "stage2c_hand_basic_multi_origin_frontier",
+                ),
+            )
+
+        evolution_frontier_lines: Dict[
+            int, Tuple[Stage2cStrategicActionLineFacts, ...]
+        ] = {}
+        evolution_frontier_valid = True
+        for origin_index in eligible_tuple:
+            evolution_lines = tuple(
+                line
+                for line in origin_lines[origin_index]
+                if (
+                    isinstance(line, Stage2cStrategicActionLineFacts)
+                    and line.supported
+                    and line.exact
+                    and line.action_line_kind
+                    == Stage2cStrategicActionLineKind.EVOLUTION_CONTINUATION
+                    and line.evolution_relation_exact is True
+                    and line.continuation_confirmed is True
+                    and line.attack_preserved_after_origin is True
+                    and _stage2c_phase5_actionable_origin_index(
+                        board, source_results, line
+                    )[0]
+                    == origin_index
+                    and scenario_identity(line) is not None
+                )
+            )
+            if not evolution_lines:
+                evolution_frontier_valid = False
+                break
+
+            strict_better = False
+            for current_line in current.candidate_lines:
+                scenario = scenario_identity(current_line)
+                covered = False
+                for evolution_line in evolution_lines:
+                    if scenario_identity(evolution_line) != scenario:
+                        continue
+                    for comparison in comparison_for_pair(
+                        current_line, evolution_line
+                    ):
+                        relation = relation_from_line(comparison, evolution_line)
+                        if relation in {
+                            DirectAttackComparison.LEFT_BETTER,
+                            DirectAttackComparison.EQUIVALENT,
+                        }:
+                            covered = True
+                            strict_better = strict_better or (
+                                relation == DirectAttackComparison.LEFT_BETTER
+                            )
+                            break
+                    if covered:
+                        break
+                if not covered:
+                    evolution_frontier_valid = False
+                    break
+            if not evolution_frontier_valid or not strict_better:
+                evolution_frontier_valid = False
+                break
+            evolution_frontier_lines[origin_index] = evolution_lines
+
+        if evolution_frontier_valid:
+            for left_pos, left_index in enumerate(eligible_tuple):
+                for right_index in eligible_tuple[left_pos + 1:]:
+                    left_lines = evolution_frontier_lines[left_index]
+                    right_lines = evolution_frontier_lines[right_index]
+                    for scenario in scenarios:
+                        sibling_relations: List[DirectAttackComparison] = []
+                        for left_line in left_lines:
+                            if scenario_identity(left_line) != scenario:
+                                continue
+                            for right_line in right_lines:
+                                if scenario_identity(right_line) != scenario:
+                                    continue
+                                for comparison in comparison_for_pair(
+                                    left_line, right_line
+                                ):
+                                    left_relation = relation_from_line(
+                                        comparison, left_line
+                                    )
+                                    if left_relation is not None:
+                                        sibling_relations.append(left_relation)
+                        if (
+                            not sibling_relations
+                            or any(
+                                relation not in {
+                                    DirectAttackComparison.EQUIVALENT,
+                                    DirectAttackComparison.INCOMPARABLE,
+                                }
+                                for relation in sibling_relations
+                            )
+                        ):
+                            evolution_frontier_valid = False
+                            break
+                    if not evolution_frontier_valid:
+                        break
+                if not evolution_frontier_valid:
+                    break
+
+        if evolution_frontier_valid:
+            return Phase5StrategicLiveFacts(
+                current_position=current,
+                counterline_collections=counter_collections,
+                drednaw_lines=defensive_lines,
+                comparisons=matrix,
+                eligible_origin_indices=eligible_tuple,
+                selected_origin_indices=eligible_tuple,
+                blocked_origin_indices=tuple(blocked_indices),
+                supported=True,
+                live_applied=False,
+                no_op_reason=None,
+                reasons=(
+                    "phase5_strategic_live",
+                    "stage2c_evolution_multi_origin_frontier",
+                ),
+            )
+
+        return no_op(
+            "global_strategic_winner_unresolved",
+            eligible=eligible_tuple,
+            blocked=blocked_indices,
+        )
+    if any(
+        relation_for_origin(left, right) != "EQUIVALENT"
+        for pos, left in enumerate(winners)
+        for right in winners[pos + 1:]
+    ):
+        return no_op(
+            "global_strategic_winner_unresolved",
+            eligible=eligible_tuple,
+            blocked=blocked_indices,
+        )
+    return Phase5StrategicLiveFacts(
+        current_position=current,
+        counterline_collections=counter_collections,
+        drednaw_lines=defensive_lines,
+        comparisons=matrix,
+        eligible_origin_indices=eligible_tuple,
+        selected_origin_indices=winners,
+        blocked_origin_indices=tuple(blocked_indices),
+        supported=True,
+        live_applied=False,
+        no_op_reason=None,
+        reasons=(
+            "phase5_strategic_live",
+            "safe_global_strategic_selection",
+        ),
+    )
+
+
+def apply_phase5_strategic_live_results(
+    board: BoardView,
+    results: Sequence[SimulationResult],
+    policy: Any,
+) -> Tuple[Tuple[SimulationResult, ...], Phase5StrategicLiveFacts]:
+    facts = phase5_strategic_live_facts(board, results, policy)
+    if not facts.supported or not facts.selected_origin_indices:
+        return tuple(results), facts
+    selected_indices = set(facts.selected_origin_indices)
+
+    def relation_from_line(
+        comparison: Phase3StrategicActionLineComparisonFacts,
+        line: Any,
+    ) -> Optional[DirectAttackComparison]:
+        if not comparison.supported or not comparison.exact:
+            return None
+        if comparison.left_line is line:
+            return comparison.relation
+        if comparison.right_line is line:
+            if comparison.relation == DirectAttackComparison.LEFT_BETTER:
+                return DirectAttackComparison.RIGHT_BETTER
+            if comparison.relation == DirectAttackComparison.RIGHT_BETTER:
+                return DirectAttackComparison.LEFT_BETTER
+            return comparison.relation
+        return None
+
+    def comparisons_for_pair(
+        left_line: Any,
+        right_line: Any,
+    ) -> Tuple[Phase3StrategicActionLineComparisonFacts, ...]:
+        return tuple(
+            comparison
+            for comparison in facts.comparisons
+            if (
+                comparison.left_line is left_line
+                and comparison.right_line is right_line
+            )
+            or (
+                comparison.left_line is right_line
+                and comparison.right_line is left_line
+            )
+        )
+
+    def stage2c_rank_payload(
+        line: Stage2cStrategicActionLineFacts,
+    ) -> Optional[Tuple[int, int]]:
+        if (
+            not line.supported
+            or not line.exact
+            or line.action_line_kind
+            != Stage2cStrategicActionLineKind.SAFE_PRE_KO_BASIC_PLAY
+            or line.continuation_confirmed is not True
+            or line.attack_preserved_after_origin is not True
+            or line.current_attack_is_nonwinning_ko is not True
+            or line.current_direct_win_exists is not False
+            or not line.current_attack_lines
+        ):
+            return None
+        payloads: List[Tuple[int, int]] = []
+        for current_line in line.current_attack_lines:
+            outcome = current_line.generic_outcome_facts
+            if (
+                not current_line.supported
+                or not current_line.exact
+                or current_line.terminal_win is not False
+                or current_line.opponent_active_ko is not True
+                or outcome is None
+                or not outcome.supported
+                or outcome.candidate_wins_game is not False
+                or outcome.opponent_active_ko is not True
+                or type(outcome.immediate_prizes_taken) is not int
+                or type(outcome.confirmed_damage) is not int
+            ):
+                return None
+            payloads.append(
+                (
+                    outcome.immediate_prizes_taken,
+                    outcome.confirmed_damage,
+                )
+            )
+        unique_payloads = tuple(dict.fromkeys(payloads))
+        if len(unique_payloads) != 1:
+            return None
+        return unique_payloads[0]
+
+    stage2c_lines: List[Stage2cStrategicActionLineFacts] = []
+    seen_stage2c_line_ids: set[int] = set()
+    for comparison in facts.comparisons:
+        for candidate_line in (comparison.left_line, comparison.right_line):
+            if not isinstance(candidate_line, Stage2cStrategicActionLineFacts):
+                continue
+            candidate_identity = id(candidate_line)
+            if candidate_identity in seen_stage2c_line_ids:
+                continue
+            seen_stage2c_line_ids.add(candidate_identity)
+            stage2c_lines.append(candidate_line)
+
+    safe_payload_by_origin: Dict[int, Tuple[int, int]] = {}
+    high_value_prep_authority_origins: set[int] = set()
+    stronger_authority_origins: set[int] = set()
+
+    def line_has_current_coverage(line: Any) -> bool:
+        strict_better = False
+        for current_line in facts.current_position.candidate_lines:
+            covered = False
+            for comparison in comparisons_for_pair(current_line, line):
+                relation = relation_from_line(comparison, line)
+                if relation in {
+                    DirectAttackComparison.LEFT_BETTER,
+                    DirectAttackComparison.EQUIVALENT,
+                }:
+                    covered = True
+                    strict_better = strict_better or (
+                        relation == DirectAttackComparison.LEFT_BETTER
+                    )
+                    break
+            if not covered:
+                return False
+        return strict_better
+
+    for origin_index in facts.selected_origin_indices:
+        for stage2c_line in stage2c_lines:
+            if stage2c_line.origin_option_index != origin_index:
+                continue
+            actionable_index, _ = _stage2c_phase5_actionable_origin_index(
+                board, results, stage2c_line
+            )
+            if actionable_index != origin_index or not line_has_current_coverage(stage2c_line):
+                continue
+            if stage2c_line.action_line_kind in {
+                Stage2cStrategicActionLineKind.HAND_BASIC_DEPLOYMENT,
+                Stage2cStrategicActionLineKind.EVOLUTION_CONTINUATION,
+            }:
+                high_value_prep_authority_origins.add(origin_index)
+            else:
+                stronger_authority_origins.add(origin_index)
+
+        if any(
+            route.origin_option_index == origin_index
+            and route.supported
+            and route.exact
+            and line_has_current_coverage(route)
+            for collection in facts.counterline_collections
+            for route in collection.routes
+        ) or any(
+            (
+                line.origin.option_index == origin_index
+                or (
+                    line.transition is not None
+                    and line.transition.origin_binding.origin_decision_option_index
+                    == origin_index
+                )
+            )
+            and line.supported
+            and line.exact
+            and line_has_current_coverage(line)
+            for line in facts.drednaw_lines
+        ):
+            stronger_authority_origins.add(origin_index)
+
+    for origin_index in facts.selected_origin_indices:
+        exact_payloads: List[Tuple[int, int]] = []
+        for stage2c_line in stage2c_lines:
+            if (
+                stage2c_line.origin_option_index != origin_index
+                or stage2c_line.action_line_kind
+                != Stage2cStrategicActionLineKind.SAFE_PRE_KO_BASIC_PLAY
+            ):
+                continue
+            actionable_index, _ = _stage2c_phase5_actionable_origin_index(
+                board,
+                results,
+                stage2c_line,
+            )
+            if actionable_index != origin_index:
+                continue
+            strict_better = False
+            covers_all_current = True
+            for current_line in facts.current_position.candidate_lines:
+                covered = False
+                for comparison in comparisons_for_pair(current_line, stage2c_line):
+                    relation = relation_from_line(comparison, stage2c_line)
+                    if relation in {
+                        DirectAttackComparison.LEFT_BETTER,
+                        DirectAttackComparison.EQUIVALENT,
+                    }:
+                        covered = True
+                        strict_better = strict_better or (
+                            relation == DirectAttackComparison.LEFT_BETTER
+                        )
+                        break
+                if not covered:
+                    covers_all_current = False
+                    break
+            if not covers_all_current or not strict_better:
+                continue
+            payload = stage2c_rank_payload(stage2c_line)
+            if payload is not None:
+                exact_payloads.append(payload)
+        unique_payloads = tuple(dict.fromkeys(exact_payloads))
+        if len(unique_payloads) == 1:
+            safe_payload_by_origin[origin_index] = unique_payloads[0]
+
+    changed = False
+    updated: List[SimulationResult] = []
+    for result in results:
+        if result.index not in selected_indices:
+            updated.append(result)
+            continue
+        current_score = result.action_score
+        high_value_prep_only = bool(
+            result.index in high_value_prep_authority_origins
+            and result.index not in stronger_authority_origins
+        )
+        target_tier = max(
+            current_score.tier,
+            TIER_HIGH_VALUE_PREP
+            if high_value_prep_only
+            else TIER_PRESERVE_WIN_OR_KO_PREP,
+        )
+        target_immediate = current_score.immediate
+        target_pressure = current_score.pressure
+        target_development = current_score.development
+        safe_payload = safe_payload_by_origin.get(result.index)
+        if safe_payload is not None:
+            preserved_prizes, preserved_damage = safe_payload
+            target_tier = max(target_tier, TIER_KO)
+            target_immediate = max(target_immediate, preserved_prizes)
+            target_pressure = max(target_pressure, preserved_damage)
+            target_development = max(
+                target_development,
+                int(bool(result.outcome.adds_board_out_buffer)),
+            )
+        if (
+            target_tier == current_score.tier
+            and target_immediate == current_score.immediate
+            and target_pressure == current_score.pressure
+            and target_development == current_score.development
+        ):
+            updated.append(result)
+            continue
+        updated.append(
+            replace(
+                result,
+                action_score=replace(
+                    current_score,
+                    tier=target_tier,
+                    immediate=target_immediate,
+                    pressure=target_pressure,
+                    development=target_development,
+                ),
+            )
+        )
+        changed = True
+    return tuple(updated), replace(facts, live_applied=changed)
+
+
+
+def _phase4ex_normal_candidate_exactness_facts(
+    board: BoardView,
+    result: SimulationResult,
+    families: Sequence[Phase4EXCandidateFamily],
+) -> Phase4EXCandidateExactnessFacts:
+    """Prove only the public Facts actually carried by one normal prep candidate."""
+    outcome = getattr(result, "outcome", None)
+    option = getattr(result, "option", None)
+    family_set = set(families)
+    option_identity_exact = bool(
+        isinstance(outcome, ImmediateOutcome)
+        and option is not None
+        and _result_option_is_current(board, result)
+    )
+    legal = option_identity_exact
+    supported = bool(
+        isinstance(outcome, ImmediateOutcome)
+        and outcome.supported is True
+    )
+
+    target_required = bool(
+        Phase4EXCandidateFamily.HEALING_SURVIVAL in family_set
+        or Phase4EXCandidateFamily.OPPONENT_DISRUPTION in family_set
+    )
+    target_identity_exact = True
+    if isinstance(outcome, ImmediateOutcome):
+        option_target = board.option_target(option) if option is not None else None
+        option_target_id = (
+            board.pid(option_target) if option_target is not None else None
+        )
+        option_target_serial = (
+            getattr(option_target, "serial", None)
+            if option_target is not None
+            else None
+        )
+        target_id = (
+            outcome.target_id
+            if type(outcome.target_id) is int
+            else option_target_id
+        )
+        target_serial = (
+            outcome.target_serial
+            if type(outcome.target_serial) is int
+            else option_target_serial
+        )
+        any_target_identity = bool(
+            outcome.target_id is not None
+            or outcome.target_serial is not None
+            or option_target is not None
+        )
+        if target_required or any_target_identity:
+            if type(target_id) is not int or type(target_serial) is not int:
+                target_identity_exact = False
+            else:
+                matches = tuple(
+                    pokemon
+                    for pokemon in tuple(getattr(board, "all_my_pokemon", ()) or ())
+                    + tuple(getattr(board, "all_opp_pokemon", ()) or ())
+                    if board.pid(pokemon) == target_id
+                    and getattr(pokemon, "serial", None) == target_serial
+                )
+                target_identity_exact = len(matches) == 1
+                if option_target is not None:
+                    target_identity_exact = bool(
+                        target_identity_exact
+                        and option_target_id == target_id
+                        and option_target_serial == target_serial
+                    )
+    elif target_required:
+        target_identity_exact = False
+
+    expected_or_probabilistic = False
+    if isinstance(outcome, ImmediateOutcome):
+        expected_or_probabilistic = bool(
+            outcome.expected_reachable_attack_id is not None
+            or outcome.expected_reachable_damage != 0
+            or outcome.expected_reachable_knockout
+            or outcome.expected_reachable_prizes_taken != 0
+            or outcome.expected_reachable_wins_game
+            or outcome.expected_hit_probability not in (0, 0.0, 1, 1.0)
+            or outcome.development_probability not in (0, 0.0, 1, 1.0)
+        )
+    transition_provenance_required = bool(
+        Phase4EXCandidateFamily.SELF_PREPARATION in family_set
+        or Phase4EXCandidateFamily.BOARD_DEVELOPMENT in family_set
+    )
+    transition_exact = bool(
+        isinstance(outcome, ImmediateOutcome)
+        and not expected_or_probabilistic
+        and not transition_provenance_required
+    )
+    hidden_dependent_component = False
+
+    policy_facts_complete = isinstance(outcome, ImmediateOutcome)
+    if isinstance(outcome, ImmediateOutcome):
+        if Phase4EXCandidateFamily.SELF_PREPARATION in family_set:
+            policy_facts_complete = bool(
+                policy_facts_complete
+                and type(outcome.enables_attack) is bool
+                and isinstance(outcome.enabled_attack_ids, tuple)
+                and type(outcome.avoids_wall) is bool
+                and type(outcome.improves_damage) is bool
+                and type(outcome.completes_next_attacker) is bool
+            )
+        if Phase4EXCandidateFamily.BOARD_DEVELOPMENT in family_set:
+            policy_facts_complete = bool(
+                policy_facts_complete
+                and type(outcome.develops_bench_next_attacker) is bool
+                and type(outcome.completes_evolution_line) is bool
+                and type(outcome.completed_same_line_attackers) is int
+                and type(outcome.post_evolution_ready_attack_count) is int
+            )
+        if Phase4EXCandidateFamily.HEALING_SURVIVAL in family_set:
+            policy_facts_complete = bool(
+                policy_facts_complete
+                and target_identity_exact
+                and type(outcome.healed_damage) is int
+                and type(outcome.recovered_energy_count) is int
+                and type(outcome.board_energy_removed) is int
+                and type(outcome.next_knockout_avoided) is bool
+                and type(outcome.avoids_prize_loss) is bool
+                and type(outcome.prizes_preserved) is int
+                and type(outcome.avoids_board_out) is bool
+                and type(outcome.preserves_primary_pokemon) is bool
+                and type(outcome.evolution_hp_gain) is int
+            )
+        if Phase4EXCandidateFamily.OPPONENT_DISRUPTION in family_set:
+            policy_facts_complete = bool(
+                policy_facts_complete
+                and target_identity_exact
+                and type(outcome.breaks_engine) is bool
+                and type(outcome.removes_tool) is bool
+            )
+
+    uncertainty: List[str] = []
+    if not legal:
+        uncertainty.append("action_not_current")
+    if not supported:
+        uncertainty.append("immediate_outcome_unsupported")
+    if not option_identity_exact:
+        uncertainty.append("option_identity_inexact")
+    if not target_identity_exact:
+        uncertainty.append("target_identity_inexact")
+    if not transition_exact:
+        uncertainty.append(
+            "typed_transition_provenance_unavailable"
+            if transition_provenance_required and not expected_or_probabilistic
+            else "probabilistic_or_expected_transition"
+        )
+    if not policy_facts_complete:
+        uncertainty.append("policy_fact_set_incomplete")
+    if hidden_dependent_component:
+        uncertainty.append("hidden_dependent_component")
+
+    exact_public_facts = bool(
+        legal
+        and supported
+        and option_identity_exact
+        and target_identity_exact
+        and transition_exact
+        and policy_facts_complete
+        and not hidden_dependent_component
+    )
+    return Phase4EXCandidateExactnessFacts(
+        legal=legal,
+        supported=supported,
+        option_identity_exact=option_identity_exact,
+        target_identity_exact=target_identity_exact,
+        transition_exact=transition_exact,
+        policy_facts_complete=policy_facts_complete,
+        hidden_dependent_component=hidden_dependent_component,
+        exact_public_facts=exact_public_facts,
+        uncertainty_reasons=tuple(uncertainty),
+    )
+
+
+def _phase4ex_stage2c_candidate_facts(
+    board: BoardView,
+    results: Sequence[SimulationResult],
+    phase5: Phase5StrategicLiveFacts,
+    line: "Stage2cStrategicActionLineFacts",
+) -> Optional[Phase4EXCandidateFacts]:
+    """Adapt only Phase5-selected Stage2c tier-40 strategic origins."""
+    if line.action_line_kind == Stage2cStrategicActionLineKind.SAFE_PRE_KO_BASIC_PLAY:
+        return None
+    if line.action_line_kind not in {
+        Stage2cStrategicActionLineKind.HAND_BASIC_DEPLOYMENT,
+        Stage2cStrategicActionLineKind.EVOLUTION_CONTINUATION,
+    }:
+        return None
+
+    selected = line.origin_option_index in set(phase5.selected_origin_indices)
+    actionable_index, binding_reason = _stage2c_phase5_actionable_origin_index(
+        board,
+        results,
+        line,
+    )
+    legal = bool(
+        actionable_index == line.origin_option_index
+        and type(line.origin_option_index) is int
+    )
+    families = (
+        Phase4EXCandidateFamily.EXACT_STRATEGIC_ACTION,
+        Phase4EXCandidateFamily.SELF_PREPARATION,
+        Phase4EXCandidateFamily.BOARD_DEVELOPMENT,
+    )
+
+    access_count: Optional[int] = None
+    exact_development_line = False
+    if line.action_line_kind == Stage2cStrategicActionLineKind.HAND_BASIC_DEPLOYMENT:
+        if type(line.accessible_drednaw_line_count) is int:
+            access_count = line.accessible_drednaw_line_count
+        elif line.bruxish_counterattack_contract_supported is True:
+            access_count = 1
+        exact_development_line = bool(
+            line.supported
+            and line.exact
+            and line.continuation_confirmed is True
+            and line.attack_preserved_after_origin is True
+            and type(access_count) is int
+            and access_count > 0
+        )
+    else:
+        access_count = 1 if line.evolution_relation_exact is True else None
+        exact_development_line = bool(
+            line.supported
+            and line.exact
+            and line.evolution_relation_exact is True
+            and line.continuation_confirmed is True
+            and line.attack_preserved_after_origin is True
+        )
+
+    supported = bool(line.supported)
+    exact_public_facts = bool(
+        legal
+        and selected
+        and supported
+        and line.exact
+        and exact_development_line
+    )
+    uncertainty: List[str] = []
+    if not legal:
+        uncertainty.append(binding_reason or "stage2c_origin_identity_inexact")
+    if not selected:
+        uncertainty.append("stage2c_origin_not_phase5_selected")
+    if not supported:
+        uncertainty.append(line.unsupported_reason or "stage2c_line_unsupported")
+    if not line.exact:
+        uncertainty.append("stage2c_line_inexact")
+    if not exact_development_line:
+        uncertainty.append("stage2c_development_or_continuation_unproved")
+
+    return Phase4EXCandidateFacts(
+        origin_option_index=line.origin_option_index,
+        option_type=line.origin_option_type,
+        option_card_id=line.origin_option_card_id,
+        target_card_id=line.origin_target_card_id,
+        target_serial=line.origin_target_serial,
+        legal=legal,
+        supported=supported,
+        exact_public_facts=exact_public_facts,
+        families=families,
+        stage2c_kind=line.action_line_kind,
+        phase5_selected=selected,
+        continuation_confirmed=line.continuation_confirmed,
+        attack_preserved_after_origin=line.attack_preserved_after_origin,
+        exact_development_line=exact_development_line,
+        development_line_access_count=access_count,
+        avoids_board_out=False,
+        avoids_prize_loss=False,
+        prizes_preserved=0,
+        preserves_primary_pokemon=False,
+        healed_damage=0,
+        recovered_energy_count=0,
+        board_energy_removed=0,
+        breaks_engine=False,
+        removes_tool=False,
+        uncertainty_reasons=tuple(uncertainty),
+    )
+
+
+def phase4ex_candidate_facts(
+    board: BoardView,
+    results: Sequence[SimulationResult],
+    phase5: Phase5StrategicLiveFacts,
+) -> Tuple[Phase4EXCandidateFacts, ...]:
+    """Build read-only Phase4EX candidate Facts without making a preference."""
+    source_results = tuple(results)
+    stage2c_lines: List[Stage2cStrategicActionLineFacts] = []
+    seen_line_ids: set[int] = set()
+    for comparison in phase5.comparisons:
+        for candidate_line in (comparison.left_line, comparison.right_line):
+            if not isinstance(candidate_line, Stage2cStrategicActionLineFacts):
+                continue
+            identity = id(candidate_line)
+            if identity in seen_line_ids:
+                continue
+            seen_line_ids.add(identity)
+            stage2c_lines.append(candidate_line)
+
+    candidates: List[Phase4EXCandidateFacts] = []
+    for line in stage2c_lines:
+        candidate = _phase4ex_stage2c_candidate_facts(
+            board,
+            source_results,
+            phase5,
+            line,
+        )
+        if candidate is not None:
+            candidates.append(candidate)
+
+    strategic_indices = {candidate.origin_option_index for candidate in candidates}
+    for result in source_results:
+        option = getattr(result, "option", None)
+        if (
+            result.index in strategic_indices
+            or option is None
+            or getattr(option, "type", None) == OptionType.ATTACK
+        ):
+            continue
+        outcome = getattr(result, "outcome", None)
+        if not isinstance(outcome, ImmediateOutcome):
+            continue
+        families: List[Phase4EXCandidateFamily] = []
+        if any((
+            outcome.enables_attack,
+            bool(outcome.enabled_attack_ids),
+            outcome.avoids_wall,
+            outcome.improves_damage,
+            outcome.completes_next_attacker,
+        )):
+            families.append(Phase4EXCandidateFamily.SELF_PREPARATION)
+        if any((
+            outcome.develops_bench_next_attacker,
+            outcome.completes_evolution_line,
+            outcome.completed_same_line_attackers > 0,
+            outcome.post_evolution_ready_attack_count > 0,
+        )):
+            families.append(Phase4EXCandidateFamily.BOARD_DEVELOPMENT)
+        if any((
+            outcome.healed_damage > 0,
+            outcome.recovered_energy_count > 0,
+            outcome.next_knockout_avoided,
+            outcome.avoids_prize_loss,
+            outcome.prizes_preserved > 0,
+            outcome.avoids_board_out,
+            outcome.preserves_primary_pokemon,
+            outcome.evolution_hp_gain > 0,
+        )):
+            families.append(Phase4EXCandidateFamily.HEALING_SURVIVAL)
+        if outcome.breaks_engine or outcome.removes_tool:
+            families.append(Phase4EXCandidateFamily.OPPONENT_DISRUPTION)
+        if not families:
+            continue
+
+        family_tuple = tuple(dict.fromkeys(families))
+        exactness = _phase4ex_normal_candidate_exactness_facts(
+            board,
+            result,
+            family_tuple,
+        )
+        option_target = board.option_target(option)
+        target_card_id = (
+            outcome.target_id
+            if type(outcome.target_id) is int
+            else board.pid(option_target)
+            if option_target is not None
+            else None
+        )
+        target_serial = (
+            outcome.target_serial
+            if type(outcome.target_serial) is int
+            else getattr(option_target, "serial", None)
+            if option_target is not None
+            else None
+        )
+        candidates.append(Phase4EXCandidateFacts(
+            origin_option_index=result.index,
+            option_type=getattr(option, "type", None),
+            option_card_id=board.option_card(option),
+            target_card_id=target_card_id,
+            target_serial=target_serial,
+            legal=exactness.legal,
+            supported=exactness.supported,
+            exact_public_facts=exactness.exact_public_facts,
+            families=family_tuple,
+            stage2c_kind=None,
+            phase5_selected=False,
+            continuation_confirmed=None,
+            attack_preserved_after_origin=None,
+            exact_development_line=False,
+            development_line_access_count=None,
+            avoids_board_out=bool(outcome.avoids_board_out),
+            avoids_prize_loss=bool(outcome.avoids_prize_loss),
+            prizes_preserved=int(outcome.prizes_preserved),
+            preserves_primary_pokemon=bool(outcome.preserves_primary_pokemon),
+            healed_damage=int(outcome.healed_damage),
+            recovered_energy_count=int(outcome.recovered_energy_count),
+            board_energy_removed=int(outcome.board_energy_removed),
+            breaks_engine=bool(outcome.breaks_engine),
+            removes_tool=bool(outcome.removes_tool),
+            uncertainty_reasons=exactness.uncertainty_reasons,
+        ))
+
+    return tuple(sorted(candidates, key=lambda candidate: candidate.origin_option_index))
+
+
+def phase4ex_board_need_facts(
+    board: BoardView,
+    phase5: Phase5StrategicLiveFacts,
+    threat: Optional["OpponentPublicThreat"] = None,
+) -> Phase4EXBoardNeedFacts:
+    """Adapt current public-board need Facts without ranking or preference."""
+    public_threat = (
+        OpponentPublicThreatEvaluator.evaluate(board)
+        if threat is None
+        else threat
+    )
+    current = phase5.current_position
+    current_supported = current.supported is True
+    current_exact = current.exact is True
+    current_terminal_win = any(
+        line.terminal_win is True for line in current.candidate_lines
+    )
+    current_attack_available = bool(current.candidate_lines)
+
+    retreat_resolved = bool(
+        public_threat.public_retreat.status != PublicRetreatStatus.UNSUPPORTED
+        and public_threat.public_retreat.unsupported_reason is None
+    )
+    public_threat_complete = bool(
+        not public_threat.unsupported_public_threats
+        and retreat_resolved
+    )
+    threat_adapter = OpponentPublicThreatFacts(
+        supported=public_threat_complete,
+        best_confirmed_damage=int(public_threat.best_certain_damage),
+        can_ko_projected_active=bool(public_threat.certain_active_can_ko),
+        prizes_lost=int(public_threat.certain_active_prizes_if_ko),
+        usable_attack_ids=tuple(sorted({
+            fact.attack_id
+            for fact in public_threat.certain_active_threats
+            if fact.unsupported_reason is None
+            and fact.can_attack_with_current_energy
+        })),
+        unsupported_reason=(
+            None
+            if public_threat_complete
+            else "opponent_public_threat_partial"
+            if public_threat.unsupported_public_threats
+            else public_threat.public_retreat.unsupported_reason
+            or "public_retreat_unresolved"
+        ),
+    )
+
+    opponent_active = getattr(board, "opp_active", None)
+    if opponent_active is None:
+        next_attacker = CandidateProjectionEvaluator._unsupported_next_attacker_facts(
+            "missing_current_opponent_active"
+        )
+    else:
+        next_attacker = CandidateProjectionEvaluator._next_attacker_for_projected_bench(
+            board,
+            projected_bench=tuple(getattr(board, "bench", ()) or ()),
+            projected_opponent_active_hp=hp_left(opponent_active),
+            threat=threat_adapter,
+        )
+    ready_next_attacker_exists = (
+        next_attacker.ready_next_attacker_exists
+        if next_attacker.supported
+        else None
+    )
+    next_attacker_deficit = (
+        not ready_next_attacker_exists
+        if type(ready_next_attacker_exists) is bool
+        else None
+    )
+
+    supported_bench_threats = tuple(
+        fact
+        for fact in public_threat.publicly_reachable_bench_threats
+        if fact.unsupported_reason is None
+    )
+    public_reachable_bench_can_ko = any(
+        fact.can_ko_our_active for fact in supported_bench_threats
+    )
+
+    uncertainty: List[str] = []
+    if not current_supported:
+        uncertainty.append("current_position_unsupported")
+    if not current_exact:
+        uncertainty.append("current_position_inexact")
+    if not next_attacker.supported:
+        uncertainty.append(next_attacker.unsupported_reason or "next_attacker_unknown")
+    if type(ready_next_attacker_exists) is not bool:
+        uncertainty.append("next_attacker_unknown")
+    if type(next_attacker_deficit) is not bool:
+        uncertainty.append("next_attacker_deficit_unknown")
+    if public_threat.unsupported_public_threats:
+        uncertainty.append("opponent_public_threat_partial")
+    if not retreat_resolved:
+        uncertainty.append(
+            public_threat.public_retreat.unsupported_reason
+            or "public_retreat_unresolved"
+        )
+
+    supported = bool(current_supported)
+    exact_public_facts = bool(
+        supported
+        and current_exact
+        and next_attacker.supported
+        and type(ready_next_attacker_exists) is bool
+        and type(next_attacker_deficit) is bool
+        and public_threat_complete
+    )
+    return Phase4EXBoardNeedFacts(
+        supported=supported,
+        exact_public_facts=exact_public_facts,
+        current_terminal_win=current_terminal_win,
+        current_attack_available=current_attack_available,
+        bench_space=int(getattr(board, "bench_space", 0)),
+        ready_next_attacker_exists=ready_next_attacker_exists,
+        next_attacker_deficit=next_attacker_deficit,
+        certain_active_can_ko=bool(public_threat.certain_active_can_ko),
+        certain_active_best_damage=int(public_threat.best_certain_damage),
+        public_reachable_bench_threat_count=len(supported_bench_threats),
+        public_reachable_bench_can_ko=public_reachable_bench_can_ko,
+        hidden_dependent_risk=bool(public_threat.has_hidden_dependent_risk),
+        hidden_dependent_reasons=tuple(public_threat.hidden_dependent_reasons),
+        uncertainty_reasons=tuple(dict.fromkeys(uncertainty)),
+    )
+
+
+def phase4ex_preference_facts(
+    left: Phase4EXCandidateFacts,
+    right: Phase4EXCandidateFacts,
+    board_need: Phase4EXBoardNeedFacts,
+    phase5: Phase5StrategicLiveFacts,
+) -> Phase4EXPreferenceFacts:
+    """Build one pairwise uncertain-policy relation without changing rank."""
+    base_supported = bool(
+        left.legal
+        and right.legal
+        and left.supported
+        and right.supported
+        and board_need.supported
+    )
+    base_exact = bool(
+        base_supported
+        and left.exact_public_facts
+        and right.exact_public_facts
+        and board_need.exact_public_facts
+    )
+
+    def abstain(
+        reason: Phase4EXPreferenceReason,
+        *uncertainty: str,
+        supported: Optional[bool] = None,
+        exact: Optional[bool] = None,
+    ) -> Phase4EXPreferenceFacts:
+        return Phase4EXPreferenceFacts(
+            left_origin_option_index=left.origin_option_index,
+            right_origin_option_index=right.origin_option_index,
+            preference=Phase4EXPreference.ABSTAIN,
+            reason=reason,
+            supported=base_supported if supported is None else supported,
+            exact_public_facts=base_exact if exact is None else exact,
+            policy_applicable=False,
+            uncertainty_reasons=tuple(uncertainty),
+        )
+
+    def decided(
+        preference: Phase4EXPreference,
+        reason: Phase4EXPreferenceReason,
+    ) -> Phase4EXPreferenceFacts:
+        return Phase4EXPreferenceFacts(
+            left_origin_option_index=left.origin_option_index,
+            right_origin_option_index=right.origin_option_index,
+            preference=preference,
+            reason=reason,
+            supported=True,
+            exact_public_facts=True,
+            policy_applicable=True,
+            uncertainty_reasons=(),
+        )
+
+    if left.origin_option_index == right.origin_option_index:
+        return abstain(
+            Phase4EXPreferenceReason.INSUFFICIENT_POLICY_EVIDENCE,
+            "same_origin_pair",
+            supported=False,
+            exact=False,
+        )
+
+    # Fail Closed before any policy-family branch.
+    if not base_exact:
+        uncertainty = tuple(dict.fromkeys(
+            tuple(left.uncertainty_reasons)
+            + tuple(right.uncertainty_reasons)
+            + tuple(board_need.uncertainty_reasons)
+            + (() if left.legal else ("left_illegal",))
+            + (() if right.legal else ("right_illegal",))
+            + (() if left.supported else ("left_unsupported",))
+            + (() if right.supported else ("right_unsupported",))
+            + (() if board_need.supported else ("board_need_unsupported",))
+            + (() if left.exact_public_facts else ("left_inexact",))
+            + (() if right.exact_public_facts else ("right_inexact",))
+            + (() if board_need.exact_public_facts else ("board_need_inexact",))
+        ))
+        return abstain(
+            Phase4EXPreferenceReason.INEXACT_PUBLIC_FACTS,
+            *uncertainty,
+            supported=base_supported,
+            exact=False,
+        )
+
+    if board_need.current_terminal_win:
+        return abstain(Phase4EXPreferenceReason.EXACT_AUTHORITY_SHIELD)
+
+    # Protect any existing strict exact Phase3 authority for this origin pair.
+    pair = frozenset((left.origin_option_index, right.origin_option_index))
+    for comparison in phase5.comparisons:
+        left_index = comparison.left_origin.option_index
+        right_index = comparison.right_origin.option_index
+        if (
+            comparison.supported
+            and comparison.exact
+            and comparison.relation in {
+                DirectAttackComparison.LEFT_BETTER,
+                DirectAttackComparison.RIGHT_BETTER,
+            }
+            and type(left_index) is int
+            and type(right_index) is int
+            and frozenset((left_index, right_index)) == pair
+        ):
+            return abstain(Phase4EXPreferenceReason.EXACT_AUTHORITY_SHIELD)
+
+    left_urgent = bool(left.avoids_prize_loss or left.avoids_board_out)
+    right_urgent = bool(right.avoids_prize_loss or right.avoids_board_out)
+    if left_urgent != right_urgent:
+        return decided(
+            Phase4EXPreference.PREFER_LEFT
+            if left_urgent
+            else Phase4EXPreference.PREFER_RIGHT,
+            Phase4EXPreferenceReason.URGENT_LOSS_AVOIDANCE,
+        )
+    if left_urgent and right_urgent:
+        return abstain(Phase4EXPreferenceReason.CONFLICTING_NONTERMINAL_PREP)
+
+    if board_need.hidden_dependent_risk:
+        return abstain(
+            Phase4EXPreferenceReason.HIDDEN_DEPENDENT_UNCERTAINTY,
+            *board_need.hidden_dependent_reasons,
+        )
+    if board_need.certain_active_can_ko or board_need.public_reachable_bench_can_ko:
+        return abstain(Phase4EXPreferenceReason.OPPONENT_PUBLIC_THREAT)
+
+    def exact_development_direction(candidate: Phase4EXCandidateFacts) -> bool:
+        return bool(
+            Phase4EXCandidateFamily.EXACT_STRATEGIC_ACTION in candidate.families
+            and Phase4EXCandidateFamily.BOARD_DEVELOPMENT in candidate.families
+            and candidate.phase5_selected
+            and candidate.continuation_confirmed is True
+            and candidate.attack_preserved_after_origin is True
+            and candidate.exact_development_line
+        )
+
+    def nonurgent_preservation(candidate: Phase4EXCandidateFacts) -> bool:
+        return bool(
+            Phase4EXCandidateFamily.HEALING_SURVIVAL in candidate.families
+            and not candidate.avoids_prize_loss
+            and not candidate.avoids_board_out
+            and candidate.preserves_primary_pokemon
+            and (candidate.healed_damage > 0 or candidate.recovered_energy_count > 0)
+        )
+
+    left_development = exact_development_direction(left)
+    right_development = exact_development_direction(right)
+    left_preservation = nonurgent_preservation(left)
+    right_preservation = nonurgent_preservation(right)
+
+    if (left_development and right_preservation) or (right_development and left_preservation):
+        if board_need.next_attacker_deficit is not True or board_need.bench_space <= 0:
+            return abstain(
+                Phase4EXPreferenceReason.BOARD_DEVELOPMENT_NEED_NOT_ESTABLISHED
+            )
+        return decided(
+            Phase4EXPreference.PREFER_LEFT
+            if left_development
+            else Phase4EXPreference.PREFER_RIGHT,
+            Phase4EXPreferenceReason.BOARD_DEVELOPMENT_NEED,
+        )
+
+    if (
+        left.stage2c_kind is not None
+        and right.stage2c_kind is not None
+        and left.stage2c_kind == right.stage2c_kind
+        and left.phase5_selected
+        and right.phase5_selected
+    ):
+        return decided(
+            Phase4EXPreference.EQUIVALENT_POLICY,
+            Phase4EXPreferenceReason.SAME_FAMILY_NO_CROSS_FAMILY_POLICY,
+        )
+
+    if (
+        left.stage2c_kind is not None
+        and right.stage2c_kind is not None
+        and left.stage2c_kind != right.stage2c_kind
+    ):
+        return abstain(Phase4EXPreferenceReason.CONFLICTING_NONTERMINAL_PREP)
+
+    if (
+        Phase4EXCandidateFamily.HEALING_SURVIVAL in left.families
+        and Phase4EXCandidateFamily.HEALING_SURVIVAL in right.families
+    ):
+        return abstain(Phase4EXPreferenceReason.INSUFFICIENT_POLICY_EVIDENCE)
+
+    return abstain(Phase4EXPreferenceReason.INSUFFICIENT_POLICY_EVIDENCE)
+
+
+def phase4ex_preference_matrix_facts(
+    candidates: Sequence[Phase4EXCandidateFacts],
+    board_need: Phase4EXBoardNeedFacts,
+    phase5: Phase5StrategicLiveFacts,
+) -> Tuple[Phase4EXPreferenceFacts, ...]:
+    """Build exactly one canonical relation for each unordered candidate pair."""
+    ordered = tuple(sorted(
+        tuple(candidates),
+        key=lambda candidate: candidate.origin_option_index,
+    ))
+    relations: List[Phase4EXPreferenceFacts] = []
+    for left_ordinal, left in enumerate(ordered):
+        for right in ordered[left_ordinal + 1:]:
+            relations.append(
+                phase4ex_preference_facts(left, right, board_need, phase5)
+            )
+    return tuple(relations)
+
+
+def phase4ex_resolution_facts(
+    candidates: Sequence[Phase4EXCandidateFacts],
+    preferences: Sequence[Phase4EXPreferenceFacts],
+) -> Phase4EXResolutionFacts:
+    """Validate the pairwise matrix and expose only canonical preference edges."""
+    source_candidates = tuple(candidates)
+    source_preferences = tuple(preferences)
+    raw_indices = tuple(candidate.origin_option_index for candidate in source_candidates)
+    candidate_indices = tuple(sorted(set(raw_indices)))
+
+    def resolution(
+        *,
+        abstained: bool,
+        reason: Phase4EXPreferenceReason,
+        edges: Sequence[Tuple[int, int]] = (),
+        cycle: bool = False,
+        missing: bool = False,
+        supported: bool = False,
+        exact: bool = False,
+        applicable: bool = False,
+        invalid: bool = False,
+    ) -> Phase4EXResolutionFacts:
+        return Phase4EXResolutionFacts(
+            candidate_indices=candidate_indices,
+            preferred_edges=tuple(sorted(set(edges))) if not abstained else (),
+            abstained=abstained,
+            reason=reason,
+            cycle_detected=cycle,
+            missing_relation=missing,
+            supported=supported,
+            exact=exact,
+            policy_applicable=applicable,
+            invalid_preference_detected=invalid,
+        )
+
+    if len(raw_indices) != len(candidate_indices):
+        return resolution(
+            abstained=True,
+            reason=Phase4EXPreferenceReason.INVALID_PREFERENCE_SET,
+            invalid=True,
+        )
+
+    candidate_map = {candidate.origin_option_index: candidate for candidate in source_candidates}
+    if any(
+        not candidate.legal
+        or not candidate.supported
+        or not candidate.exact_public_facts
+        for candidate in source_candidates
+    ):
+        return resolution(
+            abstained=True,
+            reason=Phase4EXPreferenceReason.INEXACT_PUBLIC_FACTS,
+            invalid=True,
+        )
+
+    expected_pairs = {
+        (left, right)
+        for ordinal, left in enumerate(candidate_indices)
+        for right in candidate_indices[ordinal + 1:]
+    }
+    seen_pairs: set[Tuple[int, int]] = set()
+    edges: List[Tuple[int, int]] = []
+    edge_reasons: List[Phase4EXPreferenceReason] = []
+    has_abstain = False
+
+    for preference in source_preferences:
+        left = preference.left_origin_option_index
+        right = preference.right_origin_option_index
+        pair = tuple(sorted((left, right)))
+        if (
+            left == right
+            or left not in candidate_map
+            or right not in candidate_map
+            or pair not in expected_pairs
+            or pair in seen_pairs
+        ):
+            return resolution(
+                abstained=True,
+                reason=Phase4EXPreferenceReason.INVALID_PREFERENCE_SET,
+                invalid=True,
+            )
+        seen_pairs.add(pair)
+
+        if preference.preference != Phase4EXPreference.ABSTAIN and (
+            preference.supported is not True
+            or preference.exact_public_facts is not True
+            or preference.policy_applicable is not True
+        ):
+            return resolution(
+                abstained=True,
+                reason=Phase4EXPreferenceReason.INVALID_PREFERENCE_SET,
+                invalid=True,
+            )
+        if preference.preference == Phase4EXPreference.ABSTAIN:
+            has_abstain = True
+            continue
+        if preference.preference == Phase4EXPreference.PREFER_LEFT:
+            edges.append((left, right))
+            edge_reasons.append(preference.reason)
+        elif preference.preference == Phase4EXPreference.PREFER_RIGHT:
+            edges.append((right, left))
+            edge_reasons.append(preference.reason)
+        elif preference.preference == Phase4EXPreference.EQUIVALENT_POLICY:
+            continue
+        else:
+            return resolution(
+                abstained=True,
+                reason=Phase4EXPreferenceReason.INVALID_PREFERENCE_SET,
+                invalid=True,
+            )
+
+    if seen_pairs != expected_pairs:
+        return resolution(
+            abstained=True,
+            reason=Phase4EXPreferenceReason.INSUFFICIENT_POLICY_EVIDENCE,
+            missing=True,
+        )
+    if has_abstain:
+        return resolution(
+            abstained=True,
+            reason=Phase4EXPreferenceReason.CONFLICTING_NONTERMINAL_PREP,
+            supported=True,
+            exact=True,
+            applicable=False,
+        )
+    if not edges:
+        return resolution(
+            abstained=True,
+            reason=Phase4EXPreferenceReason.INSUFFICIENT_POLICY_EVIDENCE,
+            supported=True,
+            exact=True,
+            applicable=False,
+        )
+
+    adjacency = {index: set() for index in candidate_indices}
+    for preferred, less_preferred in edges:
+        adjacency[preferred].add(less_preferred)
+    visiting: set[int] = set()
+    visited: set[int] = set()
+
+    def has_cycle(node: int) -> bool:
+        if node in visiting:
+            return True
+        if node in visited:
+            return False
+        visiting.add(node)
+        for child in adjacency[node]:
+            if has_cycle(child):
+                return True
+        visiting.remove(node)
+        visited.add(node)
+        return False
+
+    if any(has_cycle(node) for node in candidate_indices if node not in visited):
+        return resolution(
+            abstained=True,
+            reason=Phase4EXPreferenceReason.PREFERENCE_CYCLE,
+            cycle=True,
+            supported=True,
+            exact=True,
+            applicable=False,
+        )
+
+    strict_reasons = tuple(dict.fromkeys(edge_reasons))
+    return resolution(
+        abstained=False,
+        reason=(
+            strict_reasons[0]
+            if len(strict_reasons) == 1
+            else Phase4EXPreferenceReason.INSUFFICIENT_POLICY_EVIDENCE
+        ),
+        edges=edges,
+        supported=True,
+        exact=True,
+        applicable=True,
+    )
+
+
+def apply_phase4ex_preference_ordering(
+    board: BoardView,
+    results: Sequence[SimulationResult],
+    phase5: Phase5StrategicLiveFacts,
+) -> Tuple[Tuple[SimulationResult, ...], Optional[Phase4EXResolutionFacts]]:
+    """Stable post-Phase5 transport for fully resolved Phase4EX preferences only."""
+    source_results = tuple(results)
+    result_by_index = {result.index: result for result in source_results}
+    if len(result_by_index) != len(source_results):
+        return source_results, None
+
+    all_candidates = phase4ex_candidate_facts(board, source_results, phase5)
+    activated: List[Phase4EXCandidateFacts] = []
+    for candidate in all_candidates:
+        result = result_by_index.get(candidate.origin_option_index)
+        option = getattr(result, "option", None) if result is not None else None
+        outcome = getattr(result, "outcome", None) if result is not None else None
+        score = getattr(result, "action_score", None) if result is not None else None
+        terminal = bool(
+            isinstance(outcome, ImmediateOutcome)
+            and (
+                outcome.wins_game is True
+                or outcome.knockout is True
+                or outcome.prizes_taken > 0
+            )
+        )
+        if (
+            result is None
+            or option is None
+            or score is None
+            or getattr(option, "type", None) == OptionType.ATTACK
+            or score.tier != TIER_HIGH_VALUE_PREP
+            or terminal
+        ):
+            continue
+        activated.append(candidate)
+
+    if len(activated) < 2:
+        return source_results, None
+    if any(
+        not candidate.legal
+        or not candidate.supported
+        or not candidate.exact_public_facts
+        for candidate in activated
+    ):
+        return source_results, None
+
+    threat = OpponentPublicThreatEvaluator.evaluate(board)
+    board_need = phase4ex_board_need_facts(board, phase5, threat=threat)
+    if not board_need.supported or not board_need.exact_public_facts:
+        return source_results, None
+
+    candidate_tuple = tuple(activated)
+    preferences = phase4ex_preference_matrix_facts(
+        candidate_tuple,
+        board_need,
+        phase5,
+    )
+    resolution = phase4ex_resolution_facts(candidate_tuple, preferences)
+    if (
+        resolution.abstained
+        or not resolution.preferred_edges
+        or resolution.missing_relation
+        or resolution.cycle_detected
+        or resolution.invalid_preference_detected
+        or resolution.supported is not True
+        or resolution.exact is not True
+        or resolution.policy_applicable is not True
+    ):
+        return source_results, resolution
+
+    activated_indices = tuple(
+        result.index
+        for result in source_results
+        if result.index in resolution.candidate_indices
+    )
+    if set(activated_indices) != set(resolution.candidate_indices):
+        return source_results, resolution
+
+    incoming: Dict[int, set[int]] = {
+        index: set() for index in resolution.candidate_indices
+    }
+    outgoing: Dict[int, set[int]] = {
+        index: set() for index in resolution.candidate_indices
+    }
+    for preferred, less_preferred in resolution.preferred_edges:
+        if preferred not in outgoing or less_preferred not in incoming:
+            return source_results, resolution
+        outgoing[preferred].add(less_preferred)
+        incoming[less_preferred].add(preferred)
+
+    remaining = set(resolution.candidate_indices)
+    ordered_indices: List[int] = []
+    while remaining:
+        chosen: Optional[int] = None
+        for index in activated_indices:
+            if index in remaining and not (incoming[index] & remaining):
+                chosen = index
+                break
+        if chosen is None:
+            return source_results, resolution
+        ordered_indices.append(chosen)
+        remaining.remove(chosen)
+
+    if tuple(ordered_indices) == activated_indices:
+        return source_results, resolution
+
+    ordered_results = [result_by_index[index] for index in ordered_indices]
+    ordered_iter = iter(ordered_results)
+    updated: List[SimulationResult] = []
+    activated_set = set(resolution.candidate_indices)
+    for result in source_results:
+        if result.index in activated_set:
+            updated.append(next(ordered_iter))
+        else:
+            updated.append(result)
+    return tuple(updated), resolution
 
 
 def _phase4_uncertain_action_facts(
@@ -14367,6 +21345,72 @@ def phase4_current_value_gate_facts(
         gate_reason=gate_reasons[0],
         gate_reasons=gate_reasons,
     )
+class Stage2cStrategicActionLineKind(str, Enum):
+    SAFE_PRE_KO_BASIC_PLAY = "SAFE_PRE_KO_BASIC_PLAY"
+    HAND_BASIC_DEPLOYMENT = "HAND_BASIC_DEPLOYMENT"
+    EVOLUTION_CONTINUATION = "EVOLUTION_CONTINUATION"
+
+
+@dataclass(frozen=True)
+class Stage2cStrategicActionLineFacts:
+    origin_option_index: int
+    origin_option_type: Any
+    origin_option_card_id: Optional[int]
+    origin_target_card_id: Optional[int]
+    origin_target_serial: Optional[int]
+    action_line_kind: Stage2cStrategicActionLineKind
+    current_attack_lines: Tuple[ActivePositionCurrentAttackLineFacts, ...]
+    current_attack_option_index: Optional[int]
+    current_attack_id: Optional[int]
+    continuation_attack_option_indices: Tuple[int, ...]
+    continuation_attack_ids: Tuple[int, ...]
+    continuation_confirmed: Optional[bool]
+    current_attack_is_nonwinning_ko: Optional[bool]
+    attack_preserved_after_origin: Optional[bool]
+    current_direct_win_exists: Optional[bool]
+    current_direct_knockout_exists: Optional[bool]
+    current_non_ko_attack_exists: Optional[bool]
+    bench_space_before: Optional[int]
+    bench_count_before: Optional[int]
+    bench_slot_consumed: Optional[bool]
+    other_legal_basic_option_indices: Tuple[int, ...]
+    same_card_in_play_count: Optional[int]
+    duplicate_deployment: Optional[bool]
+    role: Optional[str]
+    chewtle_drednaw_in_hand: Optional[bool]
+    drednaw_in_play: Optional[bool]
+    drednaw_remaining_possible: Optional[bool]
+    accessible_drednaw_line_count: Optional[int]
+    bruxish_already_in_play: Optional[bool]
+    bruxish_counterattack_contract_supported: Optional[bool]
+    bruxish_counterline_role_live: Optional[bool]
+    evolution_relation_exact: Optional[bool]
+    supported: bool
+    exact: bool
+    blocking_high_value_evolution_exists: Optional[bool] = None
+    blocking_high_value_evolution_option_indices: Tuple[int, ...] = ()
+    unsupported_reason: Optional[str] = None
+    reasons: Tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.supported:
+            if not self.exact or self.unsupported_reason is not None:
+                raise ValueError("incomplete_supported_stage2c_strategic_action_line")
+        elif self.exact or not self.unsupported_reason:
+            raise ValueError("unsupported_stage2c_strategic_action_line_must_fail_closed")
+
+
+@dataclass(frozen=True)
+class Stage2cStrategicActionLineCollectionFacts:
+    current_position: ActivePositionCurrentLineCollectionFacts
+    counterline_collections: Tuple[Stage2b4CounterlineActionLineCollectionFacts, ...]
+    lines: Tuple[Stage2cStrategicActionLineFacts, ...]
+    supported: bool
+    exact: bool
+    unsupported_reason: Optional[str] = None
+    reasons: Tuple[str, ...] = ()
+
+
 @dataclass(frozen=True)
 class HandBasicDeploymentFacts:
     supported: bool
@@ -14394,6 +21438,7 @@ class HandBasicDeploymentFacts:
     high_value_deployment: bool
     unsupported_reason: Optional[str] = None
     reasons: Tuple[str, ...] = ()
+
 # ============================================================
 # Policy
 # ============================================================
@@ -14727,6 +21772,59 @@ class Policy:
             ),
         )
 
+    def best_boss_play_semantic_outcome(self) -> Optional[ImmediateOutcome]:
+        scored = tuple(
+            (
+                self.score_boss_outcome(outcome),
+                outcome,
+            )
+            for outcome in (
+                self.outcome.evaluate_boss_target(target)
+                for target in self.b.opp_bench
+            )
+        )
+        if not scored:
+            return None
+        score, outcome = max(scored, key=lambda item: item[0])
+        if (
+            score <= 0
+            or not outcome.supported
+            or outcome.blocked
+            or not (outcome.avoids_wall or outcome.breaks_engine)
+        ):
+            return None
+        return outcome
+
+    def best_suguri_switch_play_outcome(self) -> Optional[ImmediateOutcome]:
+        active_data = self.b.data(self.b.pid(self.b.active))
+        if active_data is None or active_data.basic:
+            return None
+        scored = tuple(
+            (
+                self.score_switch_target_outcome(outcome, "suguri"),
+                outcome,
+            )
+            for outcome in (
+                self.outcome.evaluate_switch_target(target, "suguri")
+                for target in self.b.bench
+            )
+        )
+        if not scored:
+            return None
+        score, outcome = max(scored, key=lambda item: item[0])
+        if (
+            score <= 0
+            or not outcome.supported
+            or not (
+                outcome.reachable_wins_game
+                or outcome.enables_knockout
+                or outcome.improves_damage
+                or outcome.enables_attack
+            )
+        ):
+            return None
+        return outcome
+
     def resolved_outcome_for_option(
         self,
         option: Any,
@@ -14739,7 +21837,29 @@ class Policy:
 
         resolved = raw_outcome
         cid = self.b.option_card(option)
-        if option.type == OptionType.PLAY and cid == POKE_PAD:
+        if (
+            option.type == OptionType.PLAY
+            and cid == BEFEHL_VON_BOSS
+            and raw_outcome.reasons == ("boss_play_no_reachable_prize_attack",)
+        ):
+            planned = self.best_boss_play_semantic_outcome()
+            if planned is not None:
+                resolved = replace(
+                    planned,
+                    reachable_damage=planned.damage,
+                )
+        elif (
+            option.type == OptionType.PLAY
+            and cid == SUGURI
+            and not (
+                raw_outcome.reachable_wins_game
+                or raw_outcome.reachable_knockout
+            )
+        ):
+            planned = self.best_suguri_switch_play_outcome()
+            if planned is not None:
+                resolved = planned
+        elif option.type == OptionType.PLAY and cid == POKE_PAD:
             resolved = self.poke_pad_play_outcome(
                 option,
                 base=raw_outcome,
@@ -14782,6 +21902,16 @@ class Policy:
         if option.type == OptionType.ATTACK or option.attackId is not None:
             return self.attack_action_score(option, legacy_score, outcome)
         cid = self.b.option_card(option)
+        if (
+            self.b.select.context == SelectContext.MAIN
+            and option.type == OptionType.ATTACH
+            and cid == IGNITION_ENERGY
+            and not self.ignition_has_same_turn_unique_value(option, outcome)
+        ):
+            return ActionScore(
+                TIER_BLOCKED_OR_BAD_ACTION,
+                legacy=legacy_score,
+            )
         is_surfing_beach_play = (
             option.type == OptionType.PLAY
             and cid == SURFING_BEACH
@@ -14791,6 +21921,11 @@ class Policy:
             and self.outcome.is_surfing_beach_ability(option)
         )
         if is_surfing_beach_play or is_surfing_beach_ability:
+            surfing_overwrite_value = bool(
+                is_surfing_beach_play
+                and legacy_score > 0
+                and self.outcome.is_surfing_beach_play_ability_available(option)
+            )
             planned = (
                 outcome
                 if outcome.supported and outcome.target_id is not None
@@ -14799,6 +21934,11 @@ class Policy:
                 )
             )
             if planned is None:
+                if surfing_overwrite_value:
+                    return ActionScore(
+                        TIER_LOW_VALUE_ACTION,
+                        resource=max(0, legacy_score),
+                    )
                 return ActionScore(
                     TIER_FORBIDDEN,
                     risk=1,
@@ -14826,6 +21966,11 @@ class Policy:
                     TIER_HIGH_VALUE_PREP,
                     pressure=pressure,
                     legacy=legacy_score,
+                )
+            if surfing_overwrite_value:
+                return ActionScore(
+                    TIER_LOW_VALUE_ACTION,
+                    resource=max(0, legacy_score),
                 )
             return ActionScore(
                 TIER_BLOCKED_OR_BAD_ACTION,
@@ -14970,11 +22115,12 @@ class Policy:
                     risk=outcome.board_energy_removed,
                     legacy=legacy_score,
                 )
-            return ActionScore(
-                TIER_LOW_VALUE_ACTION,
-                legacy=legacy_score,
-            )
-        if option.type == OptionType.PLAY and cid == SALVATORE and not (
+            if legacy_score >= 0:
+                return ActionScore(
+                    TIER_LOW_VALUE_ACTION,
+                    legacy=legacy_score,
+                )
+        if option.type == OptionType.PLAY and cid == SALVATORE and legacy_score >= 0 and not (
             outcome.reachable_attack_id is not None
             or outcome.expected_reachable_attack_id is not None
             or outcome.avoids_board_out
@@ -14992,15 +22138,6 @@ class Policy:
                 resource=0,
                 legacy=legacy_score,
             )
-        safe_pre_ko_basic_play = (
-            self.safe_pre_ko_basic_play_action_score(
-                option,
-                legacy_score,
-                outcome,
-            )
-        )
-        if safe_pre_ko_basic_play is not None:
-            return safe_pre_ko_basic_play
         handoff_pressure_score = self.cinderace_handoff_pressure_score(outcome, legacy_score)
         if handoff_pressure_score is not None:
             return handoff_pressure_score
@@ -15024,6 +22161,54 @@ class Policy:
                 pressure=outcome.reachable_damage,
                 resource=max(0, min(legacy_score, 200000)),
                 risk=outcome.retreat_energy_cost * 18000 + outcome.important_energy_loss * 70000,
+                legacy=legacy_score,
+            )
+        if (
+            option.type == OptionType.PLAY
+            and cid == BEFEHL_VON_BOSS
+            and outcome.supported
+            and legacy_score > 0
+            and (outcome.avoids_wall or outcome.breaks_engine)
+        ):
+            return ActionScore(
+                TIER_HIGH_VALUE_PREP,
+                pressure=outcome.reachable_damage,
+                legacy=legacy_score,
+            )
+        if (
+            option.type == OptionType.PLAY
+            and cid == SUGURI
+            and outcome.supported
+            and legacy_score > 0
+            and "suguri_switch" in outcome.reasons
+            and (outcome.enables_attack or outcome.improves_damage)
+        ):
+            return ActionScore(
+                TIER_HIGH_VALUE_PREP,
+                pressure=outcome.reachable_damage,
+                legacy=legacy_score,
+            )
+        if (
+            option.type == OptionType.PLAY
+            and cid == JUDGE
+            and self.judge_dead_hand_recovery_live()
+        ):
+            return ActionScore(
+                TIER_HIGH_VALUE_PREP,
+                legacy=legacy_score,
+            )
+        if (
+            option.type == OptionType.RETREAT
+            and outcome.supported
+            and not outcome.blocked
+            and legacy_score > 0
+            and (
+                outcome.improves_damage
+                or "survival_retreat" in outcome.reasons
+            )
+        ):
+            return ActionScore(
+                TIER_HIGH_VALUE_PREP,
                 legacy=legacy_score,
             )
             
@@ -15069,6 +22254,16 @@ class Policy:
         attach_pressure_score = self.active_attach_reachable_pressure_score(option, legacy_score, outcome)
         if attach_pressure_score is not None:
             return attach_pressure_score
+        bench_water_pressure_score = self.bench_water_attach_reachable_pressure_score(
+            option, legacy_score, outcome
+        )
+        if bench_water_pressure_score is not None:
+            return bench_water_pressure_score
+        if self.water_attach_is_exact_no_op(option, legacy_score, outcome):
+            return ActionScore(
+                TIER_BLOCKED_OR_BAD_ACTION,
+                legacy=legacy_score,
+            )
         if self.active_evolution_has_clear_attack_improvement(option):
             return ActionScore(
                 TIER_HIGH_VALUE_PREP,
@@ -15083,6 +22278,12 @@ class Policy:
                 resource=max(0, min(legacy_score, 200000)),
                 legacy=legacy_score,
             )
+        if (
+            self.b.select.context == SelectContext.MAIN
+            and legacy_score < 0
+            and option.type not in {OptionType.END, OptionType.RETREAT}
+        ):
+            return ActionScore(TIER_BLOCKED_OR_BAD_ACTION, legacy=legacy_score)
         if legacy_score <= SCORE_LAST_RESORT:
             return ActionScore(TIER_BLOCKED_OR_BAD_ACTION, risk=legacy_score, legacy=legacy_score)
         return ActionScore(TIER_LOW_VALUE_ACTION, resource=max(0, legacy_score), legacy=legacy_score)
@@ -15310,52 +22511,6 @@ class Policy:
             for marker in changed_own_state_markers
         )
 
-    def safe_pre_ko_basic_play_action_score(
-        self,
-        option: Any,
-        legacy_score: float,
-        outcome: ImmediateOutcome,
-    ) -> Optional[ActionScore]:
-        if (
-            option.type != OptionType.PLAY
-            or not outcome.supported
-            or not outcome.adds_board_out_buffer
-            or len(self.b.bench) != 0
-            or self.b.bench_space <= 0
-            or not self.b.is_basic_pokemon(
-                self.b.option_card(option)
-            )
-        ):
-            return None
-
-        preserved = (
-            self._best_current_nonwinning_knockout()
-        )
-        if preserved is None:
-            return None
-
-        (
-            attack_option,
-            attack_outcome,
-            _,
-            _,
-        ) = preserved
-
-        if not self._basic_play_preserves_current_knockout(
-            option,
-            attack_option,
-        ):
-            return None
-
-        return ActionScore(
-            TIER_KO,
-            immediate=attack_outcome.prizes_taken,
-            pressure=attack_outcome.damage,
-            development=int(
-                outcome.adds_board_out_buffer
-            ),
-            legacy=legacy_score,
-        )
 
     def best_current_attack_outcome(self) -> Optional[ImmediateOutcome]:
         outcomes: List[ImmediateOutcome] = []
@@ -15541,6 +22696,77 @@ class Policy:
             legacy=legacy_score,
         )
 
+    def bench_water_attach_reachable_pressure_score(
+        self,
+        option: Any,
+        legacy_score: float,
+        outcome: ImmediateOutcome,
+    ) -> Optional[ActionScore]:
+        target = self.b.option_target(option)
+        if (
+            option.type != OptionType.ATTACH
+            or self.b.option_card(option) != BASIC_WATER_ENERGY
+            or target is None
+            or target is self.b.active
+            or target not in self.b.bench
+        ):
+            return None
+        if not outcome.supported or outcome.blocked or outcome.reachable_attack_id is None:
+            return None
+        if outcome.reachable_attack_id not in outcome.enabled_attack_ids:
+            return None
+        if not any(
+            reason in outcome.reasons
+            for reason in {
+                "attach_access_via_retreat",
+                "attach_access_via_surfing_beach",
+            }
+        ):
+            return None
+        if (
+            outcome.reachable_wins_game
+            or outcome.reachable_knockout
+            or outcome.reachable_prizes_taken > 0
+        ):
+            return None
+        reachable_pressure = self.reachable_attack_pressure_value(outcome)
+        current_pressure = self.best_current_non_ko_attack_pressure()
+        if current_pressure is None or reachable_pressure <= current_pressure:
+            return None
+        return ActionScore(
+            TIER_NON_KO_ATTACK,
+            pressure=reachable_pressure,
+            resource=max(0, min(legacy_score, 200000)),
+            legacy=legacy_score,
+        )
+
+    def water_attach_is_exact_no_op(
+        self,
+        option: Any,
+        legacy_score: float,
+        outcome: ImmediateOutcome,
+    ) -> bool:
+        return (
+            self.b.select.context == SelectContext.MAIN
+            and legacy_score <= 0
+            and option.type == OptionType.ATTACH
+            and self.b.option_card(option) == BASIC_WATER_ENERGY
+            and outcome.supported
+            and not outcome.blocked
+            and not outcome.enables_attack
+            and not outcome.enabled_attack_ids
+            and outcome.reachable_attack_id is None
+            and outcome.reachable_damage == 0
+            and not outcome.reachable_knockout
+            and outcome.reachable_prizes_taken == 0
+            and not outcome.reachable_wins_game
+            and not outcome.improves_damage
+            and not outcome.knockout
+            and not outcome.wins_game
+            and outcome.damage == 0
+            and outcome.reasons == ("no_new_attack",)
+        )
+
     def reachable_attack_pressure_value(self, outcome: ImmediateOutcome) -> float:
         attack = self.b.attack(outcome.reachable_attack_id)
         if attack is None:
@@ -15686,14 +22912,10 @@ class Policy:
         if target is None or target not in self.b.bench:
             return SCORE_FORBIDDEN
 
-        target_role = self.b.role_facts(target)
-        target_damage = self.outcome._best_unblocked_damage_from(target)
-        target_ready = (
-            target_role.ready_if_promoted
-            and target_damage > 0
-        )
-
+        candidate_states: Dict[int, Tuple[bool, int, int]] = {}
         ready_candidate_exists = False
+        reachable_candidate_exists = False
+
         for _, candidate in self.b.iter_options():
             candidate_target = self.b.option_target(candidate)
             if (
@@ -15706,27 +22928,95 @@ class Policy:
             candidate_damage = self.outcome._best_unblocked_damage_from(
                 candidate_target
             )
-
-            if (
+            candidate_ready = bool(
                 candidate_role.ready_if_promoted
                 and candidate_damage > 0
+            )
+            reachable_damage = 0
+
+            if not candidate_ready and not bool(
+                getattr(candidate_target, "appearThisTurn", False)
             ):
-                ready_candidate_exists = True
-                break
+                for evolution_id in tuple(dict.fromkeys(self.b.hand_ids)):
+                    if not self.b.evolves_from(evolution_id, candidate_target):
+                        continue
+                    projected = object.__new__(BoardView)
+                    projected.__dict__.update(self.b.__dict__)
+                    projected.active = candidate_target
+                    projected.bench = [
+                        pokemon
+                        for pokemon in self.b.bench
+                        if pokemon is not candidate_target
+                    ]
+                    projected.all_my_pokemon = [candidate_target] + list(
+                        projected.bench
+                    )
+                    projected.me = SimpleNamespace(**vars(self.b.me))
+                    projected.me.active = [candidate_target]
+                    projected.me.bench = list(projected.bench)
+                    evolution_option = SimpleNamespace(
+                        type=OptionType.EVOLVE,
+                        cardId=evolution_id,
+                        attackId=None,
+                        area=None,
+                        index=None,
+                        playerIndex=self.b.my_index,
+                        inPlayArea=AreaType.ACTIVE,
+                        inPlayIndex=0,
+                        toolIndex=None,
+                        energyIndex=None,
+                        serial=None,
+                        number=None,
+                    )
+                    reachable_damage = max(
+                        reachable_damage,
+                        max(
+                            (
+                                fact.damage
+                                for fact in projected.active_evolution_attack_facts(
+                                    evolution_option
+                                )
+                                if fact.supported
+                                and not fact.blocked
+                                and fact.damage > 0
+                            ),
+                            default=0,
+                        ),
+                    )
 
-        # 攻撃準備済み候補が確認できる場合だけ、promotion順位を上書きする。
-        # 1体も準備できていない場合は、未確定の新方針を作らず現行fallbackを維持。
-        if not ready_candidate_exists:
+            candidate_states[id(candidate_target)] = (
+                candidate_ready,
+                candidate_damage,
+                reachable_damage,
+            )
+            ready_candidate_exists = ready_candidate_exists or candidate_ready
+            reachable_candidate_exists = (
+                reachable_candidate_exists or reachable_damage > 0
+            )
+
+        target_state = candidate_states.get(id(target))
+        if target_state is None:
+            return SCORE_FORBIDDEN
+        target_ready, target_damage, target_reachable_damage = target_state
+
+        # Actual > exactly reachable > unsupported future expectation.
+        if ready_candidate_exists:
+            if not target_ready:
+                return SCORE_LAST_RESORT
+            selected_damage = target_damage
+        elif reachable_candidate_exists:
+            if target_reachable_damage <= 0:
+                return SCORE_LAST_RESORT
+            selected_damage = target_reachable_damage
+        else:
+            # No combat evidence: keep the existing stable fallback.
             return self.score_card_selection(option)
-
-        if not target_ready:
-            return SCORE_LAST_RESORT
 
         knockout_bonus = (
             SCORE_PREFERRED // 4
             if (
                 self.b.opp_active is not None
-                and target_damage >= hp_left(self.b.opp_active)
+                and selected_damage >= hp_left(self.b.opp_active)
             )
             else 0
         )
@@ -15734,7 +23024,7 @@ class Policy:
         return (
             SCORE_PREFERRED // 2
             + knockout_bonus
-            + target_damage * 1000
+            + selected_damage * 1000
             + hp_left(target)
         )
 
@@ -15944,6 +23234,63 @@ class Policy:
                 return True
         return False
 
+    def judge_dead_hand_recovery_live(self) -> bool:
+        direct = self.best_current_attack_outcome()
+        if direct is not None and (direct.wins_game or direct.knockout):
+            return False
+
+        important_non_supporter_action = (
+            self.judge_has_important_non_supporter_action()
+        )
+        hand_facts = self.b.hand_activity_facts()
+        non_judge_activities = tuple(
+            activity
+            for card_id, activity in hand_facts.activities
+            if card_id != JUDGE
+        )
+        live_now_card_ids = {
+            card_id
+            for card_id, activity in hand_facts.activities
+            if (
+                card_id != JUDGE
+                and activity == HAND_ACTIVITY_LIVE_NOW
+            )
+        }
+        live_now_legal_option = any(
+            candidate.type
+            in {
+                OptionType.PLAY,
+                OptionType.ATTACH,
+                OptionType.EVOLVE,
+            }
+            and self.b.option_card(candidate) in live_now_card_ids
+            for _, candidate in self.b.iter_options()
+        )
+        if (
+            important_non_supporter_action
+            or live_now_legal_option
+        ):
+            return False
+
+        low_activity_count = sum(
+            activity == HAND_ACTIVITY_LOW
+            for activity in non_judge_activities
+        )
+        keep_count = sum(
+            activity == HAND_ACTIVITY_KEEP
+            for activity in non_judge_activities
+        )
+        activity_iter = iter(non_judge_activities)
+        first_activity = next(activity_iter, None)
+        small_dead_hand = (
+            first_activity in {None, HAND_ACTIVITY_LOW}
+            and next(activity_iter, None) is None
+        )
+        low_activity_dead_hand = (
+            low_activity_count > keep_count
+        )
+        return bool(small_dead_hand or low_activity_dead_hand)
+
     def score_play(self, option: Any) -> float:
         cid = self.b.option_card(option)
         if cid is None:
@@ -16034,18 +23381,24 @@ class Policy:
             direct = self.best_current_attack_outcome()
             if direct is not None and (direct.wins_game or direct.knockout):
                 return 6000
-            if self.b.opponent_profile() != "ALAKAZAM":
-                return 6000
-            hand_reduction = max(
-                0,
-                safe_int(getattr(self.b.opp, "handCount", 0)) - 4,
+
+            important_non_supporter_action = (
+                self.judge_has_important_non_supporter_action()
             )
-            if (
-                hand_reduction <= 0
-                or self.judge_has_important_non_supporter_action()
-            ):
-                return 6000
-            return 40000 + hand_reduction * 12000
+            if self.b.opponent_profile() == "ALAKAZAM":
+                hand_reduction = max(
+                    0,
+                    safe_int(getattr(self.b.opp, "handCount", 0)) - 4,
+                )
+                if (
+                    hand_reduction > 0
+                    and not important_non_supporter_action
+                ):
+                    return 40000 + hand_reduction * 12000
+
+            if not self.judge_dead_hand_recovery_live():
+                return SCORE_FORBIDDEN
+            return 6000
         if cid == SUGURI:
             direct = self.best_current_attack_outcome()
             if direct is not None and (direct.wins_game or direct.knockout):
@@ -16053,17 +23406,17 @@ class Policy:
             boosted = self.outcome.evaluate_suguri_damage_boost()
             if boosted.reachable_knockout:
                 return 94000
-            active_data = self.b.data(self.b.pid(self.b.active))
-            if active_data is not None and not active_data.basic:
-                for target in self.b.bench:
-                    outcome = self.outcome.evaluate_switch_target(target, "suguri")
-                    if outcome.supported and (outcome.reachable_wins_game or outcome.enables_knockout or outcome.improves_damage or (self.outcome.active_status_blocks_attack() and outcome.enables_attack)):
-                        return 88000
-            return 6000
+            if self.best_suguri_switch_play_outcome() is not None:
+                return 88000
+            return SCORE_FORBIDDEN
         if cid == HILDA:
-            if self.b.needs_mega_starmie() or self.b.starmie_needs_energy():
+            if (
+                self.b.needs_mega_starmie()
+                or self.b.needs_mega_yuki()
+                or self.b.starmie_needs_energy()
+            ):
                 return 62000
-            return 6000
+            return SCORE_FORBIDDEN
         if cid == CRISPIN:
             facts = self.b.active_energy_facts()
             if facts.key_attack_id is not None and not facts.key_attack_ready:
@@ -16584,7 +23937,10 @@ class Policy:
     def score_surfing_beach_play(self, option: Any) -> float:
         stadium = getattr(getattr(self.b, "state", None), "stadium", None) or ()
         current = stadium[0] if stadium else None
-        if current is not None and card_id(current) == SURFING_BEACH:
+        current_id = getattr(current, "id", None) if current is not None else None
+        if current is not None and current_id is None:
+            return 0
+        if current_id == SURFING_BEACH:
             return -12000
         if current is not None:
             owner = getattr(current, "playerIndex", None)
@@ -16691,6 +24047,97 @@ class Policy:
             return 14000
         return 1000
 
+    def ignition_equivalent_water_attach_available(
+        self,
+        option: Any,
+        ignition_outcome: ImmediateOutcome,
+    ) -> bool:
+        if (
+            option.type != OptionType.ATTACH
+            or self.b.option_card(option) != IGNITION_ENERGY
+            or not ignition_outcome.supported
+            or ignition_outcome.blocked
+            or ignition_outcome.reachable_attack_id is None
+            or ignition_outcome.reachable_attack_id
+            not in ignition_outcome.enabled_attack_ids
+        ):
+            return False
+        target = self.b.option_target(option)
+        if target is None:
+            return False
+        equivalent_energy_ids = {BASIC_WATER_ENERGY}
+        if self.b.pid(target) == CINDERACE:
+            equivalent_energy_ids.add(BASIC_DARK_ENERGY)
+        for _, candidate in self.b.iter_options():
+            if (
+                candidate.type != OptionType.ATTACH
+                or self.b.option_card(candidate) not in equivalent_energy_ids
+                or self.b.option_target(candidate) is not target
+            ):
+                continue
+            normal_outcome = self.outcome.evaluate_attach(candidate)
+            if (
+                normal_outcome.supported == ignition_outcome.supported
+                and normal_outcome.blocked == ignition_outcome.blocked
+                and normal_outcome.target_id == ignition_outcome.target_id
+                and normal_outcome.target_serial == ignition_outcome.target_serial
+                and normal_outcome.reachable_attack_id
+                == ignition_outcome.reachable_attack_id
+                and normal_outcome.reachable_attack_id
+                in normal_outcome.enabled_attack_ids
+                and normal_outcome.reachable_damage
+                == ignition_outcome.reachable_damage
+                and normal_outcome.reachable_knockout
+                == ignition_outcome.reachable_knockout
+                and normal_outcome.reachable_wins_game
+                == ignition_outcome.reachable_wins_game
+                and normal_outcome.reachable_prizes_taken
+                == ignition_outcome.reachable_prizes_taken
+            ):
+                return True
+        return False
+
+    def ignition_has_same_turn_unique_value(
+        self,
+        option: Any,
+        attach_outcome: ImmediateOutcome,
+    ) -> bool:
+        if (
+            option.type != OptionType.ATTACH
+            or self.b.option_card(option) != IGNITION_ENERGY
+            or not attach_outcome.supported
+            or attach_outcome.blocked
+        ):
+            return False
+        target = self.b.option_target(option)
+        if target is None:
+            return False
+        if self.b.pid(target) == CINDERACE:
+            return bool(
+                target is self.b.active
+                and self.b.energy_count(target) == 0
+                and not self.b.cinderace_can_accelerate()
+                and attach_outcome.reachable_attack_id == TURBO_FLARE
+                and TURBO_FLARE in attach_outcome.enabled_attack_ids
+                and self.has_live_turbo_flare_receiver()
+                and self.has_turbo_flare_energy_in_deck()
+                and not self.active_status_blocks_attack()
+                and not self.ignition_equivalent_water_attach_available(
+                    option,
+                    attach_outcome,
+                )
+            )
+        if (
+            attach_outcome.reachable_attack_id is None
+            or attach_outcome.reachable_attack_id
+            not in attach_outcome.enabled_attack_ids
+        ):
+            return False
+        return not self.ignition_equivalent_water_attach_available(
+            option,
+            attach_outcome,
+        )
+
     def score_attach(self, option: Any) -> float:
         cid = self.b.option_card(option)
         target = self.b.option_target(option)
@@ -16713,6 +24160,8 @@ class Policy:
         ):
             return 210000
         if cid == IGNITION_ENERGY:
+            if not self.ignition_has_same_turn_unique_value(option, attach_outcome):
+                return -40000
             if target_id == CINDERACE:
                 if not self.b.has_bench_energy_receiver():
                     return -40000
@@ -16973,11 +24422,8 @@ class Policy:
                 if active_data is None or active_data.basic
                 else 0
             )
-            if active_data is not None and not active_data.basic:
-                for target in self.b.bench:
-                    outcome = self.outcome.evaluate_switch_target(target, "suguri")
-                    if outcome.supported and (outcome.reachable_wins_game or outcome.enables_knockout or outcome.improves_damage or (self.outcome.active_status_blocks_attack() and outcome.enables_attack)):
-                        switch_score = max(switch_score, 88000)
+            if self.best_suguri_switch_play_outcome() is not None:
+                switch_score = max(switch_score, 88000)
             return switch_score if yes else boosted_score
         return 1000 if yes else 0
 
@@ -17382,9 +24828,12 @@ class Policy:
                 return self.score_boss_outcome(self.outcome.evaluate_boss_target(target))
             if effect == SUGURI:
                 return self.score_switch_target(target, "suguri")
-            if effect == SURFING_BEACH or self.b.select.context == SelectContext.SWITCH:
-                source = "surfing_beach" if effect == SURFING_BEACH else "retreat"
-                return self.score_switch_target(target, source)
+            if effect == SURFING_BEACH:
+                return self.score_switch_target(target, "surfing_beach")
+            if self.b.select.context == SelectContext.SWITCH:
+                if effect is not None:
+                    return SCORE_FORBIDDEN
+                return self.score_switch_target(target, "retreat")
             if effect == CINDERACE and self.b.select.context in {SelectContext.ATTACH_FROM, SelectContext.ATTACH_TO}:
                 return self.score_turbo_flare_attach_target(target)
             return self.target_value(target)
@@ -17549,10 +24998,64 @@ class Policy:
             return -10000
         return 0
 
+    def drednaw_discard_copy_is_required(self, option: Any) -> bool:
+        if (
+            self.b.select.context
+            not in {
+                SelectContext.DISCARD,
+                SelectContext.DISCARD_CARD_OR_ATTACHED_CARD,
+                SelectContext.TO_DECK,
+                SelectContext.TO_DECK_BOTTOM,
+            }
+            or self.b.option_card(option) != DREDNAW
+        ):
+            return False
+
+        hand_count = self.b.hand_ids.count(DREDNAW)
+        visible_demand = (
+            self.b.count_in_play(CHEWTLE)
+            + self.b.hand_ids.count(CHEWTLE)
+        )
+        required_count = min(
+            hand_count,
+            visible_demand
+            if visible_demand > 0
+            else int(self.b.remaining_possible(CHEWTLE)),
+        )
+        if required_count <= 0:
+            return False
+        if hand_count <= required_count:
+            return True
+
+        hand_copies = tuple(
+            (index, card, getattr(card, "serial", None))
+            for index, card in enumerate(self.b.hand)
+            if getattr(card, "id", None) == DREDNAW
+        )
+        if len(hand_copies) != hand_count:
+            return True
+
+        serials = tuple(serial for _, _, serial in hand_copies)
+        serial_identity_exact = (
+            all(type(serial) is int for serial in serials)
+            and len(set(serials)) == len(serials)
+        )
+        if not serial_identity_exact:
+            return True
+
+        option_serial = getattr(option, "serial", None)
+        if type(option_serial) is not int or option_serial not in serials:
+            return True
+
+        protected_serials = set(sorted(serials)[:required_count])
+        return option_serial in protected_serials
+
     def score_discard(self, option: Any) -> float:
         cid = self.b.option_card(option)
         if cid is None:
             return 0
+        if self.drednaw_discard_copy_is_required(option):
+            return SCORE_FORBIDDEN
         if self.effect_id() == ULTRA_BALL:
             if cid in self.ultra_ball_evolutions_to_preserve():
                 return SCORE_FORBIDDEN
@@ -17658,189 +25161,830 @@ class Policy:
         return None
 
 
-def _stage2b4_policy_direct_attack_state(policy) -> Tuple[bool, bool, Optional[float]]:
-    direct_win = False
-    direct_ko = False
-    attack_options = []
-    for _, candidate in policy.b.iter_options():
-        if candidate.type == OptionType.ATTACK or candidate.attackId is not None:
-            attack_options.append(candidate)
-            attack_outcome = policy.outcome.evaluate_attack(candidate)
-            if not attack_outcome.supported or attack_outcome.blocked:
-                return (False, False, None)
-            direct_win = direct_win or attack_outcome.wins_game
-            direct_ko = direct_ko or attack_outcome.knockout
-        elif policy.b.select.context == SelectContext.SWITCH:
-            switch_target = policy.b.option_target(candidate)
-            if switch_target is not None:
-                effect = policy.effect_id()
-                source = 'suguri' if effect == SUGURI else 'surfing_beach' if effect == SURFING_BEACH else 'retreat'
-                switch_outcome = policy.outcome.evaluate_switch_target(switch_target, source)
-                if switch_outcome.supported:
-                    direct_win = direct_win or switch_outcome.reachable_wins_game
-                    direct_ko = direct_ko or switch_outcome.reachable_knockout
-    if direct_win or direct_ko:
-        return (direct_win, direct_ko, None)
-    pressure = policy.best_current_non_ko_attack_pressure()
-    if not attack_options:
-        pressure = 0.0
-    return (direct_win, direct_ko, pressure)
 
 
 
 
 
-def _stage2b4_policy_plan_for_option(policy, option: Any) -> Optional[Stage2b4ActionPlanFacts]:
-    cache = policy.__dict__.setdefault('_stage2b4_plan_cache', {})
-    cache_key = id(option)
-    if cache_key in cache:
-        return cache[cache_key]
-    direct_win, direct_ko, current_pressure = _stage2b4_policy_direct_attack_state(policy)
-    if direct_win or direct_ko or current_pressure is None:
-        cache[cache_key] = None
+def _stage2b4_counterline_option_index(
+    board: BoardView,
+    option: Any,
+) -> Optional[int]:
+    indexes = tuple(index for index, candidate in board.iter_options() if candidate is option)
+    return indexes[0] if len(indexes) == 1 else None
+
+
+def _stage2b4_counterline_step_effect_id(
+    board: BoardView,
+    option: Optional[Any],
+    *,
+    route_origin: Optional[ActiveBenchTransitionOrigin],
+    projected_followup_action: bool,
+) -> Optional[int]:
+    """Return the effect identity of this action step, never the route as a whole."""
+    if projected_followup_action or option is None:
         return None
-    cid = policy.b.option_card(option)
-    target = policy.b.option_target(option)
-    bombs = [card for card in tuple(getattr(policy.b, 'hand', ()) or ()) if getattr(card, 'id', None) == DELUXE_BOMB and type(getattr(card, 'serial', None)) is int]
-    bomb_card = bombs[0] if len(bombs) == 1 else None
+    option_type = getattr(option, "type", None)
+    if option_type in {OptionType.ATTACH, OptionType.RETREAT}:
+        return None
+    option_card_id = board.option_card(option)
+    if option_card_id in {SURFING_BEACH, SUGURI}:
+        return option_card_id
+    select = getattr(board, "select", None)
+    effect_id = getattr(getattr(select, "effect", None), "id", None)
+    context_card_id = getattr(getattr(select, "contextCard", None), "id", None)
+    expected = (
+        SURFING_BEACH
+        if route_origin == ActiveBenchTransitionOrigin.SURFING_BEACH
+        else SUGURI
+        if route_origin == ActiveBenchTransitionOrigin.SUGURI
+        else None
+    )
+    if expected is not None and effect_id == expected:
+        return expected
+    if expected is not None and context_card_id == expected:
+        return expected
+    return None
+
+
+def _stage2b4_current_action_step_facts(
+    board: BoardView,
+    option: Any,
+    *,
+    step_index: int,
+    target: Optional[Any],
+    route_origin: Optional[ActiveBenchTransitionOrigin],
+    legality_exact: bool,
+    unsupported_reason: Optional[str] = None,
+) -> Stage2b4CounterlineActionStepFacts:
+    option_index = _stage2b4_counterline_option_index(board, option)
+    option_type = getattr(option, "type", None)
+    option_card_id = board.option_card(option)
+    target_card_id = None if target is None else board.pid(target)
+    target_serial = None if target is None else getattr(target, "serial", None)
+    identity_exact = bool(
+        type(option_index) is int
+        and isinstance(option_type, OptionType)
+        and type(target_card_id) is int
+        and type(target_serial) is int
+    )
+    reason = unsupported_reason
+    if reason is None and not identity_exact:
+        reason = "stage2b4_counterline_action_step_identity_unresolved"
+    return Stage2b4CounterlineActionStepFacts(
+        step_index=step_index,
+        option_index=option_index,
+        option_type=option_type if isinstance(option_type, OptionType) else None,
+        option_card_id=option_card_id if type(option_card_id) is int else None,
+        option_effect_id=_stage2b4_counterline_step_effect_id(
+            board,
+            option,
+            route_origin=route_origin,
+            projected_followup_action=False,
+        ),
+        target_card_id=target_card_id if type(target_card_id) is int else None,
+        target_serial=target_serial if type(target_serial) is int else None,
+        route_origin=route_origin,
+        current_observation_option=True,
+        projected_followup_action=False,
+        identity_exact=identity_exact,
+        legality_exact=bool(identity_exact and legality_exact and reason is None),
+        unsupported_reason=reason,
+        reasons=("stage2b4_counterline_current_action_step",)
+        + ((reason,) if reason else ()),
+    )
+
+
+def _stage2b4_projected_bomb_attach_step_facts(
+    projected_after_switch: Optional[BoardView],
+    *,
+    step_index: int,
+    expected_target_card_id: Optional[int],
+    expected_target_serial: Optional[int],
+    route_origin: Optional[ActiveBenchTransitionOrigin],
+    bomb_card: Optional[Any],
+    projection_reason: Optional[str],
+    attach_legality_proven: bool,
+) -> Stage2b4CounterlineActionStepFacts:
+    projected_active = (
+        None if projected_after_switch is None else getattr(projected_after_switch, "active", None)
+    )
+    target_card_id = (
+        None
+        if projected_after_switch is None or projected_active is None
+        else projected_after_switch.pid(projected_active)
+    )
+    target_serial = None if projected_active is None else getattr(projected_active, "serial", None)
+    projected_bombs = tuple(
+        card
+        for card in tuple(
+            getattr(projected_after_switch, "hand", ()) if projected_after_switch is not None else ()
+        )
+        if getattr(card, "id", None) == DELUXE_BOMB
+    )
+    bomb_serial = None if bomb_card is None else getattr(bomb_card, "serial", None)
+    bomb_identity_exact = bool(
+        len(projected_bombs) == 1
+        and bomb_card is not None
+        and getattr(bomb_card, "id", None) == DELUXE_BOMB
+        and type(bomb_serial) is int
+        and getattr(projected_bombs[0], "id", None) == DELUXE_BOMB
+        and getattr(projected_bombs[0], "serial", None) == bomb_serial
+    )
+    target_identity_exact = bool(
+        type(target_card_id) is int
+        and type(target_serial) is int
+        and target_card_id == expected_target_card_id
+        and target_serial == expected_target_serial
+    )
+    tool_state = None if projected_active is None else getattr(projected_active, "tools", None)
+    identity_exact = bool(bomb_identity_exact and target_identity_exact)
+    legality_exact = bool(
+        identity_exact
+        and projection_reason is None
+        and attach_legality_proven
+        and tool_state is not None
+        and not tuple(tool_state or ())
+    )
+    reason = None
+    if not identity_exact or not legality_exact:
+        reason = "stage2b4_counterline_followup_action_identity_unresolved"
+    return Stage2b4CounterlineActionStepFacts(
+        step_index=step_index,
+        option_index=None,
+        option_type=OptionType.ATTACH,
+        option_card_id=DELUXE_BOMB,
+        option_effect_id=None,
+        target_card_id=target_card_id if type(target_card_id) is int else None,
+        target_serial=target_serial if type(target_serial) is int else None,
+        route_origin=route_origin,
+        current_observation_option=False,
+        projected_followup_action=True,
+        identity_exact=identity_exact,
+        legality_exact=legality_exact,
+        unsupported_reason=reason,
+        reasons=("stage2b4_counterline_projected_followup_action_step",)
+        + ((reason,) if reason else ()),
+    )
+
+
+def _stage2b4_action_plan_candidates_for_option(
+    policy: Any,
+    option: Any,
+) -> Tuple[Stage2b4ActionPlanFacts, ...]:
+    """Enumerate Stage2b4 route facts without Policy selection or ranking."""
+    board = policy.b
+    option_entries = tuple(board.iter_options())
+    origin_indexes = tuple(index for index, candidate in option_entries if candidate is option)
+    if len(origin_indexes) != 1:
+        return ()
+    origin_index = origin_indexes[0]
+    cid = board.option_card(option)
+    target = board.option_target(option)
+    bombs = tuple(
+        card
+        for card in tuple(getattr(board, "hand", ()) or ())
+        if getattr(card, "id", None) == DELUXE_BOMB
+    )
+    bomb_card = (
+        bombs[0]
+        if len(bombs) == 1 and type(getattr(bombs[0], "serial", None)) is int
+        else None
+    )
     plans: List[Stage2b4ActionPlanFacts] = []
-    switch_entries = []
-    for _, candidate in policy.b.iter_options():
-        candidate_id = policy.b.option_card(candidate)
-        if candidate.type == OptionType.ABILITY and policy.outcome.is_surfing_beach_ability(candidate):
-            switch_entries.append((candidate, 'surfing_beach', ActiveBenchTransitionOrigin.SURFING_BEACH, 0.0, 0.0))
+    switch_entries: List[Tuple[Any, str, ActiveBenchTransitionOrigin, float, float]] = []
+    for _, candidate in option_entries:
+        candidate_id = board.option_card(candidate)
+        if (
+            candidate.type == OptionType.ABILITY
+            and policy.outcome.is_surfing_beach_ability(candidate)
+        ):
+            switch_entries.append(
+                (candidate, "surfing_beach", ActiveBenchTransitionOrigin.SURFING_BEACH, 0.0, 0.0)
+            )
         elif candidate.type == OptionType.PLAY and candidate_id == SURFING_BEACH:
-            switch_entries.append((candidate, 'surfing_beach', ActiveBenchTransitionOrigin.SURFING_BEACH, 0.0, 0.0))
+            switch_entries.append(
+                (candidate, "surfing_beach", ActiveBenchTransitionOrigin.SURFING_BEACH, 0.0, 0.0)
+            )
         elif candidate.type == OptionType.RETREAT:
             candidate_outcome = policy.outcome.evaluate_retreat(candidate)
             if candidate_outcome.supported:
                 cost = float(candidate_outcome.retreat_energy_cost)
-                switch_entries.append((candidate, 'retreat', ActiveBenchTransitionOrigin.RETREAT, cost, float(candidate_outcome.retreat_energy_cost + candidate_outcome.important_energy_loss * 3)))
-        elif candidate.type == OptionType.PLAY and candidate_id == SUGURI and (not bool(getattr(getattr(policy.b, 'state', None), 'supporterPlayed', False))):
-            switch_entries.append((candidate, 'suguri', ActiveBenchTransitionOrigin.SUGURI, 1.0, 1.5))
+                switch_entries.append(
+                    (
+                        candidate,
+                        "retreat",
+                        ActiveBenchTransitionOrigin.RETREAT,
+                        cost,
+                        float(
+                            candidate_outcome.retreat_energy_cost
+                            + candidate_outcome.important_energy_loss * 3
+                        ),
+                    )
+                )
+        elif (
+            candidate.type == OptionType.PLAY
+            and candidate_id == SUGURI
+            and not bool(getattr(getattr(board, "state", None), "supporterPlayed", False))
+        ):
+            switch_entries.append(
+                (candidate, "suguri", ActiveBenchTransitionOrigin.SUGURI, 1.0, 1.5)
+            )
 
-    def add_plan(*, action_kind: str, projected: Optional[BoardView], reason: Optional[str], target_pokemon: Optional[Any], origin: Optional[ActiveBenchTransitionOrigin], action_count: int, remaining_actions: int, resource_cost: float, risk: float, require_bomb_improvement: bool=False, without_bomb_board: Optional[BoardView]=None) -> None:
+    attach_candidate_by_serial: Dict[int, Tuple[Any, DeluxeBombAttachCandidateFacts]] = {}
+    for attach_candidate in deluxe_bomb_strategy_facts(board).attach_candidates:
+        attach_index = attach_candidate.option_index
+        serial = attach_candidate.target_serial
+        if (
+            attach_candidate.attach_legal_now is True
+            and type(attach_index) is int
+            and type(serial) is int
+        ):
+            matches = tuple(
+                candidate
+                for index, candidate in option_entries
+                if index == attach_index
+                and getattr(candidate, "type", None) == OptionType.ATTACH
+                and board.option_card(candidate) == DELUXE_BOMB
+                and getattr(board.option_target(candidate), "serial", None) == serial
+            )
+            if len(matches) == 1 and serial not in attach_candidate_by_serial:
+                attach_candidate_by_serial[serial] = (matches[0], attach_candidate)
+            elif len(matches) != 1 or serial in attach_candidate_by_serial:
+                attach_candidate_by_serial.pop(serial, None)
+
+    def append_fact_plan(
+        *,
+        action_kind: str,
+        projected: Optional[BoardView],
+        reason: Optional[str],
+        target_pokemon: Optional[Any],
+        origin: Optional[ActiveBenchTransitionOrigin],
+        action_count: int,
+        remaining_actions: int,
+        resource_cost: float,
+        risk: float,
+        action_steps: Tuple[Stage2b4CounterlineActionStepFacts, ...],
+    ) -> None:
         if projected is None:
             return
-        integrated = stage2b4_integrated_counterline_facts(projected, route_enumeration_complete=True, current_non_ko_attack_pressure=current_pressure, current_direct_win_exists=direct_win, current_direct_knockout_exists=direct_ko)
-        if require_bomb_improvement:
-            if without_bomb_board is None:
-                return
-            without = stage2b4_integrated_counterline_facts(without_bomb_board, route_enumeration_complete=True, current_non_ko_attack_pressure=current_pressure, current_direct_win_exists=direct_win, current_direct_knockout_exists=direct_ko)
-            improves = without.guaranteed_attacker_knockout is not True and (integrated.guaranteed_attacker_knockout is True or (integrated.exact_drednaw_followup_exists is True and without.exact_drednaw_followup_exists is not True) or (integrated.line_pressure is not None and without.line_pressure is not None and (integrated.line_pressure > without.line_pressure)) or (integrated.live_policy_route is True and without.live_policy_route is not True))
-            if not improves:
-                return
-        if integrated.live_policy_route is not True:
-            return
-        plans.append(Stage2b4ActionPlanFacts(supported=True, action_kind=action_kind, option_type=getattr(option, 'type', None), card_id=cid, target_id=None if target_pokemon is None else policy.b.pid(target_pokemon), target_serial=None if target_pokemon is None else getattr(target_pokemon, 'serial', None), route_origin=origin, action_count=action_count, remaining_actions=remaining_actions, integrated_facts=integrated, resource_cost=resource_cost, risk=risk, unsupported_reason=reason, reasons=('stage2b4_live_policy_plan', action_kind)))
-    if option.type == OptionType.ATTACH and cid == DELUXE_BOMB and (target is not None):
-        serial = getattr(target, 'serial', None)
-        candidates = deluxe_bomb_strategy_facts(policy.b).attach_candidates
-        option_index = next((index for index, candidate in policy.b.iter_options() if candidate is option), None)
-        exact = next((candidate for candidate in candidates if candidate.option_index == option_index and candidate.target_serial == serial and (candidate.attach_legal_now is True)), None)
-        if exact is not None and bomb_card is not None and (type(serial) is int):
-            if target is policy.b.active:
-                projected, reason = _stage2b4_project_board(policy.b, attach_bomb_to_serial=serial, bomb_card=bomb_card)
-                add_plan(action_kind='deluxe_bomb_attach_active', projected=projected, reason=reason, target_pokemon=target, origin=None, action_count=1, remaining_actions=0, resource_cost=1.0, risk=0.5, require_bomb_improvement=policy.b.pid(target) == BRUXISH, without_bomb_board=_stage2b4_project_board(policy.b, remove_deluxe_bomb_access=True)[0])
-            elif policy.b.pid(target) == BRUXISH:
-                for _, route_name, origin, route_resource, route_risk in tuple(switch_entries):
-                    projected, reason = _stage2b4_project_board(policy.b, attach_bomb_to_serial=serial, bomb_card=bomb_card, switch_target_serial=serial)
-                    without, _ = _stage2b4_project_board(policy.b, switch_target_serial=serial, remove_deluxe_bomb_access=True)
-                    add_plan(action_kind=f'deluxe_bomb_attach_bench_then_{route_name}', projected=projected, reason=reason, target_pokemon=target, origin=origin, action_count=2, remaining_actions=1, resource_cost=1.0 + route_resource, risk=0.5 + route_risk, require_bomb_improvement=True, without_bomb_board=without)
-    is_surfing_entry = option.type == OptionType.ABILITY and policy.outcome.is_surfing_beach_ability(option) or (option.type == OptionType.PLAY and cid == SURFING_BEACH)
+        integrated = stage2b4_integrated_counterline_facts(
+            projected,
+            route_enumeration_complete=True,
+            current_non_ko_attack_pressure=None,
+            current_direct_win_exists=False,
+            current_direct_knockout_exists=False,
+        )
+        integrated_reason = integrated.unsupported_reason
+        followup_only_limitation = (
+            integrated_reason in _STAGE2B4_COUNTERLINE_FOLLOWUP_LIMITATION_REASONS
+        )
+        step_reason = next(
+            (step.unsupported_reason for step in action_steps if step.unsupported_reason),
+            None,
+        )
+        sequence_reason = None
+        if len(action_steps) != action_count or tuple(
+            step.step_index for step in action_steps
+        ) != tuple(range(action_count)):
+            sequence_reason = "stage2b4_counterline_action_step_sequence_unresolved"
+        final_reason = reason or step_reason or sequence_reason or (
+            None if integrated.supported or followup_only_limitation else integrated_reason
+        )
+        projected_active = getattr(projected, "active", None)
+        plans.append(
+            Stage2b4CounterlineRoutePlanFacts(
+                supported=final_reason is None,
+                action_kind=action_kind,
+                option_type=getattr(option, "type", None),
+                card_id=cid,
+                target_id=None if target_pokemon is None else board.pid(target_pokemon),
+                target_serial=None
+                if target_pokemon is None
+                else getattr(target_pokemon, "serial", None),
+                route_origin=origin,
+                action_count=action_count,
+                remaining_actions=remaining_actions,
+                integrated_facts=integrated,
+                resource_cost=resource_cost,
+                risk=risk,
+                unsupported_reason=final_reason,
+                reasons=("stage2b4_fact_only_action_plan", action_kind)
+                + ((final_reason,) if final_reason else ()),
+                projected_active_card_id=None
+                if projected_active is None
+                else projected.pid(projected_active),
+                projected_active_serial=None
+                if projected_active is None
+                else getattr(projected_active, "serial", None),
+                action_steps=action_steps,
+            )
+        )
+
+    if option.type == OptionType.ATTACH and cid == DELUXE_BOMB and target is not None:
+        serial = getattr(target, "serial", None)
+        attach_candidates = deluxe_bomb_strategy_facts(board).attach_candidates
+        exact_attach = next(
+            (
+                candidate
+                for candidate in attach_candidates
+                if candidate.option_index == origin_index
+                and candidate.target_serial == serial
+                and candidate.attach_legal_now is True
+            ),
+            None,
+        )
+        if exact_attach is not None and bomb_card is not None and type(serial) is int:
+            attach_step = _stage2b4_current_action_step_facts(
+                board,
+                option,
+                step_index=0,
+                target=target,
+                route_origin=None,
+                legality_exact=True,
+            )
+            if target is board.active:
+                projected, reason = _stage2b4_project_board(
+                    board, attach_bomb_to_serial=serial, bomb_card=bomb_card
+                )
+                append_fact_plan(
+                    action_kind="deluxe_bomb_attach_active",
+                    projected=projected,
+                    reason=reason,
+                    target_pokemon=target,
+                    origin=None,
+                    action_count=1,
+                    remaining_actions=0,
+                    resource_cost=1.0,
+                    risk=0.5,
+                    action_steps=(attach_step,),
+                )
+            elif board.pid(target) == BRUXISH:
+                for switch_option, route_name, origin, route_resource, route_risk in tuple(switch_entries):
+                    projected, reason = _stage2b4_project_board(
+                        board,
+                        attach_bomb_to_serial=serial,
+                        bomb_card=bomb_card,
+                        switch_target_serial=serial,
+                    )
+                    switch_step = _stage2b4_current_action_step_facts(
+                        board,
+                        switch_option,
+                        step_index=1,
+                        target=target,
+                        route_origin=origin,
+                        legality_exact=reason is None,
+                    )
+                    append_fact_plan(
+                        action_kind=f"deluxe_bomb_attach_bench_then_{route_name}",
+                        projected=projected,
+                        reason=reason,
+                        target_pokemon=target,
+                        origin=origin,
+                        action_count=2,
+                        remaining_actions=1,
+                        resource_cost=1.0 + route_resource,
+                        risk=0.5 + route_risk,
+                        action_steps=(attach_step, switch_step),
+                    )
+
+    is_surfing_entry = (
+        option.type == OptionType.ABILITY
+        and policy.outcome.is_surfing_beach_ability(option)
+    ) or (option.type == OptionType.PLAY and cid == SURFING_BEACH)
     is_retreat_entry = option.type == OptionType.RETREAT
     is_suguri_play = option.type == OptionType.PLAY and cid == SUGURI
-    is_suguri_switch_choice = policy.b.select.context == SelectContext.FIRST_EFFECT and getattr(getattr(policy.b.select, 'contextCard', None), 'id', None) == SUGURI and (option.type == OptionType.YES)
-    if is_suguri_switch_choice:
-        boosted = policy.outcome.evaluate_suguri_damage_boost()
-        if boosted.reachable_knockout or boosted.reachable_wins_game:
-            is_suguri_switch_choice = False
-    current_switch_target = target if policy.b.select.context == SelectContext.SWITCH else None
-    route_origin = None
-    route_name = None
+    is_suguri_switch_choice = (
+        getattr(getattr(board, "select", None), "context", None) == SelectContext.FIRST_EFFECT
+        and getattr(getattr(getattr(board, "select", None), "contextCard", None), "id", None)
+        == SUGURI
+        and option.type == OptionType.YES
+    )
+    current_switch_target = (
+        target
+        if getattr(getattr(board, "select", None), "context", None) == SelectContext.SWITCH
+        else None
+    )
+    route_origin: Optional[ActiveBenchTransitionOrigin] = None
+    route_name: Optional[str] = None
+    route_reason: Optional[str] = None
     resource_cost = 0.0
     risk = 0.0
     targets: Tuple[Any, ...] = ()
     if is_surfing_entry:
         route_origin = ActiveBenchTransitionOrigin.SURFING_BEACH
-        route_name = 'surfing_beach'
-        targets = tuple((p for p in policy.b.bench if policy.b.pid(p) == BRUXISH))
+        route_name = "surfing_beach"
+        targets = tuple(pokemon for pokemon in board.bench if board.pid(pokemon) == BRUXISH)
     elif is_retreat_entry:
         retreat_outcome = policy.outcome.evaluate_retreat(option)
         if retreat_outcome.supported:
             route_origin = ActiveBenchTransitionOrigin.RETREAT
-            route_name = 'retreat'
+            route_name = "retreat"
             resource_cost = float(retreat_outcome.retreat_energy_cost)
-            risk = float(retreat_outcome.retreat_energy_cost + retreat_outcome.important_energy_loss * 3)
-            targets = tuple((p for p in policy.b.bench if policy.b.pid(p) == BRUXISH))
+            risk = float(
+                retreat_outcome.retreat_energy_cost
+                + retreat_outcome.important_energy_loss * 3
+            )
+            targets = tuple(
+                pokemon for pokemon in board.bench if board.pid(pokemon) == BRUXISH
+            )
     elif is_suguri_play:
-        if not bool(getattr(getattr(policy.b, 'state', None), 'supporterPlayed', False)):
+        if not bool(getattr(getattr(board, "state", None), "supporterPlayed", False)):
             route_origin = ActiveBenchTransitionOrigin.SUGURI
-            route_name = 'suguri'
+            route_name = "suguri"
             resource_cost = 1.0
             risk = 1.5
-            targets = tuple((p for p in policy.b.bench if policy.b.pid(p) == BRUXISH))
+            targets = tuple(
+                pokemon for pokemon in board.bench if board.pid(pokemon) == BRUXISH
+            )
     elif is_suguri_switch_choice:
         route_origin = ActiveBenchTransitionOrigin.SUGURI
-        route_name = 'suguri'
+        route_name = "suguri"
         resource_cost = 1.0
         risk = 1.5
-        targets = tuple((p for p in policy.b.bench if policy.b.pid(p) == BRUXISH))
-    elif current_switch_target is not None and policy.b.pid(current_switch_target) == BRUXISH:
+        targets = tuple(pokemon for pokemon in board.bench if board.pid(pokemon) == BRUXISH)
+    elif current_switch_target is not None and board.pid(current_switch_target) == BRUXISH:
         effect = policy.effect_id()
         if effect == SURFING_BEACH:
             route_origin = ActiveBenchTransitionOrigin.SURFING_BEACH
-            route_name = 'surfing_beach_target'
+            route_name = "surfing_beach_target"
         elif effect == SUGURI:
             route_origin = ActiveBenchTransitionOrigin.SUGURI
-            route_name = 'suguri_target'
+            route_name = "suguri_target"
             resource_cost = 1.0
             risk = 1.5
-        elif effect is None:
-            route_origin = ActiveBenchTransitionOrigin.RETREAT
-            route_name = 'retreat_target'
-            risk = 0.25
+        else:
+            route_name = "transition_origin_unresolved"
+            route_reason = "stage2b4_counterline_transition_origin_unresolved"
         targets = (current_switch_target,)
-    if route_origin is not None and route_name is not None:
-        legal_attach_serials = {candidate.target_serial for candidate in deluxe_bomb_strategy_facts(policy.b).attach_candidates if candidate.attach_legal_now is True and candidate.target_is_bruxish is True and (type(candidate.target_serial) is int)}
+
+    if route_name is not None:
         for bruxish_target in targets:
-            serial = getattr(bruxish_target, 'serial', None)
+            serial = getattr(bruxish_target, "serial", None)
             if type(serial) is not int:
                 continue
-            projected, reason = _stage2b4_project_board(policy.b, switch_target_serial=serial, remove_deluxe_bomb_access=True)
-            add_plan(action_kind=route_name, projected=projected, reason=reason, target_pokemon=bruxish_target, origin=route_origin, action_count=1, remaining_actions=0, resource_cost=resource_cost, risk=risk)
-            future_attach_ready = (current_switch_target is not None or is_suguri_switch_choice) and bomb_card is not None and not tuple(getattr(bruxish_target, 'tools', ()) or ())
-            if bomb_card is not None and ((current_switch_target is None and not is_suguri_switch_choice and serial in legal_attach_serials) or future_attach_ready):
-                projected_bomb, reason_bomb = _stage2b4_project_board(policy.b, attach_bomb_to_serial=serial, bomb_card=bomb_card, switch_target_serial=serial)
-                without, _ = _stage2b4_project_board(policy.b, switch_target_serial=serial, remove_deluxe_bomb_access=True)
-                add_plan(action_kind=f'{route_name}_then_deluxe_bomb_attach', projected=projected_bomb, reason=reason_bomb, target_pokemon=bruxish_target, origin=route_origin, action_count=2, remaining_actions=1, resource_cost=resource_cost + 1.0, risk=risk + 0.5, require_bomb_improvement=True, without_bomb_board=without)
-    best = max(plans, key=lambda plan: (plan.integrated_facts.guaranteed_attacker_knockout is True, plan.integrated_facts.line_pressure or 0.0, -plan.action_count, -plan.resource_cost, -plan.risk, -(plan.target_serial or 0)), default=None)
-    cache[cache_key] = best
-    return best
+            projected, reason = _stage2b4_project_board(
+                board, switch_target_serial=serial, remove_deluxe_bomb_access=True
+            )
+            first_step = _stage2b4_current_action_step_facts(
+                board,
+                option,
+                step_index=0,
+                target=bruxish_target,
+                route_origin=route_origin,
+                legality_exact=reason is None and route_reason is None,
+                unsupported_reason=route_reason,
+            )
+            append_fact_plan(
+                action_kind=route_name,
+                projected=projected,
+                reason=route_reason or reason,
+                target_pokemon=bruxish_target,
+                origin=route_origin,
+                action_count=1,
+                remaining_actions=0,
+                resource_cost=resource_cost,
+                risk=risk,
+                action_steps=(first_step,),
+            )
+            if route_reason is not None:
+                continue
+            attach_entry = attach_candidate_by_serial.get(serial)
+            future_followup_context = current_switch_target is not None or is_suguri_switch_choice
+            attach_legality_proven = attach_entry is not None or future_followup_context
+            diagnostic_followup = bool(bombs) and (attach_legality_proven or future_followup_context)
+            if not attach_legality_proven and not diagnostic_followup:
+                continue
+            projected_after_switch, switch_projection_reason = _stage2b4_project_board(
+                board,
+                switch_target_serial=serial,
+            )
+            second_step = _stage2b4_projected_bomb_attach_step_facts(
+                projected_after_switch,
+                step_index=1,
+                expected_target_card_id=board.pid(bruxish_target),
+                expected_target_serial=serial,
+                route_origin=route_origin,
+                bomb_card=bomb_card,
+                projection_reason=switch_projection_reason,
+                attach_legality_proven=attach_legality_proven,
+            )
+            if second_step.identity_exact and second_step.legality_exact:
+                projected_bomb, reason_bomb = _stage2b4_project_board(
+                    board,
+                    attach_bomb_to_serial=serial,
+                    bomb_card=bomb_card,
+                    switch_target_serial=serial,
+                )
+            else:
+                projected_bomb = projected_after_switch or projected
+                reason_bomb = "stage2b4_counterline_followup_action_identity_unresolved"
+            append_fact_plan(
+                action_kind=f"{route_name}_then_deluxe_bomb_attach",
+                projected=projected_bomb,
+                reason=reason_bomb,
+                target_pokemon=bruxish_target,
+                origin=route_origin,
+                action_count=2,
+                remaining_actions=1,
+                resource_cost=resource_cost + 1.0,
+                risk=risk + 0.5,
+                action_steps=(first_step, second_step),
+            )
+    return tuple(plans)
 
-def _stage2b4_policy_action_score_candidate(policy, option: Any, legacy_score: float, outcome: ImmediateOutcome) -> Optional[ActionScore]:
-    if option.type == OptionType.ATTACK or option.attackId is not None:
-        return None
-    cid = policy.b.option_card(option)
-    target = policy.b.option_target(option)
-    relevant = option.type == OptionType.ATTACH and cid == DELUXE_BOMB or (option.type == OptionType.PLAY and cid in {SURFING_BEACH, SUGURI}) or option.type == OptionType.RETREAT or (option.type == OptionType.ABILITY and policy.outcome.is_surfing_beach_ability(option)) or (policy.b.select.context == SelectContext.FIRST_EFFECT and getattr(getattr(policy.b.select, 'contextCard', None), 'id', None) == SUGURI and (option.type == OptionType.YES)) or (policy.b.select.context == SelectContext.SWITCH and target is not None and (policy.b.pid(target) == BRUXISH) and (policy.effect_id() in {None, SURFING_BEACH, SUGURI}))
-    if not relevant:
-        return None
-    plan = _stage2b4_policy_plan_for_option(policy, option)
-    if plan is None or not plan.supported or plan.integrated_facts is None:
-        return None
-    facts = plan.integrated_facts
-    if facts.live_policy_route is not True or facts.line_pressure is None:
-        return None
-    return ActionScore(TIER_HIGH_VALUE_PREP, immediate=1.0 if facts.guaranteed_attacker_knockout is True else 0.0, pressure=facts.line_pressure, development=float(facts.guaranteed_counter_damage or 0), resource=-plan.resource_cost, risk=plan.risk, legacy=legacy_score)
+def _stage2b4_counterline_route_kind(
+    attack_fact: Stage2b4CounterlineAttackFacts,
+) -> Stage2b4CounterlineRouteKind:
+    bruxish = attack_fact.bruxish_trigger_confirmed
+    bomb = attack_fact.deluxe_bomb_trigger_confirmed
+    if bruxish is True and bomb is True and attack_fact.combined_damage_counters == 15:
+        return Stage2b4CounterlineRouteKind.DELUXE_BOMB_AND_BRUXISH
+    if bruxish is True and bomb is False and attack_fact.combined_damage_counters == 3:
+        return Stage2b4CounterlineRouteKind.BRUXISH_ONLY
+    if bomb is True and bruxish is False and attack_fact.combined_damage_counters == 12:
+        return Stage2b4CounterlineRouteKind.DELUXE_BOMB_ONLY
+    return Stage2b4CounterlineRouteKind.UNRESOLVED
 
-_STAGE2B4_ORIGINAL_POLICY_ACTION_SCORE = Policy.action_score
 
-def _stage2b4_policy_action_score(policy: Policy, option: Any, legacy_score: float, outcome: ImmediateOutcome) -> ActionScore:
-    score = _stage2b4_policy_action_score_candidate(policy, option, legacy_score, outcome)
-    if score is not None:
-        return score
-    return _STAGE2B4_ORIGINAL_POLICY_ACTION_SCORE(policy, option, legacy_score, outcome)
+def _stage2b4_counterline_action_line_from_attack(
+    board: BoardView,
+    option: Any,
+    option_index: int,
+    plan: Stage2b4ActionPlanFacts,
+    attack_fact: Stage2b4CounterlineAttackFacts,
+) -> Stage2b4CounterlineActionLineFacts:
+    route_kind = _stage2b4_counterline_route_kind(attack_fact)
+    reasons: List[str] = []
+    diagnostic_reasons: List[str] = []
+    if plan.unsupported_reason:
+        reasons.append(plan.unsupported_reason)
+    if attack_fact.unsupported_reason:
+        if (
+            attack_fact.unsupported_reason
+            in _STAGE2B4_COUNTERLINE_FOLLOWUP_LIMITATION_REASONS
+        ):
+            diagnostic_reasons.append(attack_fact.unsupported_reason)
+        else:
+            reasons.append(attack_fact.unsupported_reason)
+
+    target_serial = plan.target_serial
+    matching_targets = tuple(
+        pokemon
+        for pokemon in tuple(getattr(board, "all_my_pokemon", ()) or ())
+        if getattr(pokemon, "serial", None) == target_serial
+    )
+    if type(target_serial) is not int or len(matching_targets) != 1:
+        reasons.append("stage2b4_counterline_origin_target_identity_unresolved")
+    elif board.pid(matching_targets[0]) != plan.target_id:
+        reasons.append("stage2b4_counterline_origin_target_card_mismatch")
+    if plan.option_type != getattr(option, "type", None):
+        reasons.append("stage2b4_counterline_origin_option_type_mismatch")
+
+    action_steps = tuple(getattr(plan, "action_steps", ()) or ())
+    if (
+        len(action_steps) != plan.action_count
+        or tuple(step.step_index for step in action_steps)
+        != tuple(range(plan.action_count))
+    ):
+        reasons.append("stage2b4_counterline_action_step_sequence_unresolved")
+    for step in action_steps:
+        if not step.identity_exact or not step.legality_exact:
+            reasons.append(
+                step.unsupported_reason
+                or "stage2b4_counterline_action_step_identity_unresolved"
+            )
+        if (
+            step.target_serial != plan.target_serial
+            or step.target_card_id != plan.target_id
+        ):
+            reasons.append("stage2b4_counterline_action_step_target_mismatch")
+        if step.current_observation_option:
+            if type(step.option_index) is not int:
+                reasons.append("stage2b4_counterline_action_step_identity_unresolved")
+            else:
+                matches = tuple(
+                    candidate
+                    for index, candidate in board.iter_options()
+                    if index == step.option_index
+                )
+                if len(matches) != 1:
+                    reasons.append("stage2b4_counterline_action_step_identity_unresolved")
+                else:
+                    current = matches[0]
+                    if getattr(current, "type", None) != step.option_type:
+                        reasons.append("stage2b4_counterline_action_step_identity_unresolved")
+                    current_card_id = board.option_card(current)
+                    if (
+                        step.option_card_id is not None
+                        and current_card_id != step.option_card_id
+                    ):
+                        reasons.append("stage2b4_counterline_action_step_identity_unresolved")
+        elif not step.projected_followup_action or step.option_index is not None:
+            reasons.append("stage2b4_counterline_followup_action_identity_unresolved")
+
+    if attack_fact.holder_serial != plan.target_serial:
+        reasons.append("stage2b4_counterline_holder_serial_mismatch")
+    if attack_fact.holder_id != plan.target_id:
+        reasons.append("stage2b4_counterline_holder_card_mismatch")
+    if (
+        getattr(plan, "projected_active_serial", None) != attack_fact.holder_serial
+        or getattr(plan, "projected_active_card_id", None) != attack_fact.holder_id
+    ):
+        reasons.append("stage2b4_counterline_projected_active_holder_mismatch")
+
+    if route_kind == Stage2b4CounterlineRouteKind.UNRESOLVED:
+        reasons.append("stage2b4_counterline_trigger_state_unresolved")
+    if attack_fact.can_attack_with_current_energy is not True:
+        reasons.append(
+            "stage2b4_counterline_opponent_attack_payability_unresolved"
+            if attack_fact.can_attack_with_current_energy is None
+            else "stage2b4_counterline_opponent_attack_non_payable"
+        )
+    if attack_fact.drednaw_followup_supported is True:
+        if type(attack_fact.drednaw_serial) is not int:
+            reasons.append("stage2b4_counterline_drednaw_identity_unresolved")
+        else:
+            drednaw_matches = tuple(
+                pokemon
+                for pokemon in tuple(getattr(board, "all_my_pokemon", ()) or ())
+                if board.pid(pokemon) == DREDNAW
+                and getattr(pokemon, "serial", None) == attack_fact.drednaw_serial
+            )
+            if len(drednaw_matches) != 1:
+                reasons.append("stage2b4_counterline_drednaw_identity_unresolved")
+            ready_drednaw = tuple(
+                fact
+                for fact in plan.integrated_facts.drednaw_facts.drednaw_facts
+                if fact.hard_crunch_payable is True
+                and fact.hard_crunch_damage_now is not None
+                and type(fact.drednaw_serial) is int
+            )
+            if len({fact.drednaw_serial for fact in ready_drednaw}) > 1:
+                reasons.append("stage2b4_counterline_multiple_drednaw_followups_unresolved")
+    clean = tuple(dict.fromkeys(reason for reason in reasons if reason))
+    core_attack_supported = bool(
+        attack_fact.supported
+        or attack_fact.unsupported_reason
+        in _STAGE2B4_COUNTERLINE_FOLLOWUP_LIMITATION_REASONS
+    )
+    continuity_reasons = {
+        "stage2b4_counterline_holder_serial_mismatch",
+        "stage2b4_counterline_holder_card_mismatch",
+        "stage2b4_counterline_projected_active_holder_mismatch",
+        "stage2b4_counterline_action_step_target_mismatch",
+    }
+    continuity_exact = not any(reason in continuity_reasons for reason in clean)
+    transported_route_kind = (
+        route_kind if continuity_exact else Stage2b4CounterlineRouteKind.UNRESOLVED
+    )
+    supported = (
+        plan.supported
+        and core_attack_supported
+        and attack_fact.can_attack_with_current_energy is True
+        and transported_route_kind != Stage2b4CounterlineRouteKind.UNRESOLVED
+        and len(action_steps) == plan.action_count
+        and all(step.identity_exact and step.legality_exact for step in action_steps)
+        and not clean
+    )
+    holder_survives = (
+        None
+        if attack_fact.holder_knocked_out is None
+        else not attack_fact.holder_knocked_out
+    )
+    combined = (
+        True
+        if transported_route_kind == Stage2b4CounterlineRouteKind.DELUXE_BOMB_AND_BRUXISH
+        else None
+        if (
+            attack_fact.bruxish_trigger_confirmed is None
+            or attack_fact.deluxe_bomb_trigger_confirmed is None
+        )
+        else False
+    )
+    return Stage2b4CounterlineActionLineFacts(
+        origin_option_index=option_index,
+        origin_option_type=plan.option_type,
+        origin_option_card_id=plan.card_id,
+        origin_target_card_id=plan.target_id,
+        origin_target_serial=plan.target_serial,
+        action_kind=plan.action_kind,
+        route_origin=plan.route_origin,
+        action_count=plan.action_count,
+        remaining_actions=plan.remaining_actions,
+        action_steps=action_steps,
+        supported=supported,
+        exact=supported,
+        route_kind=transported_route_kind,
+        opponent_attack_id=attack_fact.attack_id,
+        opponent_attacker_card_id=attack_fact.opponent_active_id,
+        opponent_attacker_serial=attack_fact.opponent_active_serial,
+        holder_card_id=attack_fact.holder_id,
+        holder_serial=attack_fact.holder_serial,
+        bruxish_trigger_confirmed=attack_fact.bruxish_trigger_confirmed,
+        deluxe_bomb_trigger_confirmed=attack_fact.deluxe_bomb_trigger_confirmed,
+        combined_trigger_confirmed=combined,
+        counter_damage_counters=(
+            attack_fact.combined_damage_counters if continuity_exact else None
+        ),
+        counter_damage_amount=(
+            attack_fact.combined_damage_amount if continuity_exact else None
+        ),
+        attacker_knocked_out=(
+            attack_fact.attacker_knocked_out if continuity_exact else None
+        ),
+        holder_knocked_out=attack_fact.holder_knocked_out,
+        holder_survives=holder_survives,
+        simultaneous_knockout=attack_fact.simultaneous_knockout,
+        drednaw_followup_supported=attack_fact.drednaw_followup_supported,
+        drednaw_serial=attack_fact.drednaw_serial,
+        drednaw_hard_crunch_damage=attack_fact.drednaw_hard_crunch_damage,
+        integrated_facts=plan.integrated_facts,
+        unsupported_reason=clean[0] if clean else None,
+        reasons=("stage2b4_counterline_action_line_fact", plan.action_kind)
+        + tuple(dict.fromkeys(diagnostic_reasons))
+        + clean,
+    )
+
+def stage2b4_counterline_action_line_collection_facts(
+    policy: Any,
+    option: Any,
+) -> Stage2b4CounterlineActionLineCollectionFacts:
+    entries = tuple(policy.b.iter_options())
+    indexes = tuple(index for index, candidate in entries if candidate is option)
+    if len(indexes) != 1:
+        reason = "stage2b4_counterline_origin_option_identity_unresolved"
+        return Stage2b4CounterlineActionLineCollectionFacts(
+            origin_option_index=None,
+            origin_option_type=getattr(option, "type", None),
+            origin_option_card_id=policy.b.option_card(option),
+            action_plans=(),
+            routes=(),
+            supported=False,
+            exact=False,
+            unsupported_reason=reason,
+            reasons=(reason,),
+        )
+    option_index = indexes[0]
+    plans = _stage2b4_action_plan_candidates_for_option(policy, option)
+    routes: List[Stage2b4CounterlineActionLineFacts] = []
+    for plan in plans:
+        if plan.integrated_facts is None:
+            continue
+        for attack_fact in plan.integrated_facts.attack_facts:
+            if attack_fact.can_attack_with_current_energy is False:
+                continue
+            if (
+                attack_fact.bruxish_trigger_confirmed is False
+                and attack_fact.deluxe_bomb_trigger_confirmed is False
+            ):
+                continue
+            routes.append(
+                _stage2b4_counterline_action_line_from_attack(
+                    policy.b, option, option_index, plan, attack_fact
+                )
+            )
+    if not plans:
+        reason = "stage2b4_counterline_no_fact_only_route"
+    elif not routes:
+        reason = "stage2b4_counterline_no_trigger_route"
+    else:
+        reason = None
+    supported = bool(routes) and all(route.supported for route in routes)
+    exact = supported and all(route.exact for route in routes)
+    if routes and not supported and reason is None:
+        reason = next(
+            (route.unsupported_reason for route in routes if route.unsupported_reason),
+            "stage2b4_counterline_route_unresolved",
+        )
+    return Stage2b4CounterlineActionLineCollectionFacts(
+        origin_option_index=option_index,
+        origin_option_type=getattr(option, "type", None),
+        origin_option_card_id=policy.b.option_card(option),
+        action_plans=plans,
+        routes=tuple(routes),
+        supported=supported,
+        exact=exact,
+        unsupported_reason=reason,
+        reasons=("stage2b4_counterline_action_line_collection",)
+        + ((reason,) if reason else ()),
+    )
+
+
+def stage2b4_counterline_action_line_collections(
+    policy: Any,
+) -> Tuple[Stage2b4CounterlineActionLineCollectionFacts, ...]:
+    collections: List[Stage2b4CounterlineActionLineCollectionFacts] = []
+    for _, option in policy.b.iter_options():
+        collection = stage2b4_counterline_action_line_collection_facts(policy, option)
+        if collection.action_plans or collection.routes:
+            collections.append(collection)
+    return tuple(collections)
+
+
+
+
+
 
 def _stage2c_current_attack_state(policy: Policy) -> Tuple[bool, bool, bool]:
     direct_win = False
@@ -17858,7 +26002,64 @@ def _stage2c_current_attack_state(policy: Policy) -> Tuple[bool, bool, bool]:
             not attack_outcome.wins_game and not attack_outcome.knockout
         )
     return direct_win, direct_ko, non_ko
-def _stage2c_hand_basic_role(board: BoardView, cid: Optional[int]) -> Tuple[str, bool, float]:
+def _stage2c_bruxish_after_play_counterline_role_live(
+    board: BoardView,
+    option: Any,
+) -> Optional[bool]:
+    """Return exact after-PLAY Bruxish counterline liveness, or None if unresolved."""
+    if (
+        option.type != OptionType.PLAY
+        or board.option_card(option) != BRUXISH
+        or board.count_in_play(BRUXISH) > 0
+    ):
+        return False
+    contract = _stage2b2a_bruxish_counterattack_contract(board)
+    if not contract.supported:
+        return False
+    projected, played_serial, reason = _stage2b4_project_bruxish_play_board(board, option)
+    if projected is None or type(played_serial) is not int:
+        if reason in {
+            "stage2b4_basic_play_bench_full",
+            "stage2b4_basic_play_option_identity_unresolved",
+        }:
+            return False
+        return None
+
+    projected_policy = Policy(projected)
+    collections = stage2b4_counterline_action_line_collections(projected_policy)
+    unresolved = False
+    route_kinds = {
+        Stage2b4CounterlineRouteKind.BRUXISH_ONLY,
+        Stage2b4CounterlineRouteKind.DELUXE_BOMB_AND_BRUXISH,
+    }
+    for collection in collections:
+        for route in collection.routes:
+            if (
+                route.holder_card_id != BRUXISH
+                or route.holder_serial != played_serial
+            ):
+                continue
+            if (
+                route.supported
+                and route.exact
+                and route.bruxish_trigger_confirmed is True
+                and route.route_kind in route_kinds
+            ):
+                return True
+            if (
+                route.bruxish_trigger_confirmed is None
+                or not route.supported
+                or not route.exact
+            ):
+                unresolved = True
+    return None if unresolved else False
+
+
+def _stage2c_hand_basic_role(
+    board: BoardView,
+    cid: Optional[int],
+    option: Optional[Any] = None,
+) -> Tuple[str, Optional[bool], float]:
     if cid == CHEWTLE:
         unevolved = board.count_in_play(CHEWTLE)
         drednaw_in_hand = DREDNAW in board.hand_ids
@@ -17877,12 +26078,16 @@ def _stage2c_hand_basic_role(board: BoardView, cid: Optional[int]) -> Tuple[str,
         if board.count_in_play(BRUXISH) > 0:
             return ("bruxish_already_in_play", False, 1000.0)
         contract = _stage2b2a_bruxish_counterattack_contract(board)
-        stage2b4_available = callable(
-            globals().get("stage2b4_integrated_counterline_facts")
-        )
-        if contract.supported and stage2b4_available:
+        if not contract.supported:
+            return ("bruxish_counterline_contract_unavailable", False, 1000.0)
+        if option is None:
+            return ("bruxish_counterline_role_unknown", None, 1000.0)
+        role_live = _stage2c_bruxish_after_play_counterline_role_live(board, option)
+        if role_live is True:
             return ("bruxish_counterline_board_supply", True, 62000.0)
-        return ("bruxish_counterline_contract_unavailable", False, 1000.0)
+        if role_live is False:
+            return ("bruxish_counterline_not_live", False, 1000.0)
+        return ("bruxish_counterline_role_unknown", None, 1000.0)
     return ("not_stage2c_basic", False, 1000.0)
 def hand_basic_deployment_facts(
     policy: Policy,
@@ -17906,7 +26111,7 @@ def hand_basic_deployment_facts(
         and not outcome.blocked
     )
     direct_win, direct_ko, non_ko = _stage2c_current_attack_state(policy)
-    role, role_live, role_value = _stage2c_hand_basic_role(board, cid)
+    role, role_live, role_value = _stage2c_hand_basic_role(board, cid, option)
     same_count = board.count_in_play(cid) if cid is not None else 0
     drednaw_in_hand = DREDNAW in board.hand_ids
     drednaw_in_play = board.count_in_play(DREDNAW) > 0
@@ -17933,7 +26138,7 @@ def hand_basic_deployment_facts(
             ):
                 continue
             if other_id in {CHEWTLE, BRUXISH}:
-                other_value = _stage2c_hand_basic_role(board, other_id)[2]
+                other_value = _stage2c_hand_basic_role(board, other_id, candidate)[2]
             else:
                 other_value = policy.score_pokemon_play(other_id)
             if other_value > role_value:
@@ -17978,63 +26183,653 @@ def hand_basic_deployment_facts(
         unsupported_reason=reason,
         reasons=(role,),
     )
-def hand_basic_deployment_action_score(
+def stage2c_strategic_action_line_collection_facts(
+    policy: Policy,
+    results: Sequence[SimulationResult],
+    *,
+    current_position: Optional[ActivePositionCurrentLineCollectionFacts] = None,
+    counterline_collections: Optional[
+        Sequence[Stage2b4CounterlineActionLineCollectionFacts]
+    ] = None,
+) -> Stage2cStrategicActionLineCollectionFacts:
+    """Build Stage2c preparation Lines as shadow Facts without ranking actions."""
+    board = policy.b
+    current = (
+        active_position_current_line_facts(board, results)
+        if current_position is None
+        else current_position
+    )
+    counterlines = tuple(
+        stage2b4_counterline_action_line_collections(policy)
+        if counterline_collections is None
+        else counterline_collections
+    )
+    entries = tuple(board.iter_options())
+    result_by_index = {result.index: result for result in results}
+
+    def current_state() -> Tuple[Optional[bool], Optional[bool], Optional[bool]]:
+        if not current.supported or not current.exact:
+            return None, None, None
+        lines = current.candidate_lines
+        if not lines:
+            return False, False, False
+        if any(
+            line.terminal_win is None or line.opponent_active_ko is None
+            for line in lines
+        ):
+            return None, None, None
+        direct_win = any(line.terminal_win is True for line in lines)
+        direct_ko = any(
+            line.terminal_win is not True and line.opponent_active_ko is True
+            for line in lines
+        )
+        non_ko = any(
+            line.terminal_win is False and line.opponent_active_ko is False
+            for line in lines
+        )
+        return direct_win, direct_ko, non_ko
+
+    direct_win, direct_ko, non_ko = current_state()
+
+    def current_attack_identity(
+        lines: Sequence[ActivePositionCurrentAttackLineFacts],
+    ) -> Tuple[Tuple[int, ...], Tuple[int, ...], Optional[str]]:
+        option_indexes: List[int] = []
+        attack_ids: List[int] = []
+        for line in lines:
+            if (
+                not line.supported
+                or not line.exact
+                or type(line.attack_option_index) is not int
+                or type(line.attack_id) is not int
+            ):
+                return (), (), "stage2c_current_attack_identity_unresolved"
+            option_indexes.append(line.attack_option_index)
+            attack_ids.append(line.attack_id)
+        return (
+            tuple(dict.fromkeys(option_indexes)),
+            tuple(dict.fromkeys(attack_ids)),
+            None,
+        )
+
+    def objective_basic_indexes(origin_index: int) -> Tuple[int, ...]:
+        if board.bench_space <= 0:
+            return ()
+        out: List[int] = []
+        for index, candidate in entries:
+            if index == origin_index or candidate.type != OptionType.PLAY:
+                continue
+            cid = board.option_card(candidate)
+            if (
+                type(cid) is int
+                and cid in board.hand_ids
+                and board.is_basic_pokemon(cid)
+            ):
+                out.append(index)
+        return tuple(out)
+
+    def basic_role_fields(cid: Optional[int], option: Any) -> Tuple[
+        Optional[str], Optional[bool], Optional[bool], Optional[bool],
+        Optional[int], Optional[bool], Optional[bool], Optional[bool],
+        Optional[int], Optional[bool],
+    ]:
+        same_count = board.count_in_play(cid) if type(cid) is int else None
+        duplicate = None if same_count is None else same_count > 0
+        drednaw_in_hand = DREDNAW in board.hand_ids
+        drednaw_in_play = board.count_in_play(DREDNAW) > 0
+        drednaw_remaining = board.remaining_possible(DREDNAW)
+        accessible = (
+            board.hand_ids.count(DREDNAW)
+            + board.count_in_play(DREDNAW)
+            + board.remaining_possible_count(DREDNAW)
+        )
+        if cid == CHEWTLE:
+            if duplicate:
+                role = "chewtle_duplicate_without_open_line"
+            elif drednaw_in_hand:
+                role = "chewtle_drednaw_in_hand"
+            elif drednaw_in_play and drednaw_remaining:
+                role = "chewtle_second_drednaw_line"
+            elif not drednaw_in_play and drednaw_remaining:
+                role = "chewtle_drednaw_remaining"
+            else:
+                role = "chewtle_no_drednaw_access"
+            bruxish_already = None
+            bruxish_contract_supported = None
+            bruxish_role = None
+        elif cid == BRUXISH:
+            bruxish_already = board.count_in_play(BRUXISH) > 0
+            contract = _stage2b2a_bruxish_counterattack_contract(board)
+            bruxish_contract_supported = bool(contract.supported)
+            role, bruxish_role, _ = _stage2c_hand_basic_role(board, cid, option)
+        else:
+            role = "ordinary_basic"
+            bruxish_already = None
+            bruxish_contract_supported = None
+            bruxish_role = None
+        return (
+            role,
+            duplicate,
+            drednaw_in_hand,
+            drednaw_in_play,
+            accessible,
+            bruxish_already,
+            bruxish_contract_supported,
+            bruxish_role,
+            same_count,
+            drednaw_remaining,
+        )
+
+    def make_line(
+        *,
+        origin_index: int,
+        option: Any,
+        kind: Stage2cStrategicActionLineKind,
+        attack_lines: Sequence[ActivePositionCurrentAttackLineFacts],
+        target_card_id: Optional[int] = None,
+        target_serial: Optional[int] = None,
+        current_attack_is_nonwinning_ko: Optional[bool] = None,
+        attack_preserved_after_origin: Optional[bool] = None,
+        continuation_confirmed: Optional[bool] = None,
+        blocking_high_value_evolution_exists: Optional[bool] = None,
+        blocking_high_value_evolution_option_indices: Tuple[int, ...] = (),
+        evolution_relation_exact: Optional[bool] = None,
+        supported: bool = True,
+        reason: Optional[str] = None,
+        extra_reasons: Tuple[str, ...] = (),
+    ) -> Stage2cStrategicActionLineFacts:
+        cid = board.option_card(option)
+        attack_indexes, attack_ids, attack_reason = current_attack_identity(attack_lines)
+        if supported and attack_reason is not None:
+            supported = False
+            reason = attack_reason
+        continuation_indexes = attack_indexes if continuation_confirmed is True else ()
+        continuation_ids = attack_ids if continuation_confirmed is True else ()
+        (
+            role, duplicate, dred_in_hand, dred_in_play, accessible,
+            brux_already, brux_contract_supported, brux_role,
+            same_count, dred_remaining,
+        ) = basic_role_fields(cid, option)
+        is_basic_origin = kind in {
+            Stage2cStrategicActionLineKind.SAFE_PRE_KO_BASIC_PLAY,
+            Stage2cStrategicActionLineKind.HAND_BASIC_DEPLOYMENT,
+        }
+        return Stage2cStrategicActionLineFacts(
+            origin_option_index=origin_index,
+            origin_option_type=getattr(option, "type", None),
+            origin_option_card_id=cid,
+            origin_target_card_id=target_card_id,
+            origin_target_serial=target_serial,
+            action_line_kind=kind,
+            current_attack_lines=tuple(attack_lines),
+            current_attack_option_index=(attack_indexes[0] if len(attack_indexes) == 1 else None),
+            current_attack_id=(attack_ids[0] if len(attack_ids) == 1 else None),
+            continuation_attack_option_indices=continuation_indexes,
+            continuation_attack_ids=continuation_ids,
+            continuation_confirmed=continuation_confirmed,
+            current_attack_is_nonwinning_ko=current_attack_is_nonwinning_ko,
+            attack_preserved_after_origin=attack_preserved_after_origin,
+            current_direct_win_exists=direct_win,
+            current_direct_knockout_exists=direct_ko,
+            current_non_ko_attack_exists=non_ko,
+            bench_space_before=board.bench_space if is_basic_origin else None,
+            bench_count_before=len(board.bench) if is_basic_origin else None,
+            bench_slot_consumed=(board.bench_space > 0) if is_basic_origin else None,
+            other_legal_basic_option_indices=(
+                objective_basic_indexes(origin_index) if is_basic_origin else ()
+            ),
+            same_card_in_play_count=same_count if is_basic_origin else None,
+            duplicate_deployment=duplicate if is_basic_origin else None,
+            role=role if is_basic_origin else "evolution_continuation",
+            chewtle_drednaw_in_hand=(dred_in_hand if cid == CHEWTLE else None),
+            drednaw_in_play=(dred_in_play if cid == CHEWTLE else None),
+            drednaw_remaining_possible=(dred_remaining if cid == CHEWTLE else None),
+            accessible_drednaw_line_count=(accessible if cid == CHEWTLE else None),
+            bruxish_already_in_play=(brux_already if cid == BRUXISH else None),
+            bruxish_counterattack_contract_supported=(
+                brux_contract_supported if cid == BRUXISH else None
+            ),
+            bruxish_counterline_role_live=(brux_role if cid == BRUXISH else None),
+            blocking_high_value_evolution_exists=(
+                blocking_high_value_evolution_exists
+                if kind == Stage2cStrategicActionLineKind.HAND_BASIC_DEPLOYMENT
+                else None
+            ),
+            blocking_high_value_evolution_option_indices=(
+                blocking_high_value_evolution_option_indices
+                if kind == Stage2cStrategicActionLineKind.HAND_BASIC_DEPLOYMENT
+                else ()
+            ),
+            evolution_relation_exact=evolution_relation_exact,
+            supported=supported,
+            exact=supported,
+            unsupported_reason=(None if supported else reason or "stage2c_strategic_line_unresolved"),
+            reasons=("stage2c_strategic_action_line", kind.value) + extra_reasons
+            + (() if supported else (reason or "stage2c_strategic_line_unresolved",)),
+        )
+
+    def hand_blocking_high_value_evolution_facts() -> Tuple[Optional[bool], Tuple[int, ...]]:
+        if (
+            not current.supported
+            or not current.exact
+            or direct_win is None
+            or direct_ko is None
+            or non_ko is None
+        ):
+            return None, ()
+        if direct_win is not False or direct_ko is not False or non_ko is not True:
+            return None, ()
+        evolution_option_indexes = tuple(
+            option_index
+            for option_index, option in entries
+            if option.type == OptionType.EVOLVE
+        )
+        legal_evolutions = current_legal_evolution_options(policy)
+        legal_evolution_indexes = tuple(
+            option_index for option_index, _, _, _ in legal_evolutions
+        )
+        if set(legal_evolution_indexes) != set(evolution_option_indexes):
+            return None, ()
+        high_value_indexes = tuple(
+            dict.fromkeys(
+                option_index
+                for option_index, evolution_option, _, _ in legal_evolutions
+                if _stage2c_existing_high_value_evolution(policy, evolution_option)
+            )
+        )
+        return bool(high_value_indexes), high_value_indexes
+
+    blocking_high_value_evolution_exists, blocking_high_value_evolution_option_indices = (
+        hand_blocking_high_value_evolution_facts()
+    )
+
+    lines: List[Stage2cStrategicActionLineFacts] = []
+    current_lines = tuple(current.candidate_lines)
+
+    # SAFE_PRE_KO_BASIC_PLAY: preserve every exact tied non-winning KO identity.
+    ko_lines = tuple(
+        line for line in current_lines
+        if line.supported and line.exact
+        and line.terminal_win is False
+        and line.opponent_active_ko is True
+    )
+    for origin_index, option in entries:
+        if option.type != OptionType.PLAY:
+            continue
+        cid = board.option_card(option)
+        result = result_by_index.get(origin_index)
+        is_basic = type(cid) is int and board.is_basic_pokemon(cid)
+        safe_shape = bool(
+            is_basic
+            and result is not None
+            and result.option is option
+            and result.outcome.supported
+            and not result.outcome.blocked
+            and result.outcome.adds_board_out_buffer
+            and len(board.bench) == 0
+            and board.bench_space > 0
+        )
+        if safe_shape and direct_win is not True and ko_lines:
+            preservation: List[bool] = []
+            for attack_line in ko_lines:
+                matches = tuple(
+                    candidate for index, candidate in entries
+                    if index == attack_line.attack_option_index
+                    and candidate.type == OptionType.ATTACK
+                    and getattr(candidate, "attackId", None) == attack_line.attack_id
+                )
+                preservation.append(
+                    len(matches) == 1
+                    and policy._basic_play_preserves_current_knockout(option, matches[0])
+                )
+            preserved = bool(preservation) and all(preservation)
+            lines.append(make_line(
+                origin_index=origin_index,
+                option=option,
+                kind=Stage2cStrategicActionLineKind.SAFE_PRE_KO_BASIC_PLAY,
+                attack_lines=ko_lines,
+                current_attack_is_nonwinning_ko=True,
+                attack_preserved_after_origin=preserved,
+                continuation_confirmed=preserved,
+                supported=preserved,
+                reason=None if preserved else "stage2c_safe_pre_ko_attack_not_preserved",
+                extra_reasons=("nonwinning_ko_attack",),
+            ))
+
+        if cid not in {CHEWTLE, BRUXISH}:
+            continue
+        legal = bool(
+            type(cid) is int
+            and cid in board.hand_ids
+            and board.is_basic_pokemon(cid)
+            and board.bench_space > 0
+            and result is not None
+            and result.option is option
+            and result.outcome.supported
+            and not result.outcome.blocked
+        )
+        reason = None if legal else "stage2c_hand_basic_deployment_not_exact"
+        hand_continuation: Optional[bool] = None
+        if legal and current.supported and current.exact:
+            if direct_win is None or direct_ko is None or non_ko is None:
+                hand_continuation = None
+            elif direct_win or direct_ko or non_ko is not True:
+                hand_continuation = False
+            else:
+                preservation: List[bool] = []
+                for attack_line in current_lines:
+                    if (
+                        not attack_line.supported
+                        or not attack_line.exact
+                        or attack_line.terminal_win is not False
+                        or attack_line.opponent_active_ko is not False
+                        or type(attack_line.attack_option_index) is not int
+                        or type(attack_line.attack_id) is not int
+                    ):
+                        preservation.append(False)
+                        continue
+                    matches = tuple(
+                        candidate for index, candidate in entries
+                        if index == attack_line.attack_option_index
+                        and candidate.type == OptionType.ATTACK
+                        and getattr(candidate, "attackId", None) == attack_line.attack_id
+                    )
+                    preservation.append(
+                        len(matches) == 1
+                        and policy._basic_play_preserves_current_knockout(
+                            option, matches[0]
+                        )
+                    )
+                hand_continuation = bool(preservation) and all(preservation)
+        lines.append(make_line(
+            origin_index=origin_index,
+            option=option,
+            kind=Stage2cStrategicActionLineKind.HAND_BASIC_DEPLOYMENT,
+            attack_lines=current_lines,
+            attack_preserved_after_origin=hand_continuation,
+            continuation_confirmed=hand_continuation,
+            blocking_high_value_evolution_exists=blocking_high_value_evolution_exists,
+            blocking_high_value_evolution_option_indices=(
+                blocking_high_value_evolution_option_indices
+            ),
+            supported=legal and current.supported and current.exact,
+            reason=(reason if not legal else current.unsupported_reason),
+            extra_reasons=(
+                "objective_deployment_facts",
+                "current_nonko_attack_continuation_exact"
+                if hand_continuation is True
+                else "current_nonko_attack_continuation_not_proven",
+            ),
+        ))
+
+    def evolution_preserves_current_attack(
+        option: Any,
+        target: Any,
+        attack_lines: Sequence[ActivePositionCurrentAttackLineFacts],
+    ) -> bool:
+        target_id = board.pid(target) if target is not None else None
+        target_serial = getattr(target, "serial", None) if target is not None else None
+        if type(target_id) is not int or type(target_serial) is not int:
+            return False
+        bench_matches = tuple(
+            pokemon
+            for pokemon in tuple(board.bench)
+            if getattr(pokemon, "serial", None) == target_serial
+            and board.pid(pokemon) == target_id
+        )
+        board_matches = tuple(
+            pokemon
+            for pokemon in tuple(board.all_my_pokemon)
+            if getattr(pokemon, "serial", None) == target_serial
+            and board.pid(pokemon) == target_id
+        )
+        active = getattr(board, "active", None)
+        if (
+            len(bench_matches) != 1
+            or len(board_matches) != 1
+            or bench_matches[0] is not board_matches[0]
+            or active is target
+            or (
+                active is not None
+                and getattr(active, "serial", None) == target_serial
+                and board.pid(active) == target_id
+            )
+        ):
+            return False
+
+        changed_state_markers = (
+            "your hand",
+            "cards in your hand",
+            "your benched pokemon",
+            "pokemon on your bench",
+            "your bench",
+            "your pokemon in play",
+            "pokemon you have in play",
+            "number of your pokemon",
+            "evolved pokemon",
+            "evolution pokemon",
+            "basic pokemon",
+            "stage 1",
+            "stage 2",
+        )
+        preservation: List[bool] = []
+        for attack_line in attack_lines:
+            if (
+                not attack_line.supported
+                or not attack_line.exact
+                or attack_line.terminal_win is not False
+                or attack_line.opponent_active_ko is not False
+                or type(attack_line.attack_option_index) is not int
+                or type(attack_line.attack_id) is not int
+            ):
+                preservation.append(False)
+                continue
+            matches = tuple(
+                candidate
+                for index, candidate in entries
+                if index == attack_line.attack_option_index
+                and candidate.type == OptionType.ATTACK
+                and getattr(candidate, "attackId", None) == attack_line.attack_id
+            )
+            if len(matches) != 1:
+                preservation.append(False)
+                continue
+            attack = board.attack(attack_line.attack_id)
+            if attack is None:
+                preservation.append(False)
+                continue
+            text = _normalized_attack_text(attack)
+            preservation.append(
+                not any(marker in text for marker in changed_state_markers)
+            )
+        return bool(preservation) and all(preservation)
+
+    legal_evolutions = current_legal_evolution_options(policy)
+
+    # EVOLUTION_CONTINUATION: exact legal Stage2c bench evolution only.
+    for origin_index, option in entries:
+        if option.type != OptionType.EVOLVE:
+            continue
+        evolution_id = board.option_card(option)
+        target = board.option_target(option)
+        target_id = board.pid(target) if target is not None else None
+        target_serial = getattr(target, "serial", None) if target is not None else None
+        if target_id not in {CHEWTLE, BRUXISH}:
+            continue
+        legal_matches = tuple(
+            (index, candidate, legal_target_id, legal_target_serial)
+            for index, candidate, legal_target_id, legal_target_serial in legal_evolutions
+            if index == origin_index
+            and candidate is option
+            and legal_target_id == target_id
+            and legal_target_serial == target_serial
+        )
+        identity_exact = bool(
+            type(evolution_id) is int
+            and type(target_id) is int
+            and type(target_serial) is int
+            and len(legal_matches) == 1
+            and len(tuple(
+                pokemon for pokemon in board.all_my_pokemon
+                if getattr(pokemon, "serial", None) == target_serial
+                and board.pid(pokemon) == target_id
+            )) == 1
+        )
+        relation_exact = bool(
+            identity_exact
+            and board.evolves_from(evolution_id, target)
+            and board.deck_evolution_for_base(target_id) == evolution_id
+        )
+        state_exact = (
+            direct_win is not None and direct_ko is not None and non_ko is not None
+        )
+        supported = bool(
+            identity_exact
+            and relation_exact
+            and state_exact
+            and direct_win is False
+            and direct_ko is False
+            and non_ko is True
+            and current.supported
+            and current.exact
+        )
+        continuation = False
+        if supported:
+            continuation = evolution_preserves_current_attack(
+                option, target, current_lines
+            )
+        reason = None
+        if not identity_exact:
+            reason = "stage2c_evolution_origin_identity_unresolved"
+        elif not relation_exact:
+            reason = "stage2c_evolution_relation_unresolved"
+        elif not state_exact:
+            reason = "stage2c_current_attack_state_unresolved"
+        elif direct_win or direct_ko or non_ko is not True:
+            reason = "stage2c_evolution_continuation_attack_state_not_applicable"
+        lines.append(make_line(
+            origin_index=origin_index,
+            option=option,
+            kind=Stage2cStrategicActionLineKind.EVOLUTION_CONTINUATION,
+            attack_lines=current_lines,
+            target_card_id=target_id,
+            target_serial=target_serial if type(target_serial) is int else None,
+            evolution_relation_exact=relation_exact if identity_exact else None,
+            attack_preserved_after_origin=continuation if supported else False,
+            continuation_confirmed=continuation if supported else False,
+            supported=supported,
+            reason=reason,
+            extra_reasons=(
+                "deck_evolution_relation",
+                "bench_evolution_current_attack_continuation_exact"
+                if continuation
+                else "bench_evolution_current_attack_continuation_not_proven",
+            ),
+        ))
+
+    supported = bool(lines) and all(line.supported for line in lines)
+    exact = supported and all(line.exact for line in lines)
+    reason = next(
+        (line.unsupported_reason for line in lines if line.unsupported_reason),
+        None,
+    )
+    if not lines:
+        reason = "stage2c_no_strategic_action_line_origin"
+    return Stage2cStrategicActionLineCollectionFacts(
+        current_position=current,
+        counterline_collections=counterlines,
+        lines=tuple(lines),
+        supported=supported,
+        exact=exact,
+        unsupported_reason=reason,
+        reasons=("stage2c_strategic_action_line_collection",)
+        + ((reason,) if reason else ()),
+    )
+
+
+def current_legal_evolution_options(
+    policy: Policy,
+) -> Tuple[Tuple[int, Any, int, int], ...]:
+    out = []
+    for option_index, option in policy.b.iter_options():
+        if option.type != OptionType.EVOLVE:
+            continue
+        evolution_id = policy.b.option_card(option)
+        target = policy.b.option_target(option)
+        target_id = policy.b.pid(target) if target is not None else None
+        target_serial = getattr(target, "serial", None) if target is not None else None
+        if (
+            type(evolution_id) is not int
+            or type(target_id) is not int
+            or type(target_serial) is not int
+        ):
+            continue
+        matches = [
+            pokemon
+            for pokemon in policy.b.all_my_pokemon
+            if getattr(pokemon, "serial", None) == target_serial
+        ]
+        if (
+            len(matches) != 1
+            or policy.b.pid(matches[0]) != target_id
+            or not policy.b.evolves_from(evolution_id, matches[0])
+        ):
+            continue
+        out.append((option_index, option, target_id, target_serial))
+    return tuple(out)
+
+
+def _stage2c_is_line_continuation_evolution(
     policy: Policy,
     option: Any,
-    legacy_score: float,
-    outcome: ImmediateOutcome,
-) -> Optional[ActionScore]:
-    cid = policy.b.option_card(option)
-    if option.type != OptionType.PLAY or cid not in {CHEWTLE, BRUXISH}:
-        return None
-    if legacy_score <= SCORE_FORBIDDEN // 2:
-        return None
-    facts = hand_basic_deployment_facts(policy, option, outcome)
-    if not facts.supported:
-        return ActionScore(
-            TIER_LOW_VALUE_ACTION,
-            risk=1,
-            legacy=legacy_score,
-        )
-    if facts.current_direct_win_exists or facts.current_direct_knockout_exists:
-        return ActionScore(
-            TIER_LOW_VALUE_ACTION,
-            resource=max(0, legacy_score),
-            legacy=legacy_score,
-        )
-    if not facts.high_value_deployment:
-        return ActionScore(
-            TIER_LOW_VALUE_ACTION,
-            resource=max(0, legacy_score),
-            legacy=legacy_score,
-        )
-    development = _stage2c_hand_basic_role(policy.b, cid)[2]
-    return ActionScore(
-        TIER_HIGH_VALUE_PREP,
-        development=development,
-        resource=max(0, min(legacy_score, 200000)),
-        legacy=legacy_score,
+    target_id: int,
+) -> bool:
+    evolution_id = policy.b.option_card(option)
+    return bool(
+        target_id in {CHEWTLE, BRUXISH}
+        and type(evolution_id) is int
+        and policy.b.deck_evolution_for_base(target_id) == evolution_id
     )
-def _stage2c_policy_action_score(
+
+
+def _stage2c_existing_high_value_evolution(
     policy: Policy,
     option: Any,
-    legacy_score: float,
-    outcome: ImmediateOutcome,
-) -> ActionScore:
-    stage2b4_score = _stage2b4_policy_action_score_candidate(
-        policy, option, legacy_score, outcome,
+) -> bool:
+    legacy_score = policy.score_evolve(option)
+    outcome = policy.outcome.evaluate_active_evolution(option)
+    if outcome.supported and not outcome.blocked and (
+        outcome.wins_game
+        or outcome.knockout
+        or outcome.reachable_wins_game
+        or outcome.reachable_knockout
+    ):
+        return True
+    if policy.active_evolution_has_clear_attack_improvement(option):
+        return True
+    return policy.is_high_value_attack_preserving_prep(option, legacy_score)
+
+
+def _stage2c_existing_evolution_precedes_deployment(
+    policy: Policy,
+    evolution_option: Any,
+    deployment_legacy_score: float,
+    current_non_ko_attack_exists: bool,
+) -> bool:
+    if current_non_ko_attack_exists:
+        return _stage2c_existing_high_value_evolution(
+            policy,
+            evolution_option,
+        )
+    return (
+        policy.score_evolve(evolution_option)
+        > deployment_legacy_score
     )
-    if stage2b4_score is not None:
-        return stage2b4_score
-    stage2c_score = hand_basic_deployment_action_score(
-        policy, option, legacy_score, outcome,
-    )
-    if stage2c_score is not None:
-        return stage2c_score
-    return _STAGE2B4_ORIGINAL_POLICY_ACTION_SCORE(
-        policy, option, legacy_score, outcome,
-    )
-Policy.action_score = _stage2c_policy_action_score
+
+
+
+
+
 
 
 # ============================================================
@@ -18051,8 +26846,38 @@ class GameSimulator:
             self.evaluate_candidate(index, option)
             for index, option in self.b.iter_options()
         ]
-        end_result = next((result for result in results if result.option.type == OptionType.END), None)
-        return sorted(results, key=lambda result: self._rank_result_key(result, end_result), reverse=True)
+        results, _ = apply_phase5_confirmed_live_results(
+            self.b,
+            results,
+        )
+        strategic_policy = getattr(self, "policy", None)
+        strategic_facts: Optional[Phase5StrategicLiveFacts] = None
+        if strategic_policy is not None:
+            results, strategic_facts = apply_phase5_strategic_live_results(
+                self.b,
+                results,
+                strategic_policy,
+            )
+        end_result = next(
+            (
+                result
+                for result in results
+                if result.option.type == OptionType.END
+            ),
+            None,
+        )
+        ranked = tuple(sorted(
+            results,
+            key=lambda result: self._rank_result_key(result, end_result),
+            reverse=True,
+        ))
+        if strategic_facts is not None:
+            ranked, _ = apply_phase4ex_preference_ordering(
+                self.b,
+                ranked,
+                strategic_facts,
+            )
+        return list(ranked)
 
     def evaluate_candidate(self, index: int, option: Any) -> SimulationResult:
         score = self.policy.score(index, option)
