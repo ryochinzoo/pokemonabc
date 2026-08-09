@@ -556,6 +556,218 @@
 
 ---
 
+## 2026-07-23 / v7全体総括
+
+### 問題
+
+- v6までのAIは、単純な巨大固定点とカード固有分岐が多く、実戦ログで「なぜその行動を選んだか」を追いにくかった。
+- v7初期では、攻撃可能なOptionがあるだけで弱攻撃や補助役の攻撃を優先し、攻撃前に使える展開札・手札更新札・進化札を抱え続ける局面が多かった。
+- `Cinderace` / `Turbo Flare` / `Ignition Energy` を導入したことで、加速役の評価が過剰になり、主軸である `Staryu` / `Mega Starmie ex` / `Mega Froslass ex` への育成が遅れる副作用が出た。
+- `Pokégear 3.0`、`Salvatore`、`Crispin`、`Lillie's Determination` など、攻撃前に使えるカードの価値が非KO攻撃と同じ土俵で比較され、局面によっては攻撃が先に選ばれていた。
+- 提出ログ分析で、Replay事実と現行Policy採点を混同すると誤Issue化する危険があったため、v7後半では「Replay事実」「コード事実」「修正対象」を分離して扱う方針へ移行した。
+
+### 原因分析
+
+- `score_attack()` は有効攻撃へ高い基礎点を与えるため、非KOの `Water Gun`、`Chilly`、補助役攻撃、`Turbo Flare` が展開札を上回りやすかった。
+- `score_play()` はカードごとの固定点が中心で、手札稼働率、山札内サポート残存、アカマツで必要エネルギーを満たせるかなどのFactが不足していた。
+- `score_attach()` は主軸育成とUtility起動を同列に扱う局面があり、主軸が生きている場合でも `Cinderace`、`Shaymin`、`Yveltal` へエネルギーが流れる可能性があった。
+- `GameSimulator` 導入前は、Policyの巨大点だけで候補を比較しており、勝利・KO・高価値準備・非KO攻撃の責務が混ざっていた。
+- `ImmediateOutcome` はFactとして整備されたが、Turbo Flare加速、Clutch逃げ封じ、Absolute Snowの状態異常など、text-only効果はOutcomeへ入れずPolicy側の既存知識に留める必要があった。
+
+### 修正案
+
+- v7では、評価を `Fact -> Decision -> Coordinator` に近づけるため、`ImmediateOutcome`、Fact helper、`Policy`、`ActionScore`、`GameSimulator` の責務を段階的に分離した。
+- 弱攻撃・補助役攻撃・加速役攻撃を、KO/勝利でない場合だけ抑制し、攻撃前の展開・進化・手札更新を選べるようにした。
+- 主軸育成可能時は、Utilityへのエネルギーを抑え、`Staryu` / `Mega Starmie ex` / `Snorunt` / `Mega Froslass ex` を優先する評価へ寄せた。
+- `Turbo Flare` は強制行動ではなく加速手段として評価し直し、受け先・山札内基本エネルギー残存・状態異常を確認したうえで、水/悪Attachによる即時解禁を評価するようにした。
+- `ActionScore` により、勝利、KO、高価値準備、通常非KO攻撃をTierで分離し、通常非KO攻撃同士はPressureで比較する形にした。
+- v7.3後半では、Issue2の後続Attachロジックのように代表Replayで改善が確認できない変更は撤回し、実測で効果のない複雑化を残さない方針にした。
+
+---
+
+## 2026-07-23 / v7.2 Issue 1: Pokégear候補評価と盤面復旧
+
+### 問題
+
+- `Pokégear 3.0` 使用後の候補選択で、`Boss's Orders` などの局面札が、手札・盤面復旧に必要な `Lillie's Determination` や `Salvatore` より高くなる疑いがあった。
+- `score_pokegear_candidate()` 内で現在のOption列を攻撃可否判定に使うと、ポケギア候補選択フェーズではATTACK Optionが存在せず、実際は攻撃可能でも攻撃不能と誤認する危険があった。
+
+### 原因分析
+
+- `has_effective_attack_option()` は現在の `select.option` を見るため、カード候補選択フェーズの攻撃可否判定には不適切だった。
+- PolicyからEvaluatorのprivateメソッドへ直接依存する経路もあり、FactとDecisionの依存方向が逆流する恐れがあった。
+- 攻撃可否は「現在のOption列」ではなく、現在active・エネルギー・壁判定など公開盤面Factから見る必要があった。
+
+### 修正案
+
+- ポケギア候補評価では、カード候補Option列を攻撃Optionとして扱わない。
+- 現在activeに支払い可能かつ壁に遮られない攻撃があるかを、publicな判定として扱う。
+- 完成盤面では `Lillie` へ復旧用高評価を与えず、復旧盤面では `Lillie` / 有効Supporter候補を評価する。
+- Bossリーサル、Boss KO、Bossエンジン破壊は従来どおり維持する。
+
+---
+
+## 2026-07-23 / v7.2 Issue 2: 主軸育成可能時のUtilityエネルギー抑制
+
+### 問題
+
+- 主軸が場にあり育成可能な局面でも、`Cinderace`、`Shaymin`、`Yveltal` などUtilityへエネルギーが流れ、`Mega Starmie ex` や `Mega Froslass ex` の完成が遅れる局面があった。
+- 特に `Cinderace` は加速役として価値があるため、一律禁止ではなく、主軸育成可能時だけ抑制する必要があった。
+
+### 原因分析
+
+- `score_water_attach()` / `score_dark_attach()` は、Utility起動と主軸育成の競合を十分に見ていなかった。
+- `main_axis_attach_target_available()` の初期実装では、`Snorunt` がいるだけで主軸候補とみなすなど、進化先が残っていない「死んだルート」を抑制できない非対称性があった。
+- `Staryu` は `Mega Starmie ex` の残存を確認していたが、`Snorunt` は `Mega Froslass ex` の残存確認が不足していた。
+
+### 修正案
+
+- 主軸候補が生きている場合だけUtilityへのエネルギー評価を抑える。
+- `Staryu` は `Mega Starmie ex` が手札または山札に残存可能な場合だけ主軸候補とする。
+- `Snorunt` は `Mega Froslass ex` が手札または山札に残存可能な場合だけ主軸候補とする。
+- 主軸候補が存在しない、または `Cinderace` の加速価値が明確な場合は、Utilityの既存価値を維持する。
+
+---
+
+## 2026-07-23 / v7.2 Issue 3: Steel / Wall対面の即時Nebula Beam到達
+
+### 問題
+
+- `STEEL` / `WALL` 対面で `Mega Starmie ex` が `Nebula Beam` へ到達できる局面でも、非KOの `Jetting Blow` や別行動に流れ、壁突破ルートを遅らせる可能性があった。
+- 初期修正では、Benchの `Mega Starmie ex` へのAttachまで即時Nebulaルート扱いする危険があった。
+- また、巨大固定減点で `Jetting Blow` を抑えると、KOや勝利、追加50ダメージの価値まで壊すリスクがあった。
+
+### 原因分析
+
+- `Nebula Beam` はEX壁を突破できる重要攻撃だが、将来撃てるだけのBench準備と、同一ターンにactiveが撃てる即時到達は区別する必要があった。
+- `has_nebula_enabling_attach_option()` のような広い判定では、Bench Attachを即時ルートとして誤判定する恐れがあった。
+- PressureやAttack評価ではなく、active `Mega Starmie ex` へのAttachで `Nebula Beam` が新規解禁する場合に限定するのが安全だった。
+
+### 修正案
+
+- `STEEL` / `WALL` 対面で、active `Mega Starmie ex` へのAttachにより `Nebula Beam` が新規解禁する場合だけ、非KO `Jetting Blow` よりそのAttachを優先する。
+- Bench `Mega Starmie ex` へのAttachは、同一ターンにactiveへ出せる公開根拠がない限り即時Nebulaルートに含めない。
+- `Jetting Blow` のKO、勝利、重要な追加50ダメージ対象は維持する。
+
+---
+
+## 2026-07-23 / v7.3 Issue 1: Cinderace Turbo Flare即時加速ルート復活
+
+### 問題
+
+- v7.2 Issue2で主軸優先Attachを入れた副作用として、active `Cinderace` へ水/悪エネルギーを貼ることで `Turbo Flare` が新規解禁し、Bench主軸へ即時加速できる局面でも、`Staryu` への直接Attachが優先されるようになった。
+- 代表局面では、`Water -> Staryu = 175000`、`Water -> Active Cinderace = 102000` となり、Turbo Flareルートを取りこぼした。
+
+### 原因分析
+
+- `Turbo Flare` の必要エネルギーは無色1個なので、基本水・基本悪のどちらでも無エネルギー `Cinderace` を起動できる。
+- ただし、受け先がいない、山札に基本エネルギーが残っていない、または `asleep` / `paralyzed` の場合は即時加速価値がない。
+- Turbo Flareの有効受け先は `Staryu` / `Mega Starmie ex` だけでなく、`Snorunt` / `Mega Froslass ex` も現行デッキの主軸・サブ軸として対象になり得る。
+
+### 修正案
+
+- Active `Cinderace` への基本水・基本悪Attachで `Turbo Flare` が新規解禁する場合だけ、Turbo Flare例外を適用する。
+- 生きた受け先として、`Staryu` / `Mega Starmie ex` / `Snorunt` / `Mega Froslass ex` を評価する。
+- `Staryu` / `Snorunt` は対応するメガ進化先が手札または山札に残存可能な場合だけ生きた受け先とする。
+- 山札に基本水または基本悪エネルギーが残存可能な場合だけ例外を発火する。`Ignition Energy` はTurbo Flareで加速できる基本エネルギーではないため数えない。
+- 既にTurbo Flareが有効、受け先なし、山札基本エネルギーなし、状態異常時は例外を発火しない。
+
+---
+
+## 2026-07-23 / v7.3 Issue 2: 後続Attachロジック追加と撤回
+
+### 問題
+
+- 20戦分析で、後続アタッカー準備が遅れる疑いがあり、代表Replay `87377112`、`87374233`、`87384356`、`87382219` を対象に、後続Attachボーナスを検討した。
+- 初期実装では、activeが何らかの攻撃を撃てるだけで後続育成へ流れる可能性があり、`Mega Starmie ex` の `Nebula Beam` 未完成や `Mega Froslass ex` の本命技未完成を妨げるリスクがあった。
+
+### 原因分析
+
+- `followup_attach_bonus()`、`active_main_role_ready()`、`active_attach_can_enable_attack()` などの追加ロジックは、代表Replay4件で実際のトップ選択を1件も変えなかった。
+- 改善確認数は `0/4` であり、コード複雑化に対する実戦改善根拠が不足していた。
+- 後続育成は有用な概念だが、Replay事実だけで勝率改善に直結する局面が確認できないまま固定ボーナスを残すべきではなかった。
+
+### 修正案
+
+- Issue2で追加した後続Attachロジックは撤回する。
+- v7.3 Issue1のTurbo Flare例外、水/悪Attach共通化、生きた受け先判定、山札基本エネルギー残存判定、状態異常判定は維持する。
+- `followup_attach_bonus`、`active_main_role_ready`、`active_attach_can_enable_attack`、Issue2専用固定ボーナスとテスト残骸を残さない。
+- 後続アタッカー改善は再設計扱いとし、この段階では新しいロジックを追加しない。
+
+---
+
+## 2026-07-23 / v7.3 Issue 3: 手札リソース抱え込み対策とFact helper整備
+
+### 問題
+
+- 実戦ログで、`Lillie's Determination`、`Crispin`、`Pokégear 3.0`、`Salvatore` などを中盤以降に抱え続ける傾向が疑われた。
+- ただしReplayだけでは「使うべきだった」までは断定できない局面が多く、まずPolicyが利用できる公開Factを整理する必要があった。
+- PLAY評価を全面再設計すると、攻撃・Attach・進化・Turbo Flare・セイジなど既存Issueの修正へ波及するリスクがあった。
+
+### 原因分析
+
+- `score_play()` はカードごとの固定点が多く、手札全体の低稼働率、リーリエで戻す枚数、ポケギアの山札内サポート残存、アカマツで不足している本命技エネルギーなどを十分に見ていなかった。
+- `Crispin` 評価では、基本水または基本悪が残っているだけで高評価になり、不足タイプすべてを満たせるかを厳密に見ていなかった。
+- Role系のFactを作る際、攻撃可能なら役割完了とみなすと、`Cinderace`、`Shaymin`、`Yveltal`、進化元Basicのようなtext-only / 役割依存カードを誤って完了扱いする危険があった。
+
+### 修正案
+
+- Issue3-Aとして、`hand_activity_facts()`、`lillie_effect_facts()`、`active_energy_facts()`、`pokegear_supporter_facts()` などFact helperを整備する。
+- Issue3-Bとして、PLAY評価は追加したFact helperだけを使い、リーリエ、ポケギア、アカマツ、セイジの評価を局所的に接続する。
+- `Crispin` は、不足タイプがすべて残存可能な場合だけ高評価にする。水不足なら基本水、悪不足なら基本悪、水+悪不足なら両方、無色不足なら水または悪が残存可能かを見る。
+- Issue3-Cとして、RoleFactsを追加するが、Policy順位には接続せず、Raw Factと安全なDerived Factだけを返す。
+- RoleFactsでは `key_attack_id` を `Mega Starmie ex -> Nebula Beam`、`Mega Froslass ex -> Absolute Snow`、`Cinderace -> Turbo Flare` の既存定義に限定し、`Yveltal`、`Staryu`、`Snorunt`、`Shaymin`には推測key attackを作らない。
+- `role_completed` は定義できない場合 `None` とし、攻撃可能性だけで役割完了を断定しない。
+
+---
+
+## 2026-07-23 / v7.3 Issue 4: Pressure評価の最終改善
+
+### 問題
+
+- ActionScore Phase1で通常非KO攻撃はPressureで比較できるようになったが、`Active150` と `Jetting Blow 120 + Bench50` のような比較で、将来価値をより明確に扱う必要があった。
+- Bench攻撃はJetting Blowだけを対象にすべきで、他のBench攻撃へ汎用的にBench50を拡張すると、カード効果推測になる。
+- KO、勝利、Tier40準備の順位は変えず、通常非KO攻撃同士だけを改善する必要があった。
+
+### 原因分析
+
+- `attack_pressure_value()` はactiveへのダメージ量、相手HP割合、次ターン同攻撃継続可能性を見ていた。
+- `bench_attack_pressure_value()` はBench50の価値を見ていたが、低価値Benchと重要Bench、Bench KO圏、次ターン継続価値をより明確に分離する必要があった。
+- `attack_bench_damage_amount()` はJetting BlowのみBench50としており、ここは設計どおりだった。
+
+### 修正案
+
+- `attack_pressure_value()` では、active damage、active HP割合、残HP100以下、同攻撃継続可能かつ2回でKO圏をPressureへ反映する。
+- `bench_attack_pressure_value()` では、Jetting Blowのみを対象に、重要Bench、Bench KO圏、次ターン継続可能性を評価する。
+- `Active150 > Jetting120+低価値Bench50`、`Jetting120+重要Bench50 > Active150`、`Active240 > Jetting120+重要Bench50` をテストで固定する。
+- KO順位、勝利順位、Salvatore、Lillie、Crispin、Pokégear、Bench進化、END抑止は維持する。
+
+---
+
+## 2026-07-23 / v7提出前アーキテクチャ監査
+
+### 問題
+
+- Issue1〜Issue4完了後、提出前に設計破綻、責務漏れ、二重計上がないかを確認する必要があった。
+- 特に、Fact helperがPolicy判断を持っていないか、ActionScoreがPolicyの代替になっていないか、GameSimulatorがカード固有評価を持っていないかを確認した。
+
+### 原因分析
+
+- `ImmediateOutcome` は `damage`、`knockout`、`prizes_taken`、`wins_game`、`enabled_attack_ids`、`retreat_energy_cost` などFactを返し、点数判断は持っていない。
+- `ActionScore` はTier、immediate、pressure、development、resource、risk、legacyを持つ構造化比較値であり、Policy本体の代替ではない。
+- `GameSimulator` は `Policy.score()` と `ImmediateOutcome` を集め、`_result_key()` で候補順を整えるCoordinatorに留まっている。
+- `RoleFacts` はPolicy未接続で、Raw Fact / 安全なDerived Factだけを保持している。
+- 中程度の注意点として、`hand_card_activity()` はFact helper配下にあるが、`LIVE_NOW` / `KEEP` / `LOW_ACTIVITY` の軽い価値分類を含むため、純粋FactよりPolicy寄りである。
+
+### 修正案
+
+- 提出前に直すべき重大な設計破綻は確認されなかった。
+- `hand_card_activity()` の責務は今後の整理候補だが、提出阻害ではない。
+- `can_continue_same_attack()` は実質「現在activeがその攻撃コストを支払えるか」に近く、命名上は軽微な監査事項として残す。
+- v7.3提出時点では、ActionScore、RoleFacts、ImmediateOutcome、GameSimulatorの責務分離を維持したまま提出可能と判断する。
+
+---
+
 ## 今後の追記方針
 
 今後のKaggleリプレイ改善は、次の形でこのファイルへ追記する。
