@@ -29,7 +29,7 @@ import math
 from cew import WEIGHTS
 
 # --reps の位置引数の順序。WEIGHTS の宣言順と一致させること。
-ORDER = ["alakazam", "crustle", "lucario", "archaludon"]
+ORDER = ["alakazam", "grimmsnarl", "crustle", "lucario", "archaludon"]
 
 
 def parse_cells(spec: str) -> dict:
