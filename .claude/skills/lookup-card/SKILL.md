@@ -13,10 +13,17 @@ card, 2102 cards each, sharing the same Card ID space:
 (2026-08-09 fix: this file used to say the CSVs were "at the repo root" and gave the JP path
 as a bare `JP_Card_Data.csv`. Neither exists at the root — both live in `verification/data/`.)
 
-Columns (identical in both):
-`Card ID, Card Name, Expansion, Collection No., Stage (Pokémon)/Type (Energy and Trainer),
-Rule, Category, Previous stage, HP, Type, Weakness, Resistance (Type), Retreat, Move Name,
-Cost, Damage, Effect Explanation`
+Columns — **same order in both files, but the header names differ by language**
+(2026-08-09 fix: this file used to say "identical in both", which breaks any
+`DictReader` written against the EN names. Both files also carry a **UTF-8 BOM**,
+so open them with `encoding="utf-8-sig"` or the first column name gets a `﻿` prefix):
+
+- `EN_Card_Data.csv`: `Card ID, Card Name, Expansion, Collection No., Stage (Pokémon)/Type
+  (Energy and Trainer), Rule, Category, Previous stage, HP, Type, Weakness,
+  Resistance (Type), Retreat, Move Name, Cost, Damage, Effect Explanation`
+- `JP_Card_Data.csv`: `カード ID, カード名, エキスパンションマーク, コレクション番号,
+  ポケモンの進化の段階/エネルギー・トレーナーズの種類, ルール, カテゴリ, 進化前, HP, タイプ,
+  弱点, 抵抗力, にげる, ワザ名, コスト, ダメージ, 効果の説明`
 
 Notes on the data:
 - Types use brace codes, e.g. `{G}` grass, `{R}` fire, `{W}` water, `{L}` lightning,
