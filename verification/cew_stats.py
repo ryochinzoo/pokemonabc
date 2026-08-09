@@ -59,7 +59,7 @@ def main():
     ap.add_argument("--b", help="構成B(比較する場合)")
     ap.add_argument("--label-a", default="A")
     ap.add_argument("--label-b", default="B")
-    ap.add_argument("--reps", nargs="*", help='反復: "w/n,w/n,w/n,w/n" を alakazam,crustle,lucario,archaludon の順で')
+    ap.add_argument("--reps", nargs="*", help='反復: "w/n,w/n,w/n,w/n" を alakazam,grimmsnarl,crustle,lucario,archaludon の順で(ORDERと同じ5面。4個渡すとzipが黙って切り詰めセルを取り違える)')
     args = ap.parse_args()
 
     if args.reps:

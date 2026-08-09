@@ -1,4 +1,4 @@
-# チーム案内 — 外部の実物と戦わせる方法・デッキ全一覧・資料の場所(2026-08-06、りょーちん向け)
+# チーム案内 — 外部の実物と戦わせる方法・デッキ全一覧・資料の場所(2026-08-09更新、りょーちん向け)
 
 > 目的: ①セルフ対戦ではない「他チームの実物」との対戦のやり方をコピペで動く形で共有
 > ②リポジトリにあるデッキ全部の「なんでこれがあるの?」に答える ③見つけた記事・データの場所の地図
@@ -12,9 +12,18 @@
 
 - **自分のパイロット同士のセルフ対戦で勝率を測ると、本物の相手より+8〜+62pt甘く出る。**
   勝率の判定は必ず下の「外部実物ゲージ」か本番ラダーで。セルフ対戦は動作確認用。
+  ここで言う「セルフ対戦」は**自分のパイロットが相手のデッキも動かすこと**を指す。
+  相手のデッキリストを60枚完璧にコピーしても、動かすのが我々のコードなら同じ罠にかかる
+  (D61の三段分解: 自作P×自作D 96.0% → 自作P×実物D 89.0% → **本物P×実物D 57.3%**。
+  **デッキ差7.0pt / 操縦者差31.7pt = 操縦者が4.5倍効く**)。
+- **族内ゲージの数値を採否判定に混ぜない。** 2026-08-08に実際に事故った —
+  合成の重みに族内オーロンゲを19.3%混ぜていたため「デッキ差分は実質ゼロ(+0.04pt)」が
+  族外のみの再計算で**−2.70pt(符号反転)**になった。
 - **ベンチは同時に1本だけ**(並列で走らせると数字が汚れるのに、エラーは出ない=気づけない)。
 - 安全ゲート: **vs random ≥96%** を先に確認(攻撃的な相手は自滅バグを隠す)。
 - N=200で誤差±3.5pt程度。**3pt差をN=200で語らない**。本番レートは同一エージェントでも±150〜400ぶれる。
+- **`env $vars cmd` と書かない。** zsh はクォートしない `$var` を単語分割しないので
+  **先頭のトグルしか適用されないのに数値は正常に見える**。`env A=1 B=1 cmd` と直書きする。
 
 ### やり方(コピペ用)
 
@@ -35,15 +44,21 @@ python3 $REPO/verification/bench.py 200 \
 
 ### 使える外部実物ゲージ一覧(すべて検証専用・提出禁止)
 
-| 相手 | agent | デッキcsv | 信頼度 |
-|---|---|---|---|
-| フーディン | `reference/alakazam_ryota_agent.py` | `decks/ryota_alakazam_2026-07-05.csv` | **較正済み**(本番実測と差5.6pt) |
-| メガルカリオ | `reference/makthanithin_lucario_agent.py` | `decks/makthanithin_lucario_2026-08-05.csv` | **較正済み**(本番のルカリオ勢2勝11敗=15.4%を14.0%で再現) |
-| ブリジュラス | `reference/tomato_archaludon_agent.py` | `decks/tomato_archaludon_2026-07-22.csv` | 実ラダー系譜(60/60一致×2) |
-| イワパレス | `reference/soutasakurai_crustle_agent.py` | `decks/soutasakurai_crustle_2026-08-04.csv` | 公開強豪の実装 |
-| ドラパルト | `reference/official_dragapult_agent.py` | `decks/official_dragapult_2026-07-22.csv` | 運営サンプル |
-| ユキノオー | `reference/official_abomasnow_agent.py` | `decks/official_abomasnow_2026-07-21.csv` | 運営サンプル |
-| ~~メガルカリオ(旧)~~ | `reference/official_lucario_agent.py` | — | **勝率判定に使用禁止**(本物より+45pt甘いと実証済み。動作確認のみ可) |
+**2026-08-09 更新**: オーロンゲの族外ゲージを新設し、CEWの重みを再較正した(覆域 66.6%→85.9%)。
+下表の「CEW重み」は現在の800-1099帯の実遭遇シェア。正典は `verification/cew.py`。
+
+| 相手 | agent | デッキcsv | CEW重み | 信頼度 |
+|---|---|---|---|---|
+| フーディン | `reference/alakazam_ryota_agent.py` | `decks/ryota_alakazam_2026-07-05.csv` | **0.3399** | **較正済み**(本番実測と差5.6pt) |
+| オーロンゲ | `reference/tetsutani_grimmsnarl_agent.py` | `reference/tetsutani_grimmsnarl/deck.csv` | **0.2247** | **2026-08-09新設**。公開notebookに base64 で畳まれていた実装を展開 |
+| イワパレス | `reference/soutasakurai_crustle_agent.py` | `decks/soutasakurai_crustle_2026-08-04.csv` | **0.1572** | 公開強豪の実装 |
+| メガルカリオ | `reference/makthanithin_lucario_agent.py` | `decks/makthanithin_lucario_2026-08-05.csv` | **0.1537** | **較正済み**(本番のルカリオ勢2勝11敗=15.4%を14.0%で再現) |
+| ブリジュラス | `reference/tomato_archaludon_agent.py` | `decks/tomato_archaludon_2026-07-22.csv` | **0.1246** | 実ラダー系譜(60/60一致×2) |
+| ブリジュラス(副) | `reference/steel_agent.py` | `decks/steel_archaludon.csv` | — | 実時間依存のため**直列必須**。CEWからは外れた |
+| ドラパルト | `reference/official_dragapult_agent.py` | `decks/official_dragapult_2026-07-22.csv` | — | 運営サンプル。**CEWから外れた**(現在の帯シェア2.1%) |
+| ユキノオー | `reference/official_abomasnow_agent.py` | `decks/official_abomasnow_2026-07-21.csv` | — | 運営サンプル。**CEWから外れた**(帯のcensusに出現しない) |
+| ~~メガルカリオ(旧)~~ | `reference/official_lucario_agent.py` | — | — | **勝率判定に使用禁止**(本物より+45pt甘いと実証済み。動作確認のみ可) |
+| ~~オーロンゲ(族内)~~ | `reference/grimmsnarl_infamily_agent.py` | `decks/meta_grimmsnarl_800_2026-08-03.csv` | — | **族内=スクリーニング専用**。採否判定に混ぜない(2026-08-08に混入事故あり) |
 
 - 相手のデッキも自由に差し替え可: `verification/decks/meta_*_800_2026-08-03.csv` に実ラダー最頻出デッキ11本
   (全部エンジン受理確認済み。中身の日本語一覧は `docs-for-you/notebooklm-sources/deck-catalog-2026-08-06.md`)。
@@ -53,14 +68,26 @@ python3 $REPO/verification/bench.py 200 \
 
 ## 2. デッキディレクトリ全一覧 — 「なんでこのデッキがあるの?」
 
-場所: `src/input/datasets/decks/`。**王者(starmie-aggro)と凍結物(deckswap-tarountula)は直接触らない**(実験は複製ディレクトリで)。
+場所: `src/input/datasets/decks/`(**30ディレクトリ**、2026-08-09時点)。
+**王者(starmie-aggro)と凍結物(deckswap-tarountula / -pilotfix)は直接触らない**(実験は複製ディレクトリで)。
+
+> **なぜこんなに多いのか**: `md5 -q */main.py | sort | uniq -c` で数えると 30本が **16グループ**になる。
+> **`main.py` がバイト同一のコピーが 12本(王者)+4本(pilotfix)**。これは散らかりではなく実験設計で、
+> **デッキ実験は `main.py` を1バイトも変えずに `deck.csv` だけ差し替え、パイロット実験はその逆**をやる
+> (＝変数を1個だけ動かす)。残り14本が固有ロジック。
+> **デッキdirに `*.jsonl` やログを置かないこと** — ここは提出時にそのまま tar される。
 
 | ディレクトリ | 何者か | 状態 |
 |---|---|---|
 | **starmie-aggro** | **現王者**。メガスターミー、確定レート783/793.9 | 使用中・**変更禁止** |
-| **mega-starmie-ex-deck** | **りょーちんのデッキ** | りょーちん管理 |
-| **deckswap-tarountula** | **P9プローブ提出物**(タマンチュラ、本番で53戦実測済み) | 提出中・**凍結** |
+| **mega-starmie-ex-deck** | **りょーちんのデッキ**(`src/`で我々が書いていない唯一のもの) | りょーちん管理 |
+| **deckswap-tarountula-pilotfix** | **いまラダーに載っている腕**(ref 55308422)。P9とdeck.csvバイト同一・操縦者だけ修理版 | 稼働中・**凍結** |
+| **deckswap-tarountula** | **P9プローブ提出物**(タマンチュラ、本番で53戦実測済み) | 提出済み・**凍結** |
 | deckswap-tarountula-sweep | ↑のバイト同一コピー(凍結物を触らず測定するため) | 測定用 |
+| deckswap-tarountula-toolfix | pilotfix + どうぐ専用の貼り先分岐 | 実験済み |
+| **deckswap-tarountula-v2** | **現役の作業場**。3修理(costfix / I1 / VETO、各独立トグル)実装済み・**掃引は未実行** | 作業中 |
+| deckswap-v2-control | ↑の対照(変更前 `ce8aef63` を復元)。介入なしの腕 | 作業中 |
+| **deckcand-{alakazam, archaludon, lucario}** | **実ラダー最頻出デッキを「我々が持つ」側に置いた候補**(2026-08-09新設)。操縦者はpilotfixとバイト同一＝デッキ軸だけを見る | 作業中 |
 | deckswap-grimmsnarl | デッキ入替実験の腕(オーロンゲ、パイロット無修理=35%) | 実験済み・対照として保持 |
 | deckswap-grimmsnarl-abilityfix | **パイロット修理実験**(エネ配分修理で35→55%、+13〜20pt実証) | 実験済み・修理束の原本 |
 | deckswap-crustle | デッキ入替実験の腕(イワパレス) | 実験済み |
@@ -84,8 +111,11 @@ python3 $REPO/verification/bench.py 200 \
 
 | 場所 | 中身 |
 |---|---|
-| `docs/memo/data.md` | **数値の正典**。全実測がN・CI付きで日付順に(4,000行超) |
-| `docs/memo/decisions.md` | 意思決定ログ D1〜D65(何を・なぜ決めたか) |
+| `docs/memo/handover-*.md`(**日付が最新のもの**) | **いまの現在地**。ここから読むのが一番速い |
+| `docs/directory-guide.html` | **リポジトリ全体の構造ガイド**(どのファイルが何をしているか/対戦の呼び出し連鎖/なぜセルフ対戦をやめたか) |
+| `docs/memo/data.md` | **数値の正典**。全実測がN・CI付きで日付順に(5,400行超) |
+| `docs/memo/decisions.md` | 意思決定ログ D1〜(何を・なぜ決めたか)。冒頭に「最小読了セット」のナビあり |
+| `verification/cew.py` | **採否判定の重みの正典**(2026-08-09 T3再較正。README.mdより新しい) |
 | `docs/memo/team-report-2026-08-05.md` / `.html` | **りょーちん向け総括**(背景/外部調査/デッキ選定の経緯/本番53戦の中身/相談事項) |
 | `docs/memo/agents-2026-08-03/` | 一次調査9本: 公開ノートブック291件の実行分類(corpus-B)/ Kaggle外部偵察(scout-A)/ 人間大会×AIメタ(cross-human-ai)/ メタ=コピー可視性の検証(ood-imitability)/ デッキ表現力(deck-expressiveness)/ 本番53戦の解剖(p9-replay-mining)/ Discord偵察 / 検証の赤チーム(red-team-D)/ 根拠の再検証 |
 | `docs/memo/prior-art-audit-2026-08-02.md` | 公開ノートブック291件の精読監査 |

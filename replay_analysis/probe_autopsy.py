@@ -32,7 +32,8 @@ OUR_TEAM_SUBS = {55163442, 55070495, 55060473, 55058443, 54961048, 54858780, 548
                  # 2026-08-08 追記: 8/3-8/5 のりょーちん提出4本 + 8/7 の pilotfix。
                  # これが欠けると**チーム内対戦が外部対面として集計される**(red-team-D §8.1 #3 と同種)。
                  55258782, 55260998, 55264776, 55270074,  # proto3 / proto4 / proto5 / v9
-                 55308422}  # pilotfix(本検死の対象)
+                 55308422,  # pilotfix
+                 55376467}  # 2026-08-09 v2(デッキ非ex化 + 3修理全ON)。T1事前登録は data.md
 COVERED = {"Lucario", "Archaludon", "Abomasnow", "Dragapult"}  # 既定=旧CEW4面(argv[5]で上書き可)
 RULES = [
     ("Lucario", ["Mega Lucario ex"]),
