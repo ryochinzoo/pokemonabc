@@ -14,9 +14,11 @@
     battle_select(選んだリスト) で次の状況に進む。これを勝敗が決まるまで繰り返す。
 """
 
+import json
 import random
 import sys
 import time
+from pathlib import Path
 
 from cg.game import battle_start, battle_select, battle_finish
 from cg.api import to_observation_class, LogType
@@ -43,9 +45,36 @@ def random_agent(obs_dict: dict) -> list[int]:
     return random.sample(range(n), k)
 
 
+def _record_path(path):
+    """記録の書き出し先を検査して返す。
+
+    **デッキディレクトリ配下には絶対に書かない**: そこは提出tarにそのまま固められる
+    ので、記録が混入すると提出物が汚れる(handover-2026-08-08 で8本8.4MBを退避した)。
+    出力は `../pokemonabc-runs/` 配下に置くこと(v2final_sweep_driver.sh と同じ流儀)。
+    """
+    p = Path(path).resolve()
+    if "src/input/datasets/decks" in p.as_posix():
+        raise ValueError(
+            f"デッキディレクトリ配下には記録できない: {p}\n"
+            "  提出tarに混入する。../pokemonabc-runs/ 配下を指定すること")
+    p.parent.mkdir(parents=True, exist_ok=True)
+    return p
+
+
 def run_match(deck0: list[int], deck1: list[int], agent0, agent1,
-              max_steps: int = 200000) -> dict:
+              max_steps: int = 200000, record=None, record_meta=None) -> dict:
     """1試合を最後まで回す。
+
+    Args:
+        record: 指定するとイベント列を JSONL で1試合1行 追記する(既定 None = 完全に不活性)。
+            エンジンは `obs.logs`(前回の選択以降に起きたこと)を毎手渡してくるだけで
+            棋譜を保持しないので、残したければ呼び出し側で積むしかない。
+            **未指定時の挙動は変わらない**: 追加で走るのは `events, prev_logs` の初期化と
+            `record is not None` の判定だけで、乱数も引かずエンジンも叩かず obs にも触れない。
+            なお同一シードでも譜は再現しない(シャッフルはC側の内部乱数で、Python の
+            random からは届かない — 2026-08-09実測)。よって対照は決定列のバイト一致では
+            なく、旧版との統計的同等性で取る(playbook §1)。
+        record_meta: record 時に各行へ混ぜる追加情報(試合番号など)。
 
     Returns:
         dict: winner(0/1/2=引き分け/-1=不明), reason, decisions, turns
@@ -58,9 +87,26 @@ def run_match(deck0: list[int], deck1: list[int], agent0, agent1,
         )
 
     winner, reason, decisions, max_turn = -1, None, 0, 0
+    events, prev_logs = [], None
     try:
         for _ in range(max_steps):
             o = to_observation_class(obs)
+
+            # 記録は RESULT 走査より前に置く(試合終了ログもイベント列に残すため)。
+            # 同じ logs が連続する観測で再掲されうるので card_effect_probe と同じ排除をする。
+            if record is not None:
+                raw = obs.get("logs")
+                if raw and raw != prev_logs:
+                    prev_logs = raw
+                    turn = o.current.turn if o.current else None
+                    events.extend(
+                        {"t": turn,
+                         "type": int(lg.type) if lg.type is not None else None,
+                         "pi": lg.playerIndex, "cid": lg.cardId,
+                         "from": lg.fromArea, "to": lg.toArea,
+                         "aid": lg.attackId, "val": lg.value,
+                         "dmg": lg.putDamageCounter}
+                        for lg in (o.logs or []))
 
             # このターンまでに起きた出来事(logs)に「試合終了」が含まれていないか確認
             for log in (o.logs or []):
@@ -82,20 +128,28 @@ def run_match(deck0: list[int], deck1: list[int], agent0, agent1,
     finally:
         battle_finish()
 
-    return {"winner": winner, "reason": reason, "decisions": decisions, "turns": max_turn}
+    result = {"winner": winner, "reason": reason, "decisions": decisions, "turns": max_turn}
+    if record is not None:
+        row = dict(record_meta or {})
+        row.update(result)
+        row["events"] = events
+        with _record_path(record).open("a") as f:
+            f.write(json.dumps(row, separators=(",", ":")) + "\n")
+    return result
 
 
-def run_series(n: int, deck0, deck1, agent0, agent1) -> dict:
+def run_series(n: int, deck0, deck1, agent0, agent1, record=None) -> dict:
     """n試合まわして勝敗を集計（先攻/後攻の有利を均すため半分ずつ入れ替える）。"""
     wins = [0, 0]
     draws = 0
     for i in range(n):
+        meta = {"i": i, "swapped": i % 2 == 1} if record is not None else None
         if i % 2 == 0:
-            r = run_match(deck0, deck1, agent0, agent1)
+            r = run_match(deck0, deck1, agent0, agent1, record=record, record_meta=meta)
             w = r["winner"]
         else:
             # 席を入れ替えて agent0 を後攻側に
-            r = run_match(deck1, deck0, agent1, agent0)
+            r = run_match(deck1, deck0, agent1, agent0, record=record, record_meta=meta)
             w = (1 - r["winner"]) if r["winner"] in (0, 1) else r["winner"]
         if w == 0:
             wins[0] += 1
