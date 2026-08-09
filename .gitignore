@@ -19,3 +19,6 @@ replay_analysis/eps*/ep*.json
 # 公開ノートブックの取得アーカイブ(検証専用・提出禁止。8/2締切でプール凍結のため退避)
 verification/reference/_inbox/
 replay_analysis/ladder_scout/
+
+# トレース(デッキディレクトリは提出用に tar されるので混入させない — handover 2026-08-08 §4.2)
+src/input/datasets/decks/*/trace*.jsonl

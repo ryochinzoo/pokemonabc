@@ -151,6 +151,113 @@ def _ex_wall_ids():
     return _EX_WALL_IDS
 
 
+_TOOL_KINDS = None
+
+
+def _tool_kinds():
+    """ポケモンのどうぐを効果テキストから分類する（デッキ非依存・カードDB由来）。
+
+    {cardId: (hp_boost, dmg_boost, rulebox_only)}
+      hp_boost    : 「gets +N HP」        （ヒーローマント +100 / シンオウのパワーウェイト +70）
+      dmg_boost   : 「do N more damage」  （ブレイブバングル +30 / マキシマムベルト +50 等）
+      rulebox_only: 「doesn't have a Rule Box」= ex/メガに貼ると効果ゼロ（ブレイブバングル）
+
+    分類できないどうぐ（退却軽減・被ダメ軽減・きぜつ時誘発など）は載せない。
+    載っていないカードには新規則を当てず、従来のエネ用キーのまま扱う。
+
+    ★2026-08-09 既知の欠陥（他デッキへ再利用する前に必ず直すこと）:
+      **2本の裸の正規表現しか見ておらず、効果テキストの条件節を全部落としている。**
+      実際に分類される7枚のうち **6枚** が条件つきで、3系統ある:
+        ① 相手のバトル場が ex のときだけ — ブレイブバングル(1175 +30) /
+           マキシマムベルト(1158 +50)。**非exが相手なら効果0。**
+        ② 貼る側が特定の系統のときだけ — ライトボール(1178, ピカチュウex限定) /
+           ホップのタイキバン(1171) / シンオウのパワーウェイト(1173)
+        ③ 貼る側が特定の状態のときだけ — しばりのモチ(1162, どく状態限定)
+      無条件なのは ヒーローマント(1159 +100) だけ。
+      さらに `rulebox_only` が拾えるのは、自己条件を "doesn't have a Rule Box" と
+      **書き方で表現している**ブレイブバングルだけ。マキシマムベルト/ライトボールの
+      `{ex}` 側の条件は無言で捨てられる。
+      → 現デッキ(ex 0枚)では「バングルの useful ビットが常に1」になるが、
+        その +30 は相手が ex のときしか出ない。**評価が実効値より甘い方向にズレる。**
+    """
+    global _TOOL_KINDS
+    if _TOOL_KINDS is None:
+        kinds = {}
+        try:
+            cards, _ = _card_db()
+            for c in cards.values():
+                if c.cardType != CardType.TOOL:
+                    continue
+                text = " ".join((getattr(sk, "text", "") or "") for sk in (c.skills or []))
+                # カードDBは丸アポストロフィ(U+2019)を使う。両方に当たるよう正規化する。
+                flat = text.replace("’", "'")
+                hp = _re.search(r"gets \+(\d+) HP", flat)
+                dm = _re.search(r"do (\d+) more damage", flat)
+                if hp is None and dm is None:
+                    continue
+                kinds[c.cardId] = (
+                    int(hp.group(1)) if hp else 0,
+                    int(dm.group(1)) if dm else 0,
+                    ("doesn't have a Rule Box" in flat) or ("does not have a Rule Box" in flat),
+                )
+        except Exception:
+            kinds = {}
+        _TOOL_KINDS = kinds
+    return _TOOL_KINDS
+
+
+def _tool_target_key(card_id, pk, is_active: int, dmg: int):
+    """どうぐの貼り先評価キー。どうぐでない/分類できない場合は None（＝従来のエネ用キー）。
+
+    返すのは (効果が出る貼り先か, バトル場か, その体の打点, 残HP)。
+
+    2026-08-07: どうぐは PLAY ではなく **ATTACH** として提示されるため、貼り先が
+    「エネの飢え(hungry)」で決まっていた。ヒーローマントは4回に2回しか主砲に乗らなかった。
+    どうぐには「飢え」ではなく「効果が出る貼り先か」を使う。
+
+    ※初版には -献上サイド枚数 の項を入れたが、v2デッキは ex 0枚＝全員サイド1枚で
+      定数(不活性)になるため外した。ex入りデッキに戻すときは再考が要る。
+
+    ★2026-08-09 訂正: 旧文には「実測では ブレイブバングルの2割がルールボックス持ち＝
+      効果+0 の死に札になり」とあったが、**この観測は ex入りの P9デッキ(ミュウツーex×2)
+      由来の持ち越しで、v2デッキには当てはまらない**。v2の21種を engine の card DB と
+      全数照合した結果 `ex or megaEx` は **0枚**で、`rulebox_only` の枝は
+      **このデッキでは原理的に発火しない**(判定は :216-219 の getattr(c,"ex"/"megaEx"))。
+      記事に持ち込む前に消しておく。ex入りデッキへ戻すときだけ復活する話。
+    """
+    if card_id is None or os.environ.get("V4_NO_TOOLFIX"):
+        return None
+    kind = _tool_kinds().get(card_id)
+    if kind is None:
+        return None
+    hp_boost, dmg_boost, rulebox_only = kind
+    cards, _ = _card_db()
+    c = cards.get(pk.id)
+    useful = 1
+    if rulebox_only and c is not None and (
+        getattr(c, "ex", False) or getattr(c, "megaEx", False)
+    ):
+        useful = 0  # ルールボックス持ちに貼っても +0
+    if dmg_boost and not hp_boost and dmg <= 0:
+        useful = 0  # 打点補正を「そもそも撃てない体」に貼っても +0（例: 水エネ0のフリーザー）
+    return (useful, is_active if useful else 0, dmg, pk.hp or 0)
+
+
+def _is_tool_attach(obs, sel, answer) -> bool:
+    """その答えが「手札のどうぐを貼る」か。探索の上書き保護(VETO)の判定に使う。"""
+    if not answer or os.environ.get("V4_NO_TOOLVETO"):
+        return False
+    try:
+        o = sel.option[answer[0]]
+        if o.type != OptionType.ATTACH or o.area != AreaType.HAND:
+            return False
+        state = obs.current
+        cid = state.players[state.yourIndex].hand[o.index].id
+        return cid in _tool_kinds()
+    except (IndexError, TypeError, AttributeError):
+        return False
+
+
 # ---------------------------------------------------------------------------
 # 盤面の読み取りヘルパ（全て「分からなければ None / 0」で落ちない）
 # ---------------------------------------------------------------------------
@@ -303,7 +410,12 @@ def _usable_attacks(card):
     優先してエネを吸い続けていた（本番53戦で 1.7枚/戦・Dark Frost の使用は0回）。
     """
     _, attacks = _card_db()
-    avail = None if os.environ.get("V3_NO_TRFIX") else _deck_energy_types()
+    # 2026-08-07: 独立トグルに分離。以前は V3_NO_TRFIX 1本で「打点登録(560/609)」と
+    # 「エネ型フィルタ」という別々の介入が同時に消え、事後にどちらが効いたか切り分けられなかった
+    # (robustness-guard W1)。帰属は純関数で確認済み:
+    #   フリーザー 必要3/価値60 → 0/0 は 100% こちら側(エネ型フィルタ)
+    #   ワナイダー 価値 0 → 120  は 100% あちら側(_SCALING_DAMAGE 登録)
+    avail = None if os.environ.get("V3_NO_ENERGYFIX") else _deck_energy_types()
     for aid in card.attacks or []:
         a = attacks.get(aid)
         if a is None:
@@ -314,16 +426,37 @@ def _usable_attacks(card):
 
 
 def _max_attack_cost(card_id: int) -> int:
-    """カードのワザの最大エネルギーコスト（エネ貼り先の必要数判定）。払えるワザのみ。"""
+    """エネ貼り先の「必要数」。**実際に撃ちたいワザのコスト**を返す。
+
+    2026-08-07: 以前はワザの**最大**コストを返していた。そのため、価値の低い高コストワザを
+    1本持っているだけで、その個体が永久に hungry=1 のままエネとどうぐを吸い続けた。
+    実測: ソーナンスは「とびだしヘッド {P}●●=3・打点70」で need=3 になるが、
+    本命は「ロケットミラー {P}●=2」。主砲ワナイダー(need=2)より長く飢えたままキーに勝ち、
+    自己対戦でエネ配分1位・ヒーローマントの誤爆先1位になっていた(data.md 2026-08-07)。
+    「最良の価値を出すワザのうち最も安いもの」のコストを返すと、実測で動くのは
+    **ソーナンス 3→2 だけ**で他4体は不変（デッキ非依存・名前のハードコード不要）。
+    """
     cards, _ = _card_db()
     c = cards.get(card_id)
     if not c:
         return 0
-    need = 0
-    for _aid, a in _usable_attacks(c):
-        if a.energies is not None:
-            need = max(need, len(a.energies))
-    return need
+    if os.environ.get("V4_NO_COSTFIX"):
+        need = 0
+        for _aid, a in _usable_attacks(c):
+            if a.energies is not None:
+                need = max(need, len(a.energies))
+        return need
+    best_val, best_cost = -1, 0
+    for aid, a in _usable_attacks(c):
+        if a.energies is None:
+            continue
+        val = a.damage
+        if aid in _SCALING_DAMAGE and (_trfix_on() or aid not in _TRFIX_SCALING):
+            val = max(val, 120)   # スケーリングワザの評価は _best_attack_damage_of_card と同一
+        cost = len(a.energies)
+        if (val, -cost) > (best_val, -best_cost):
+            best_val, best_cost = val, cost
+    return best_cost
 
 
 def _best_attack_damage_of_card(card_id: int) -> int:
@@ -503,6 +636,7 @@ def _choose_main(obs: Observation) -> list[int]:
     #  たねStaryuに33回貼って捨てていた」(data.md 2026-07-21)。
     # 基本エネで3枚に届く局面(have>=2)ではIgnitionを温存する。
     attach_best, attach_key = None, (-1, -1, -1, -1, -99)
+    tool_best, tool_key = None, (-1, -1, -1, -1)
     for i, o in enumerate(options):
         if o.type != OptionType.ATTACH:
             continue
@@ -530,11 +664,21 @@ def _choose_main(obs: Observation) -> list[int]:
             )
             # 進化体がバトル場にいて、基本エネでは3に届かない(have<2)ときだけ最優先。
             pri = 2 if (evolved and is_active and have < 2) else 0
+        tkey = _tool_target_key(ecid, pk, is_active, dmg)
+        if tkey is not None:
+            # どうぐはエネとキーの意味が違うので**同じ土俵で比べない**（別の勝者を持つ）。
+            if tkey > tool_key:
+                tool_best, tool_key = i, tkey
+            continue
         key = (pri, hungry, is_active if hungry else 0, dmg, -have)
         if key > attach_key:
             attach_best, attach_key = i, key
+    # エネを先に貼る（1ターン1枚の希少資源で、攻撃可否を直接決める）。
+    # どうぐは枚数制限が無く同ターン内の次の決定で必ず処理されるので、後回しでも取りこぼさない。
     if attach_best is not None:
         return [attach_best]
+    if tool_best is not None:
+        return [tool_best]
 
     # 5. 攻撃（見積りダメージ最大。リーサルなら最優先）
     attack_best, attack_dmg = None, -1
@@ -574,7 +718,8 @@ def _choose_main(obs: Observation) -> list[int]:
     idx = first(lambda o: o.type == OptionType.END)
     if idx is not None:
         return [idx]
-    return [0]
+    # optionが空のときの [0] は範囲外=違法手（robustness-guardが実測で再現、王者にも同居）。
+    return [0] if options else []
 
 
 def _choose_cards(obs: Observation) -> list[int]:
@@ -673,7 +818,17 @@ def _v1_decide(obs: Observation) -> list[int]:
     sel = obs.select
     try:
         if sel.type == SelectType.MAIN:
-            return _choose_main(obs)
+            # CARD分岐と同じ事後契約検査。MAINだけ検査が無く、_choose_mainの
+            # 最終フォールバックが範囲外を返しても素通りしていた。
+            # 実測(4戦486件)ではMAINは常に minCount=maxCount=1 の int。
+            result = _choose_main(obs)
+            if (
+                sel.minCount <= len(result) <= sel.maxCount
+                and len(set(result)) == len(result)
+                and all(0 <= r < len(sel.option) for r in result)
+            ):
+                return result
+            return _fallback(sel)
         if sel.type == SelectType.YES_NO:
             yes = next(
                 (i for i, o in enumerate(sel.option) if o.type == OptionType.YES),
@@ -1030,7 +1185,10 @@ def _search_decide(obs_dict: dict, sel, v1_answer: list[int]) -> list[int] | Non
 _TRACE_PATH = os.environ.get("V3_SELECT_TRACE")
 
 
-def _trace_select(obs: Observation, picked: list[int]) -> None:
+def _trace_select(obs: Observation, picked: list[int], src: str = "v1", v1=None) -> None:
+    """src: この答えを出したのが探索層("search")か v1 ヒューリスティック("v1")か。
+    v1: 探索が採用されたときに v1 が出したかった答え（層の不一致を数えるため）。
+    どちらもログ専用で判断には使わない。"""
     if not _TRACE_PATH:
         return
     try:
@@ -1063,6 +1221,18 @@ def _trace_select(obs: Observation, picked: list[int]) -> None:
                 if pk:
                     rec["toNm"] = (cards.get(pk.id).name if cards.get(pk.id) else None)
                     rec["toHave"] = len(pk.energies) if pk.energies else 0
+                # 貼る側のカード。ATTACHは playerIndex=None なので _card_id_of_option が
+                # TypeError で None を返し、貼ったのがエネかどうぐか判別できなかった
+                # (旧トレース: ATTACH 2,726件すべて nm=null)。_choose_main:519-523 と同じ読み方。
+                if rec.get("cid") is None and o.area == AreaType.HAND:
+                    try:
+                        scid = state.players[me].hand[o.index].id
+                        rec["cid"] = scid
+                        sc = cards.get(scid)
+                        if sc:
+                            rec["nm"] = sc.name
+                    except (IndexError, TypeError, AttributeError):
+                        pass
             opts.append(rec)
         line = {
             "turn": getattr(state, "turn", None),
@@ -1072,6 +1242,7 @@ def _trace_select(obs: Observation, picked: list[int]) -> None:
             "oppHp": _opp_active_hp(state, me),
             "eff": eff_id,
             "opts": opts, "picked": picked,
+            "src": src, "v1": v1,
         }
         with open(_TRACE_PATH, "a") as f:
             f.write(json.dumps(line, ensure_ascii=False) + "\n")
@@ -1112,19 +1283,27 @@ def agent(obs_dict: dict) -> list[int]:
         sel = obs.select
         v1 = _v1_decide(obs)
         try:
-            if sel.type in (SelectType.MAIN, SelectType.ATTACK):
+            # どうぐ貼りは探索に上書きさせない(VETO)。実測: マントの貼り先の29%を探索が奪い、
+            # 奪った5件は5件ともv1と不一致だった。どうぐの+100HPが効くのは「相手がその体を
+            # 殴ったとき」で、短いロールアウトでは評価できない。台帳#27(_OVERRIDE_MARGIN=120は
+            # サイド1枚=10,000・終局=1e9の評価スケールに対して無効=実質くじ引き)の再発。
+            if sel.type in (SelectType.MAIN, SelectType.ATTACK) and not _is_tool_attach(obs, sel, v1):
                 picked = _search_decide(obs_dict, sel, v1)
                 if (
                     picked is not None
                     and sel.minCount <= len(picked) <= sel.maxCount
                     and len(set(picked)) == len(picked)
                     and all(0 <= p < len(sel.option) for p in picked)
+                    # 探索**側**がどうぐ貼りを選んだ場合も却下する。v1の答えだけを見る初版では、
+                    # 「v1はエネを貼りたい→探索が走る→探索がどうぐを選ぶ」経路が漏れていた
+                    # (実測: VETO ON でもマント2件が探索決定のまま残った)。
+                    and not _is_tool_attach(obs, sel, picked)
                 ):
-                    _trace_select(obs, picked)
+                    _trace_select(obs, picked, "search", v1)
                     return picked
         except Exception:
             pass
-        _trace_select(obs, v1)
+        _trace_select(obs, v1, "v1")
         return v1
     except Exception:
         # Observationパース・v1本体まで含めて何が起きても合法手を返す

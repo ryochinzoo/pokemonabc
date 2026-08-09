@@ -12,18 +12,24 @@ CEW = Σ w_i・p_i (w=D35の遭遇重み)。各成分は二項なので
 
 使い方(勝数と試合数を成分ごとに渡す):
     python3 verification/cew_stats.py \\
-        --a lucario=161/642,archaludon=56/383,dragapult=64/102,abomasnow=11/73 \\
-        --b lucario=179/642,archaludon=54/383,dragapult=68/102,abomasnow=24/73
+        --a alakazam=1173/1248,crustle=371/380,lucario=177/934,archaludon=80/638 \\
+        --b alakazam=1180/1248,crustle=373/380,lucario=220/934,archaludon=95/638
 
     # 単一構成なら --a だけでよい。--reps で反復の過分散検定(χ²)も行う:
-    python3 verification/cew_stats.py --reps "196/428,50/256,57/68,16/48" "208/428,71/256,49/68,21/48" ...
+    python3 verification/cew_stats.py --reps "1173/1248,371/380,177/934,80/638" ...
+
+2026-08-09: ゲージ集合を T3再較正で入れ替えた(cew.py 参照)。
+  旧: lucario / archaludon / dragapult / abomasnow  ← dragapult は実シェアの7.4倍、
+      abomasnow は 800-1099帯の census に出現しないのに 5.6% の重みを持っていた。
+  新: alakazam / crustle / lucario / archaludon     ← 実シェア上位の較正済み族外4面。
 """
 import argparse
 import math
 
 from cew import WEIGHTS
 
-ORDER = ["lucario", "archaludon", "dragapult", "abomasnow"]
+# --reps の位置引数の順序。WEIGHTS の宣言順と一致させること。
+ORDER = ["alakazam", "crustle", "lucario", "archaludon"]
 
 
 def parse_cells(spec: str) -> dict:
@@ -53,7 +59,7 @@ def main():
     ap.add_argument("--b", help="構成B(比較する場合)")
     ap.add_argument("--label-a", default="A")
     ap.add_argument("--label-b", default="B")
-    ap.add_argument("--reps", nargs="*", help='反復: "w/n,w/n,w/n,w/n" を lucario,archaludon,dragapult,abomasnow の順で')
+    ap.add_argument("--reps", nargs="*", help='反復: "w/n,w/n,w/n,w/n" を alakazam,crustle,lucario,archaludon の順で')
     args = ap.parse_args()
 
     if args.reps:

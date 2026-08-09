@@ -28,7 +28,11 @@ REPO = Path(__file__).resolve().parent.parent
 OUR_TEAM_SUBS = {55163442, 55070495, 55060473, 55058443, 54961048, 54858780, 54832323,
                  55169074,  # P2幅プローブ(2026-08-04追加)
                  55209782, 55216410,  # 2026-08-03 ゆうじのproto提出2本(CLI一覧で発見、2026-08-04追記)
-                 55236642}  # P9 deckswap-tarountula(2026-08-04提出)。新規提出のたびにここへ追記する
+                 55236642,  # P9 deckswap-tarountula(2026-08-04提出)。新規提出のたびにここへ追記する
+                 # 2026-08-08 追記: 8/3-8/5 のりょーちん提出4本 + 8/7 の pilotfix。
+                 # これが欠けると**チーム内対戦が外部対面として集計される**(red-team-D §8.1 #3 と同種)。
+                 55258782, 55260998, 55264776, 55270074,  # proto3 / proto4 / proto5 / v9
+                 55308422}  # pilotfix(本検死の対象)
 COVERED = {"Lucario", "Archaludon", "Abomasnow", "Dragapult"}  # 既定=旧CEW4面(argv[5]で上書き可)
 RULES = [
     ("Lucario", ["Mega Lucario ex"]),

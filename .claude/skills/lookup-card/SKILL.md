@@ -5,10 +5,13 @@ description: Look up Pokémon TCG card data by Card ID, name, or type from EN_Ca
 
 # lookup-card
 
-Query the card reference data in this repo. Two CSVs at the repo root, one row per card,
-2102 cards each, sharing the same Card ID space:
+Query the card reference data in this repo. Two CSVs under `verification/data/`, one row per
+card, 2102 cards each, sharing the same Card ID space:
 - `verification/data/EN_Card_Data.csv` — English (default)
-- `JP_Card_Data.csv` — Japanese
+- `verification/data/JP_Card_Data.csv` — Japanese
+
+(2026-08-09 fix: this file used to say the CSVs were "at the repo root" and gave the JP path
+as a bare `JP_Card_Data.csv`. Neither exists at the root — both live in `verification/data/`.)
 
 Columns (identical in both):
 `Card ID, Card Name, Expansion, Collection No., Stage (Pokémon)/Type (Energy and Trainer),
