@@ -574,7 +574,8 @@ def _choose_main(obs: Observation) -> list[int]:
     idx = first(lambda o: o.type == OptionType.END)
     if idx is not None:
         return [idx]
-    return [0]
+    # optionが空のときの [0] は範囲外=違法手（robustness-guardが実測で再現、王者にも同居）。
+    return [0] if options else []
 
 
 def _choose_cards(obs: Observation) -> list[int]:
@@ -673,7 +674,17 @@ def _v1_decide(obs: Observation) -> list[int]:
     sel = obs.select
     try:
         if sel.type == SelectType.MAIN:
-            return _choose_main(obs)
+            # CARD分岐と同じ事後契約検査。MAINだけ検査が無く、_choose_mainの
+            # 最終フォールバックが範囲外を返しても素通りしていた。
+            # 実測(4戦486件)ではMAINは常に minCount=maxCount=1 の int。
+            result = _choose_main(obs)
+            if (
+                sel.minCount <= len(result) <= sel.maxCount
+                and len(set(result)) == len(result)
+                and all(0 <= r < len(sel.option) for r in result)
+            ):
+                return result
+            return _fallback(sel)
         if sel.type == SelectType.YES_NO:
             yes = next(
                 (i for i, o in enumerate(sel.option) if o.type == OptionType.YES),
