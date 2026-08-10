@@ -23364,6 +23364,25 @@ class Policy:
             facts = self.b.hand_activity_facts()
             if any(card_id == SALVATORE and activity == HAND_ACTIVITY_LIVE_NOW for card_id, activity in facts.activities):
                 return -12000
+            remaining_activities = list(facts.activities)
+            remaining_activities.remove(next(
+                item for item in remaining_activities
+                if item[0] == LILLIE_DETERMINATION
+            ))
+            remaining_count = len(remaining_activities)
+            remaining_low_count = sum(
+                activity == HAND_ACTIVITY_LOW
+                for _, activity in remaining_activities
+            )
+            remaining_live_or_keep_count = sum(
+                activity in {HAND_ACTIVITY_LIVE_NOW, HAND_ACTIVITY_KEEP}
+                for _, activity in remaining_activities
+            )
+            if (
+                remaining_count > 0
+                and remaining_live_or_keep_count > remaining_low_count
+            ):
+                return 8000
             if facts.hand_size <= 2 or self.b.needs_basic():
                 return 70000
             if facts.hand_size <= 4 and facts.lillie_effect.shuffle_count >= 3:
