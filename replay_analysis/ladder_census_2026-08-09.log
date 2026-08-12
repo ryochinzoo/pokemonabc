@@ -1,0 +1,497 @@
+=== ladder_census 本走 開始 2026-08-09 23:13:32 / TOP=100 ===
+git HEAD: 37c853a
+
+--- [1/3] seed (leaderboard → team-submissions) ---
+leaderboard 上位100チーム取得 (既知10チーム / 目標100)
+  #  8 da da                         1128.2 → 稼働提出2件
+  # 12 vvs                           1106.3 → 稼働提出2件
+  # 13 @kdcyberdude                  1101.7 → 稼働提出2件
+  # 14 Dipam Chakraborty             1100.0 → 稼働提出2件
+  # 15 Pokemon Siuuuu                1098.3 → 稼働提出2件
+  # 16 Sixth Sense                   1098.0 → 稼働提出2件
+  # 17 M Sato                        1097.4 → 稼働提出2件
+  # 18 Team Rot-Weiß                 1096.2 → 稼働提出2件
+  # 19 Luca                          1085.4 → 稼働提出2件
+  # 20 matsurih                      1084.6 → 稼働提出2件
+  # 21 대답해드리는게인지상정                   1076.3 → 稼働提出2件
+  # 22 ---below this line is gay---  1074.2 → 稼働提出2件
+  # 23 THIRD PTCG Club               1071.0 → 稼働提出2件
+  中断: CLI が律速に当たった: 'id,dateSubmitted,publicScore\n55374895,2026-08-09 09:59:05.267000,1069.4\n55374292,2026-08-09 09:34:01.960000,1002.7\n' → 4h停止(永続)
+  → targets.json に46件保存済み。再実行で続きから
+seed rc=1
+
+--- [2/3] mine (list_episodes → 適応プレフィックス読み → 60枚) ---
+mine: 未取得40提出 (既取得9) / 1提出あたり最大4本読む
+  中断: cooldown 残り240分
+  → 9提出まで保存済み。再実行で差分だけ進む
+mine rc=1
+
+--- [3/3] report ---
+=== 上位100ラダーのデッキ悉皆調査 ===
+順位つき提出 3 / 野良(対戦相手として観測) 6 / 総 9
+
+--- アーキタイプ分布(分類器A: カード名ベース) ---
+  Kangaskhan           1   33.3%
+  lucario              1   33.3%
+  grimmsnarl           1   33.3%
+
+--- 分類器A/Bの不一致 1件 (D59: 片方の取りこぼしを黙って飲まない) ---
+  #  1 Majkel1337           A=Kangaskhan B=None top=Slowpoke
+
+--- 帯別の構成 ---
+  [1200-1299] N=  1   lucario:1
+  [1000-1099] N=  1   grimmsnarl:1
+  [900-999] N=  1   Kangaskhan:1
+
+--- 両分類器とも未分類 0件 (新アーキタイプはここに居る) ---
+
+--- 我々のデッキ(deck.csv) との差分 ---
+  上位100で広く使われ、我々が1枚も入れていないカード(採用提出数の多い順):
+      2/3 提出   1182  Boss’s Orders
+      2/3 提出   1123  Switch
+      1/3 提出   1259  Spikemuth Gym
+      1/3 提出   1248  Academy at Night
+      1/3 提出   1231  Dawn
+      1/3 提出   1229  Wally's Compassion
+      1/3 提出   1225  Hilda
+      1/3 提出   1213  Judge
+      1/3 提出   1194  Colress’s Tenacity
+      1/3 提出   1188  Ciphermaniac’s Codebreaking
+      1/3 提出   1146  Wondrous Patch
+      1/3 提出   1142  Fighting Gong
+      1/3 提出   1141  Premium Power Pro
+      1/3 提出   1137  Tool Scrapper
+      1/3 提出   1122  Pokégear 3.0
+      1/3 提出   1088  Prime Catcher
+      1/3 提出   1086  Buddy-Buddy Poffin
+      1/3 提出   1080  Unfair Stamp
+      1/3 提出   1079  Rare Candy
+      1/3 提出   1071  Meowth ex
+  逆に、上位100の誰も使っていない我々のカード 15種:
+    x8      1  Basic {G} Energy
+    x4     15  Team Rocket's Energy
+    x4    400  Team Rocket's Tarountula
+    x4    401  Team Rocket's Spidops
+    x2    414  Team Rocket's Articuno
+    x1    432  Team Rocket's Wobbuffet
+    x2    463  Team Rocket's Murkrow
+    x3   1094  Bug Catching Set
+    x4   1134  Team Rocket's Transceiver
+    x3   1175  Brave Bangle
+    x4   1216  Team Rocket's Ariana
+    x1   1217  Team Rocket's Archer
+    x3   1218  Team Rocket's Giovanni
+    x4   1220  Team Rocket's Proton
+    x2   1257  Team Rocket's Factory
+
+=== 律速で中断 2026-08-09 23:15:47 — 4時間後に同じコマンドを再実行すれば差分だけ進む ===
+=== ladder_census 本走 開始 2026-08-09 23:21:18 / TOP=100 ===
+git HEAD: d12854b
+
+--- [1/3] seed (leaderboard → team-submissions) ---
+leaderboard 上位100チーム取得 (既知23チーム / 目標100)
+  # 13 wwwwwwwwwwwwwwwwwwwwwwwwwwww  1103.3 → 稼働提出2件
+  # 19 tttzof351                     1088.0 → 稼働提出2件
+  # 25 DavidFreelan                  1069.4 → 稼働提出2件
+  # 26 213tubo                       1069.3 → 稼働提出2件
+  # 27 ONE PIECE                     1064.3 → 稼働提出2件
+  # 28 Octavi Grau                   1059.9 → 稼働提出2件
+  # 29 S4nkurero                     1059.8 → 稼働提出2件
+  # 30 齐乐                            1059.7 → 稼働提出2件
+  # 31 Bart, Edwyn                   1058.6 → 稼働提出2件
+  # 32 e-toppo + kurupical           1057.3 → 稼働提出2件
+  # 33 masspeaks                     1056.4 → 稼働提出2件
+  # 34 Pokopia                       1055.0 → 稼働提出2件
+  # 35 NIWATORI                      1054.2 → 稼働提出2件
+  # 36 fishcat                       1054.2 → 稼働提出2件
+  # 37 Yaroslav                      1054.1 → 稼働提出2件
+  # 38 hatry                         1053.3 → 稼働提出2件
+  # 39 Jonathan Coletti              1052.9 → 稼働提出2件
+  # 40 PP kawada                     1052.3 → 稼働提出2件
+  # 41 Kosmostars                    1051.6 → 稼働提出2件
+  # 42 __Taichicchi__                1049.6 → 稼働提出2件
+  # 43 JB Bryant                     1048.0 → 稼働提出2件
+  # 44 Confusion                     1047.4 → 稼働提出2件
+  # 45 你好哇                           1047.0 → 稼働提出2件
+  # 46 wennan cao                    1046.2 → 稼働提出2件
+  # 47 Jack                          1045.8 → 稼働提出2件
+  # 48 kwa                           1043.9 → 稼働提出2件
+  # 49 ANDPAD kaggler team           1043.5 → 稼働提出2件
+  # 50 Magist                        1043.1 → 稼働提出2件
+  # 51 RtoABC                        1042.7 → 稼働提出2件
+  # 52 haggle                        1040.1 → 稼働提出2件
+  # 53 YumeNeko                      1039.7 → 稼働提出2件
+  # 54 Canon                         1038.5 → 稼働提出2件
+  # 55 Evgeniy Zdoronok              1038.4 → 稼働提出2件
+  # 56 Oshbocker                     1038.0 → 稼働提出2件
+  # 57 MtN                           1037.6 → 稼働提出2件
+  # 58 Yopta                         1035.1 → 稼働提出2件
+  # 59 Team                          1034.5 → 稼働提出2件
+  # 60 Lunariz                       1031.5 → 稼働提出2件
+  # 61 Brahim                        1031.3 → 稼働提出2件
+  # 62 Ars Noveau                    1031.1 → 稼働提出2件
+  # 63 I4Kaggle                      1030.2 → 稼働提出2件
+  # 64 ☕ Psyduck Needs Coffee        1023.7 → 稼働提出2件
+  # 65 wkonishi                      1022.1 → 稼働提出2件
+  # 66 Battle Data Base              1022.0 → 稼働提出2件
+  # 67 爆爆盛焼脂油麺                       1021.2 → 稼働提出2件
+  # 68 Mega Regigigas Ex Vmax        1019.4 → 稼働提出2件
+  # 69 Ghleii                        1019.2 → 稼働提出2件
+  # 70 想要成为kaggle大师                  1018.5 → 稼働提出2件
+  # 71 Nghia Tran + ketchum alt      1018.4 → 稼働提出4件
+  # 72 PokeMiniMax                   1018.2 → 稼働提出2件
+  # 73 tktkyamyam                    1017.0 → 稼働提出2件
+  # 74 Juyong                        1016.9 → 稼働提出2件
+  # 75 cyrus                         1016.1 → 稼働提出2件
+  # 76 MarineYY                      1015.5 → 稼働提出2件
+  # 77 cununn                        1014.4 → 稼働提出2件
+  # 78 goonew                        1013.6 → 稼働提出2件
+  # 79 Boss's Orders Are All You Ne  1012.7 → 稼働提出2件
+  # 80 GuerillaMoon                  1011.4 → 稼働提出2件
+  # 81 takayosi                      1011.3 → 稼働提出2件
+  # 82 Where is my orbit             1010.8 → 稼働提出2件
+  # 83 szlachetny snieg              1010.3 → 稼働提出2件
+  # 84 KouFu                         1010.2 → 稼働提出2件
+  # 85 BC+                           1008.9 → 稼働提出2件
+  # 86 cm391                         1008.6 → 稼働提出2件
+  # 87 Boseiju                       1007.9 → 稼働提出2件
+  # 88 【共逐荣光】Timmy Juicehouse        1007.7 → 稼働提出2件
+  # 89 miya                          1007.2 → 稼働提出2件
+  # 90 Byer Script                   1006.9 → 稼働提出2件
+  # 91 ei1333                        1005.9 → 稼働提出2件
+  # 92 あなまか                          1004.1 → 稼働提出2件
+  # 93 llkarill                      1003.6 → 稼働提出2件
+  # 94 haruto                        1003.1 → 稼働提出2件
+  # 95 宝糕手                           1002.8 → 稼働提出2件
+  # 96 李秉叡（ntumlnoob）                1001.6 → 稼働提出2件
+  # 97 S. B.                         1001.3 → 稼働提出2件
+  # 98 ykhnkf                        1000.8 → 稼働提出2件
+  # 99 typeIIIfairy                  1000.8 → 稼働提出2件
+  #100 tonakaiiii                    1000.1 → 稼働提出2件
+seed 完了: 101チーム / 提出204件 → /Users/yujiinoue/Documents/products/pokemonabc/replay_analysis/lake/targets.json
+seed rc=0
+
+--- [2/3] mine (list_episodes → 適応プレフィックス読み → 60枚) ---
+mine: 未取得198提出 (既取得9) / 1提出あたり最大4本読む
+  [1/198] #  3 palsystem            sub55337492 Teal Mask Ogerpon ex 65-37 (64%) 
+  [2/198] #  4 James Cox & Henry Ch sub55328864 Kangaskhan     84-46 (65%) 
+  [3/198] #  4 James Cox & Henry Ch sub55278240 Kangaskhan     163-100 (62%) 
+  [4/198] #  5 MissingNo.           sub55332194 crustle        81-45 (64%) 
+  [5/198] #  5 MissingNo.           sub55331941 crustle        91-38 (71%) 
+=== ladder_census 本走 開始 2026-08-09 23:38:05 / TOP=100 ===
+git HEAD: d12854b
+
+--- [1/3] seed (leaderboard → team-submissions) ---
+leaderboard 上位100チーム取得 (既知101チーム / 目標100)
+  # 31 yumizu                        1059.4 → 稼働提出2件
+  # 94 Klein Houmani                 1005.4 → 稼働提出2件
+  # 97 loIzpo + emonga               1001.4 → 稼働提出2件
+  # 99 Yan                           1000.3 → 稼働提出2件
+seed 完了: 105チーム / 提出212件 → /Users/yujiinoue/Documents/products/pokemonabc/replay_analysis/lake/targets.json
+seed rc=0
+
+--- [2/3] mine (list_episodes → 適応プレフィックス読み → 60枚) ---
+mine: 未取得201提出 (既取得17) / 1提出あたり最大4本読む
+  [1/201] #  6 flg                  sub55290732 Teal Mask Ogerpon ex 107-47 (69%) 
+  [2/201] #  6 flg                  sub55290684 grimmsnarl     137-77 (64%) 
+  [3/201] #  7 Raihan Ramadistra    sub55202823 grimmsnarl     307-193 (61%) 
+  [4/201] #  8 Thai                 sub55350156 Kangaskhan     62-20 (76%) 
+  [5/201] #  8 Thai                 sub55340443 Kangaskhan     67-37 (64%) 
+  [6/201] #  9 sadwat               sub55333284 crustle        86-34 (72%) 
+  [7/201] #  9 sadwat               sub55333279 Dunsparce      79-43 (65%) 
+  [8/201] # 10 LiamK                sub55248965 Dunsparce      242-170 (59%) 
+  [9/201] # 10 LiamK                sub55248957 lucario        129-70 (65%) 
+  [10/201] #  8 da da                sub55379796 crustle        16-6 (73%) 
+  [11/201] #  8 da da                sub55367658 Teal Mask Ogerpon ex 23-17 (58%) 
+  [12/201] # 12 vvs                  sub55349216 alakazam       46-28 (62%) 
+  [13/201] # 12 vvs                  sub55337712 alakazam       62-33 (65%) 
+  [14/201] # 13 @kdcyberdude         sub55362230 grimmsnarl     45-19 (70%) 
+  [15/201] # 13 @kdcyberdude         sub55331428 crustle        61-52 (54%) 
+  [16/201] # 14 Dipam Chakraborty    sub55379056 dragapult      25-7 (78%) 
+  [17/201] # 14 Dipam Chakraborty    sub55370960 dragapult      41-12 (77%) 
+  [18/201] # 15 Pokemon Siuuuu       sub55351925 dragapult      52-28 (65%) 
+  [19/201] # 15 Pokemon Siuuuu       sub55302165 dragapult      95-52 (65%) 
+  [20/201] # 16 Sixth Sense          sub55356795 Grookey        58-29 (67%) 
+  [21/201] # 16 Sixth Sense          sub55354892 Grookey        63-28 (69%) 
+  [22/201] # 17 M Sato               sub55367704 alakazam       34-19 (64%) 
+  [23/201] # 17 M Sato               sub55367699 Dunsparce      38-24 (61%) 
+  [24/201] # 18 Team Rot-Weiß        sub55373917 alakazam       32-18 (64%) 
+  [25/201] # 18 Team Rot-Weiß        sub55373361 alakazam       39-15 (72%) 
+  [26/201] # 19 Luca                 sub55362304 alakazam       43-25 (63%) 
+  [27/201] # 19 Luca                 sub55362302 Teal Mask Ogerpon ex 43-25 (63%) 
+  [28/201] # 20 matsurih             sub55363831 Dunsparce      43-15 (74%) 
+  [29/201] # 20 matsurih             sub55358165 Dunsparce      50-31 (62%) 
+  [30/201] # 21 대답해드리는게인지상정          sub55379844 lucario        14-10 (58%) 
+  [31/201] # 21 대답해드리는게인지상정          sub55378792 lucario        27-13 (68%) 
+  [32/201] # 22 ---below this line i sub55379960 Dunsparce      16-8 (67%) 
+  [33/201] # 22 ---below this line i sub55374880 grimmsnarl     26-15 (63%) 
+  [34/201] # 23 THIRD PTCG Club      sub55377700 alakazam       31-14 (69%) 
+  [35/201] # 23 THIRD PTCG Club      sub55354638 dragapult      57-29 (66%) 
+  [36/201] # 13 wwwwwwwwwwwwwwwwwwww sub55379838 Kangaskhan     10-13 (43%) 
+  [37/201] # 13 wwwwwwwwwwwwwwwwwwww sub55379748 grimmsnarl     20-4 (83%) 
+  [38/201] # 19 tttzof351            sub55380015 alakazam       13-4 (76%) 
+  [39/201] # 19 tttzof351            sub55361121 Teal Mask Ogerpon ex 26-23 (53%) 
+  [40/201] # 25 DavidFreelan         sub55374895 lucario        34-16 (68%) 
+  [41/201] # 25 DavidFreelan         sub55374292 Dunsparce      37-12 (76%) 
+  [42/201] # 26 213tubo              sub55363080 grimmsnarl     47-19 (71%) 
+  [43/201] # 26 213tubo              sub55353913 lucario        55-24 (70%) 
+  [44/201] # 27 ONE PIECE            sub55370915 alakazam       35-18 (66%) 
+  [45/201] # 27 ONE PIECE            sub55370887 grimmsnarl     36-16 (69%) 
+  [46/201] # 28 Octavi Grau          sub55374897 garchomp       37-14 (73%) 
+  [47/201] # 28 Octavi Grau          sub55374888 garchomp       23-15 (61%) 
+  [48/201] # 29 S4nkurero            sub55367213 lucario        33-17 (66%) 
+  [49/201] # 29 S4nkurero            sub55361685 alakazam       43-24 (64%) 
+  [50/201] # 30 齐乐                   sub55247479 alakazam       117-90 (57%) 
+  [51/201] # 30 齐乐                   sub55247218 alakazam       120-97 (55%) 
+  [52/201] # 31 Bart, Edwyn          sub55380079 alakazam       13-7 (65%) 
+  [53/201] # 31 Bart, Edwyn          sub55378371 alakazam       26-12 (68%) 
+  [54/201] # 32 e-toppo + kurupical  sub55365737 dragapult      37-20 (65%) 
+  [55/201] # 32 e-toppo + kurupical  sub55357507 dragapult      55-26 (68%) 
+  [56/201] # 33 masspeaks            sub55378169 alakazam       28-11 (72%) 
+  [57/201] # 33 masspeaks            sub55371277 alakazam       34-18 (65%) 
+  [58/201] # 34 Pokopia              sub55373213 dragapult      28-14 (67%) 
+  [59/201] # 34 Pokopia              sub55367659 dragapult      42-20 (68%) 
+  [60/201] # 35 NIWATORI             sub55291808 Dunsparce      100-47 (68%) 
+  [61/201] # 35 NIWATORI             sub55291801 crustle        92-62 (60%) 
+  [62/201] # 36 fishcat              sub55299032 alakazam       87-53 (62%) 
+  [63/201] # 36 fishcat              sub55273229 grimmsnarl     89-76 (54%) 
+  [64/201] # 37 Yaroslav             sub55377439 grimmsnarl     28-16 (64%) 
+  [65/201] # 37 Yaroslav             sub55292349 grimmsnarl     82-63 (57%) 
+  [66/201] # 38 hatry                sub55361977 grimmsnarl     44-15 (75%) 
+  [67/201] # 38 hatry                sub55352278 grimmsnarl     58-20 (74%) 
+  [68/201] # 39 Jonathan Coletti     sub55373704 alakazam       39-18 (68%) 
+  [69/201] # 39 Jonathan Coletti     sub55369300 alakazam       34-15 (69%) 
+  [70/201] # 40 PP kawada            sub55366775 Applin         31-24 (56%) 
+  [71/201] # 40 PP kawada            sub55364861 Applin         46-20 (70%) 
+  [72/201] # 41 Kosmostars           sub55317687 grimmsnarl     69-53 (57%) 
+  [73/201] # 41 Kosmostars           sub55306986 grimmsnarl     88-52 (63%) 
+  [74/201] # 42 __Taichicchi__       sub55362209 grimmsnarl     41-23 (64%) 
+  [75/201] # 42 __Taichicchi__       sub55362193 Teal Mask Ogerpon ex 43-24 (64%) 
+  [76/201] # 43 JB Bryant            sub55308390 grimmsnarl     87-52 (63%) 
+  [77/201] # 43 JB Bryant            sub55267977 Dunsparce      124-89 (58%) 
+  [78/201] # 44 Confusion            sub55305274 Teal Mask Ogerpon ex 80-48 (62%) 
+  [79/201] # 44 Confusion            sub55294158 Teal Mask Ogerpon ex 87-52 (63%) 
+  [80/201] # 45 你好哇                  sub55335975 grimmsnarl     66-40 (62%) 
+  [81/201] # 45 你好哇                  sub55334183 grimmsnarl     68-45 (60%) 
+  [82/201] # 46 wennan cao           sub55381110 alakazam       11-5 (69%) 
+  [83/201] # 46 wennan cao           sub55380465 archaludon     11-14 (44%) 
+  [84/201] # 47 Jack                 sub55325950 crustle        46-44 (51%) 
+  [85/201] # 47 Jack                 sub55286357 Dunsparce      96-66 (59%) 
+  [86/201] # 48 kwa                  sub55379214 grimmsnarl     23-12 (66%) 
+  [87/201] # 48 kwa                  sub55365227 Dunsparce      45-16 (74%) 
+  [88/201] # 49 ANDPAD kaggler team  sub55379578 grimmsnarl     20-11 (65%) 
+  [89/201] # 49 ANDPAD kaggler team  sub55379553 grimmsnarl     23-10 (70%) 
+  [90/201] # 50 Magist               sub55370794 grimmsnarl     33-17 (66%) 
+  [91/201] # 50 Magist               sub55365909 grimmsnarl     39-23 (63%) 
+  [92/201] # 51 RtoABC               sub55356674 dragapult      53-25 (68%) 
+  [93/201] # 51 RtoABC               sub55356411 dragapult      54-28 (66%) 
+  [94/201] # 52 haggle               sub55372617 dragapult      35-16 (69%) 
+  [95/201] # 52 haggle               sub55367315 dragapult      34-19 (64%) 
+  [96/201] # 53 YumeNeko             sub55354380 grimmsnarl     55-29 (65%) 
+  [97/201] # 53 YumeNeko             sub55354311 grimmsnarl     54-30 (64%) 
+  [98/201] # 54 Canon                sub55362735 grimmsnarl     34-23 (60%) 
+  [99/201] # 54 Canon                sub55362619 grimmsnarl     42-25 (63%) 
+  [100/201] # 55 Evgeniy Zdoronok     sub55242459 alakazam       130-89 (59%) 
+  [101/201] # 55 Evgeniy Zdoronok     sub55095721 crustle        188-174 (52%) 
+  [102/201] # 56 Oshbocker            sub55280132 grimmsnarl     100-70 (59%) 
+  [103/201] # 56 Oshbocker            sub55280123 grimmsnarl     102-73 (58%) 
+  [104/201] # 57 MtN                  sub55363551 grimmsnarl     42-20 (68%) 
+  [105/201] # 57 MtN                  sub55361039 grimmsnarl     43-28 (61%) 
+  [106/201] # 58 Yopta                sub55380187 Dunsparce      18-11 (62%) 
+  [107/201] # 58 Yopta                sub55359125 grimmsnarl     51-30 (63%) 
+  [108/201] # 59 Team                 sub55313824 alakazam       83-47 (64%) 
+  [109/201] # 59 Team                 sub55291360 alakazam       107-55 (66%) 
+  [110/201] # 60 Lunariz              sub55379313 Teal Mask Ogerpon ex 13-13 (50%) 
+  [111/201] # 60 Lunariz              sub55365307 alakazam       43-21 (67%) 
+  [112/201] # 61 Brahim               sub55324471 Buneary        73-52 (58%) 
+  [113/201] # 61 Brahim               sub55324462 garchomp       74-36 (67%) 
+  [114/201] # 62 Ars Noveau           sub55364634 grimmsnarl     43-23 (65%) 
+  [115/201] # 62 Ars Noveau           sub55341379 grimmsnarl     60-37 (62%) 
+  [116/201] # 63 I4Kaggle             sub55305454 grimmsnarl     82-62 (57%) 
+  [117/201] # 63 I4Kaggle             sub55247294 grimmsnarl     128-92 (58%) 
+  [118/201] # 64 ☕ Psyduck Needs Coff sub55328414 grimmsnarl     64-46 (58%) 
+  [119/201] # 64 ☕ Psyduck Needs Coff sub55300907 grimmsnarl     94-68 (58%) 
+  [120/201] # 65 wkonishi             sub55369238 alakazam       38-22 (63%) 
+  [121/201] # 65 wkonishi             sub55363209 alakazam       37-23 (62%) 
+  [122/201] # 66 Battle Data Base     sub55348020 Teal Mask Ogerpon ex 55-37 (60%) 
+  [123/201] # 66 Battle Data Base     sub55348017 Teal Mask Ogerpon ex 54-39 (58%) 
+  [124/201] # 67 爆爆盛焼脂油麺              sub55364823 alakazam       34-22 (61%) 
+  [125/201] # 67 爆爆盛焼脂油麺              sub55345154 alakazam       57-42 (58%) 
+  [126/201] # 68 Mega Regigigas Ex Vm sub55378870 grimmsnarl     25-14 (64%) 
+  [127/201] # 68 Mega Regigigas Ex Vm sub55369511 grimmsnarl     40-20 (67%) 
+  [128/201] # 69 Ghleii               sub54948127 garchomp       319-288 (53%) 
+  [129/201] # 69 Ghleii               sub54866812 alakazam       509-487 (51%) 
+  [130/201] # 70 想要成为kaggle大师         sub55365545 N’s Zorua      41-23 (64%) 
+  [131/201] # 70 想要成为kaggle大师         sub55355189 Dunsparce      52-24 (68%) 
+  [132/201] # 71 Nghia Tran + ketchum sub55366610 Teal Mask Ogerpon ex 26-19 (58%) 
+  [133/201] # 71 Nghia Tran + ketchum sub55364362 alakazam       28-21 (57%) 
+  [134/201] # 71 Nghia Tran + ketchum sub55282766 Teal Mask Ogerpon ex 89-77 (54%) 
+  [135/201] # 71 Nghia Tran + ketchum sub55282758 Teal Mask Ogerpon ex 94-67 (58%) 
+  [136/201] # 72 PokeMiniMax          sub55374132 lucario        25-16 (61%) 
+  [137/201] # 72 PokeMiniMax          sub55374131 Grookey        43-10 (81%) 
+  [138/201] # 73 tktkyamyam           sub55296227 Teal Mask Ogerpon ex 91-61 (60%) 
+  [139/201] # 73 tktkyamyam           sub55283348 Teal Mask Ogerpon ex 97-64 (60%) 
+  [140/201] # 74 Juyong               sub55335480 alakazam       65-38 (63%) 
+  [141/201] # 74 Juyong               sub55335476 alakazam       62-34 (65%) 
+  [142/201] # 75 cyrus                sub55371207 grimmsnarl     41-15 (73%) 
+  [143/201] # 75 cyrus                sub55364276 dragapult      34-25 (58%) 
+  [144/201] # 76 MarineYY             sub55369472 crustle        38-17 (69%) 
+  [145/201] # 76 MarineYY             sub55352798 crustle        60-31 (66%) 
+  [146/201] # 77 cununn               sub55373892 grimmsnarl     31-18 (63%) 
+  [147/201] # 77 cununn               sub55373886 grimmsnarl     27-19 (59%) 
+  [148/201] # 78 goonew               sub55370073 Teal Mask Ogerpon ex 37-17 (69%) 
+  [149/201] # 78 goonew               sub55362161 garchomp       44-20 (69%) 
+  [150/201] # 79 Boss's Orders Are Al sub55379333 Kangaskhan     22-10 (69%) 
+  [151/201] # 79 Boss's Orders Are Al sub55361202 Kangaskhan     47-21 (69%) 
+  [152/201] # 80 GuerillaMoon         sub55367101 grimmsnarl     32-25 (56%) 
+  [153/201] # 80 GuerillaMoon         sub55358292 grimmsnarl     55-21 (72%) 
+  [154/201] # 81 takayosi             sub55377180 Teal Mask Ogerpon ex 25-15 (62%) 
+  [155/201] # 81 takayosi             sub55299922 Teal Mask Ogerpon ex 80-67 (54%) 
+  [156/201] # 82 Where is my orbit    sub54959248 crustle        528-472 (53%) 
+  [157/201] # 82 Where is my orbit    sub54957625 crustle        531-466 (53%) 
+  [158/201] # 83 szlachetny snieg     sub55368707 Dunsparce      36-15 (71%) 
+  [159/201] # 83 szlachetny snieg     sub55341389 grimmsnarl     68-35 (66%) 
+  [160/201] # 84 KouFu                sub55367223 Kangaskhan     17-17 (50%) 
+  [161/201] # 84 KouFu                sub55328142 Teal Mask Ogerpon ex 70-45 (61%) 
+  [162/201] # 85 BC+                  sub55370572 alakazam       28-14 (67%) 
+  [163/201] # 85 BC+                  sub55370560 alakazam       39-14 (74%) 
+  [164/201] # 86 cm391                sub55345031 grimmsnarl     51-30 (63%) 
+  [165/201] # 86 cm391                sub55345024 Dunsparce      55-47 (54%) 
+  [166/201] # 87 Boseiju              sub55373424 grimmsnarl     27-19 (59%) 
+  [167/201] # 87 Boseiju              sub55359464 grimmsnarl     41-35 (54%) 
+  [168/201] # 88 【共逐荣光】Timmy Juicehou sub55380837 grimmsnarl     20-8 (71%) 
+  [169/201] # 88 【共逐荣光】Timmy Juicehou sub55377210 grimmsnarl     24-19 (56%) 
+  [170/201] # 89 miya                 sub55365521 alakazam       38-20 (66%) 
+  [171/201] # 89 miya                 sub55351478 alakazam       51-35 (59%) 
+  [172/201] # 90 Byer Script          sub55299971 grimmsnarl     91-71 (56%) 
+  [173/201] # 90 Byer Script          sub55294562 grimmsnarl     84-63 (57%) 
+  [174/201] # 91 ei1333               sub55296170 alakazam       91-53 (63%) 
+  [175/201] # 91 ei1333               sub55238370 alakazam       99-74 (57%) 
+  [176/201] # 92 あなまか                 sub55366038 grimmsnarl     19-17 (53%) 
+  [177/201] # 92 あなまか                 sub55276449 crustle        97-84 (54%) 
+  [178/201] # 93 llkarill             sub55354960 Teal Mask Ogerpon ex 40-20 (67%) 
+  [179/201] # 93 llkarill             sub55217790 Teal Mask Ogerpon ex 147-135 (52%) 
+  [180/201] # 94 haruto               sub55380478 alakazam       22-11 (67%) 
+  [181/201] # 94 haruto               sub55380469 alakazam       20-12 (62%) 
+  [182/201] # 95 宝糕手                  sub55366789 dragapult      27-15 (64%) 
+  [183/201] # 95 宝糕手                  sub55360284 alakazam       45-30 (60%) 
+  [184/201] # 96 李秉叡（ntumlnoob）       sub55366513 lucario        38-15 (72%) 
+  [185/201] # 96 李秉叡（ntumlnoob）       sub55365892 lucario        45-15 (75%) 
+  [186/201] # 97 S. B.                sub55344264 grimmsnarl     64-28 (70%) 
+  [187/201] # 97 S. B.                sub55218119 grimmsnarl     133-128 (51%) 
+  [188/201] # 98 ykhnkf               sub55380823 crustle        21-11 (66%) 
+  [189/201] # 98 ykhnkf               sub55380812 crustle        18-14 (56%) 
+  [190/201] # 99 typeIIIfairy         sub55324935 Dunsparce      67-54 (55%) 
+  [191/201] # 99 typeIIIfairy         sub55324819 crustle        31-32 (49%) 
+  [192/201] #100 tonakaiiii           sub55381423 dragapult      16-8 (67%) 
+  [193/201] #100 tonakaiiii           sub55185728 Kangaskhan     202-177 (53%) 
+  [194/201] # 31 yumizu               sub55380494 lucario        21-12 (64%) 
+  [195/201] # 31 yumizu               sub55376221 Dunsparce      26-15 (63%) 
+  [196/201] # 94 Klein Houmani        sub55367728 crustle        37-20 (65%) 
+  [197/201] # 94 Klein Houmani        sub55362187 crustle        39-20 (66%) 
+  [198/201] # 97 loIzpo + emonga      sub55374852 Dunsparce      37-15 (71%) 
+  [199/201] # 97 loIzpo + emonga      sub55374744 Grookey        25-16 (61%) 
+  [200/201] # 99 Yan                  sub55256480 Teal Mask Ogerpon ex 89-59 (60%) 
+  [201/201] # 99 Yan                  sub55235071 Teal Mask Ogerpon ex 124-100 (55%) 
+mine 完了 / 累計 311 提出 → /Users/yujiinoue/Documents/products/pokemonabc/replay_analysis/lake/rival_decks.jsonl
+mine rc=0
+
+--- [3/3] report ---
+=== 上位100ラダーのデッキ悉皆調査 ===
+順位つき提出 209 / 野良(対戦相手として観測) 102 / 総 311
+
+--- アーキタイプ分布(分類器A: カード名ベース) ---
+  grimmsnarl          57   27.3%
+  (未分類)               50   23.9%
+  alakazam            41   19.6%
+  crustle             18    8.6%
+  dragapult           16    7.7%
+  lucario             11    5.3%
+  Kangaskhan          10    4.8%
+  garchomp             5    2.4%
+  archaludon           1    0.5%
+
+--- 分類器A/Bの不一致 29件 (D59: 片方の取りこぼしを黙って飲まない) ---
+  #  1 Majkel1337           A=Kangaskhan B=None top=Slowpoke
+  #  4 James Cox & Henry Ch A=Kangaskhan B=None top=Mega Kangaskhan ex
+  #  4 James Cox & Henry Ch A=Kangaskhan B=None top=Mega Kangaskhan ex
+  #  8 Thai                 A=Kangaskhan B=None top=Slowpoke
+  #  8 Thai                 A=Kangaskhan B=None top=Slowpoke
+  #  9 sadwat               A=None B=dudunsparce top=Dunsparce
+  # 10 LiamK                A=None B=dudunsparce top=Dunsparce
+  # 17 M Sato               A=None B=dudunsparce top=Dunsparce
+  # 20 matsurih             A=None B=dudunsparce top=Dunsparce
+  # 20 matsurih             A=None B=dudunsparce top=Dunsparce
+  # 22 ---below this line i A=None B=dudunsparce top=Dunsparce
+  # 13 wwwwwwwwwwwwwwwwwwww A=Kangaskhan B=None top=Mega Kangaskhan ex
+  # 25 DavidFreelan         A=None B=dudunsparce top=Dunsparce
+  # 35 NIWATORI             A=None B=dudunsparce top=Dunsparce
+  # 43 JB Bryant            A=None B=dudunsparce top=Dunsparce
+
+--- 帯別の構成 ---
+  [1200-1299] N=  1   lucario:1
+  [1100-1199] N= 15   grimmsnarl:4  Kangaskhan:3  crustle:3
+  [1000-1099] N=108   grimmsnarl:32  (未分類):28  alakazam:22
+  [900-999] N= 54   grimmsnarl:16  alakazam:13  (未分類):11
+  [800-899] N= 13   grimmsnarl:4  alakazam:3  (未分類):3
+  [700-799] N=  9   (未分類):3  Kangaskhan:2  garchomp:1
+  [600-699] N=  5   lucario:1  alakazam:1  (未分類):1
+  [500-599] N=  4   (未分類):1  Kangaskhan:1  grimmsnarl:1
+
+--- 両分類器とも未分類 31件 (新アーキタイプはここに居る) ---
+  #  3 palsystem                966.2  主力=Teal Mask Ogerpon ex
+  #  6 flg                     1107.5  主力=Teal Mask Ogerpon ex
+  #  8 da da                    751.2  主力=Teal Mask Ogerpon ex
+  # 16 Sixth Sense             1098.0  主力=Grookey
+  # 16 Sixth Sense             1085.0  主力=Grookey
+  # 19 Luca                    1085.4  主力=Teal Mask Ogerpon ex
+  # 19 tttzof351                706.8  主力=Teal Mask Ogerpon ex
+  # 40 PP kawada                959.5  主力=Applin
+  # 40 PP kawada               1058.4  主力=Applin
+  # 42 __Taichicchi__          1049.6  主力=Teal Mask Ogerpon ex
+  # 44 Confusion                944.3  主力=Teal Mask Ogerpon ex
+  # 44 Confusion               1047.4  主力=Teal Mask Ogerpon ex
+  # 60 Lunariz                  590.6  主力=Teal Mask Ogerpon ex
+  # 66 Battle Data Base         999.5  主力=Teal Mask Ogerpon ex
+  # 66 Battle Data Base        1022.0  主力=Teal Mask Ogerpon ex
+  # 70 想要成为kaggle大师             973.6  主力=N’s Zorua
+  # 71 Nghia Tran + ketchum a   791.5  主力=Teal Mask Ogerpon ex
+  # 71 Nghia Tran + ketchum a  1018.4  主力=Teal Mask Ogerpon ex
+  # 71 Nghia Tran + ketchum a   936.9  主力=Teal Mask Ogerpon ex
+  # 72 PokeMiniMax             1018.2  主力=Grookey
+
+--- 我々のデッキ(deck.csv) との差分 ---
+  上位100で広く使われ、我々が1枚も入れていないカード(採用提出数の多い順):
+    201/209 提出   1182  Boss’s Orders
+    164/209 提出   1086  Buddy-Buddy Poffin
+    113/209 提出   1231  Dawn
+    109/209 提出   1122  Pokégear 3.0
+     98/209 提出   1079  Rare Candy
+     93/209 提出   1225  Hilda
+     89/209 提出   1080  Unfair Stamp
+     75/209 提出      7  Basic {D} Energy
+     74/209 提出    860  Snorunt
+     74/209 提出    112  Munkidori
+     72/209 提出   1197  Xerosic’s Machinations
+     71/209 提出    140  Fezandipiti ex
+     66/209 提出     66  Dudunsparce
+     66/209 提出      5  Basic {P} Energy
+     62/209 提出    305  Dunsparce
+     61/209 提出     13  Enriching Energy
+     59/209 提出   1137  Tool Scrapper
+     57/209 提出   1259  Spikemuth Gym
+     57/209 提出    648  Marnie's Grimmsnarl ex
+     57/209 提出    647  Marnie's Morgrem
+  逆に、上位100の誰も使っていない我々のカード 10種:
+    x4     15  Team Rocket's Energy
+    x4    400  Team Rocket's Tarountula
+    x4    401  Team Rocket's Spidops
+    x1    432  Team Rocket's Wobbuffet
+    x2    463  Team Rocket's Murkrow
+    x4   1134  Team Rocket's Transceiver
+    x4   1216  Team Rocket's Ariana
+    x1   1217  Team Rocket's Archer
+    x3   1218  Team Rocket's Giovanni
+    x4   1220  Team Rocket's Proton
+
+=== 完走 2026-08-10 00:58:28 ===

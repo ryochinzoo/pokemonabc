@@ -119,7 +119,7 @@ python3 ../../../../../verification/bench.py 300 --deck ../../../../../verificat
 
 | パス | 何 |
 |---|---|
-| `selfplay.py` | 対戦ハーネス（席入替つき、`run_match`/`run_series`） |
+| `selfplay.py` | 対戦ハーネス（席入替つき、`run_match`/`run_series`）。**`record=` で棋譜を残せる**（下記） |
 | `bench.py` | 勝率+信頼区間。`--deck` `--opponent` `--opponent-deck` `--baseline` |
 | `donk_meter.py` | 5ターン以内の早期敗北率 |
 | `gauges/` | Alakazam型 / Grimmsnarl型の専用スクリプトAI |
@@ -130,6 +130,31 @@ python3 ../../../../../verification/bench.py 300 --deck ../../../../../verificat
 | `reference/tomato_archaludon_agent.py` + `decks/tomato_archaludon_2026-07-22.csv` | 公開notebook(TOMATOMATO)。**実ラダーArchaludonの正体=この系譜**(60/60一致×2、D34)。CEWのArchaludon成分の優先参照。ライセンス未確認=再配布・派生禁止。**検証専用・提出禁止** |
 | `reference/official_dragapult_agent.py` + `decks/official_dragapult_2026-07-22.csv` | ホスト公式サンプル(kiyotah)。CEW第4成分(D35)。**検証専用・提出禁止** |
 | `data/` | カードDB（EN/JP CSV、replay_analysis からも参照） |
+
+## 対戦ログを残す（2026-08-09追加、D73）
+
+エンジンは `obs.logs`（前回の選択以降に起きたこと）を毎手渡してくるだけで**棋譜を保持しない**。
+`run_match` は長らくそこから `RESULT` だけ拾って残りを捨てていたので、
+結果に驚くたびに使い捨てプローブ（`e3_probe.py` など）を書き直していた。`record=` で残せる。
+
+```python
+import os
+from cg.api import LogType
+
+# 相対パスはデッキディレクトリ基準になって数え間違えやすいので、絶対パスで組む
+OUT = os.path.expanduser("~/Documents/products/pokemonabc-runs/mylogs/run.jsonl")
+selfplay.run_series(200, deck, deck, our_agent, opp_agent, record=OUT,
+                    record_types={LogType.ATTACK, LogType.HP_CHANGE, LogType.RESULT})
+```
+
+- **既定はオフで、挙動は一切変わらない**。対照 N=300×2 で 45.7% vs 45.7%（差 +0.0pt, 95%CI ±8.0）
+- **デッキディレクトリ配下には書けない**（`ValueError` で拒否）。そこは提出tarに固められるため。
+  出力は `pokemonabc-runs/` 配下に置く
+- **`record_types` で必ず絞ること**: 全種別だと **81KB/戦**（12,048戦の掃引で **1.00GB**）。
+  `MOVE_CARD` と `*_REVERSE` だけで42%を占める。4種に絞れば 8.1KB/戦（101MB）
+- 1試合1行のJSONL。`{i, swapped, winner, reason, decisions, turns, events:[...]}`
+- 注意: **同一シードでも譜は再現しない**（シャッフルはC側の内部乱数で、Pythonの `random` からは
+  届かない）。再現比較ではなく、起きたことの記録として使う
 
 ## 関連
 

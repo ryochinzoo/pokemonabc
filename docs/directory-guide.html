@@ -73,6 +73,8 @@ code{font-family:var(--mono);font-size:.85em;background:var(--panel-2);border:1p
 .tree b{color:var(--fg);font-weight:700}
 .tree .c{color:var(--fg-dim)}
 .tree .hl{color:var(--amber)}
+.tree .g{color:var(--green)}
+.tree .r{color:var(--red)}
 
 .quote{
   border-left:3px solid var(--amber);background:var(--panel);
@@ -87,6 +89,8 @@ code{font-family:var(--mono);font-size:.85em;background:var(--panel-2);border:1p
 }
 .callout .h{font-size:.72rem;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:.4rem}
 .callout.key .h{color:var(--pink)}
+.callout.bad{border-color:var(--red)}
+.callout.bad .h{color:var(--red)}
 .callout p:first-of-type{margin-top:0}
 .callout p:last-child{margin-bottom:0}
 
@@ -121,28 +125,32 @@ footer{margin-top:5rem;padding-top:2rem;border-top:1px solid var(--line);font-si
 
 <header>
   <div class="eyebrow">pokemonabc / repository reference</div>
-  <h1>ディレクトリガイド<br><span class="accent">何がどこにあり、誰がいつ読むのか</span></h1>
+  <h1>ディレクトリガイド<br><span class="accent">何がどこにあり、誰と戦い、なぜこの形なのか</span></h1>
   <p class="lede">
     Pokémon TCG AI Battle Challenge（Kaggle）の作業リポジトリの構造リファレンス。
-    4つの主要ディレクトリを「役割」ではなく<strong>「誰がいつ開くか」</strong>の軸で整理してある。
+    <strong>この1枚で「どのファイルが何をしているか」「新しいデッキは誰と戦わせて測るのか」
+    「なぜセルフ対戦をやめたのか」が分かる</strong>ことを目標にしている。
   </p>
-  <div class="meta">作成 2026-08-02 ／ branch: yuji/verify-infra ／ 対象コミット: d2fa8d8</div>
+  <div class="meta">改訂 2026-08-09 ／ branch: yuji/verify-infra ／ 対象コミット: 3a699bd ／ 前版 2026-08-02 (d2fa8d8)</div>
 </header>
 
 <div class="cols">
 <nav>
   <div class="navtitle">Contents</div>
   <a href="#overview">0. 全体像</a>
-  <a href="#src">1. src/ — 提出物</a>
+  <a href="#src">1. src/ — 作る</a>
+  <a class="sub" href="#src-md5">30デッキと16グループ</a>
+  <a class="sub" href="#src-state">どれが現役でどれが負債か</a>
   <a href="#verification">2. verification/ — 測る</a>
-  <a href="#replay">3. replay_analysis/ — 答え合わせ</a>
+  <a class="sub" href="#v-chain">対戦の呼び出し連鎖</a>
+  <a class="sub" href="#v-family">族内 / 族外</a>
+  <a class="sub" href="#v-roster">練習相手の名簿</a>
+  <a class="sub" href="#v-cew">CEW</a>
+  <a href="#why">3. なぜセルフ対戦をやめたか</a>
+  <a href="#replay">4. replay_analysis/ — 答え合わせ</a>
   <a class="sub" href="#replay-eps">eps〇〇/ とは</a>
-  <a class="sub" href="#replay-py">18本の .py</a>
-  <a href="#docs">4. docs/ — 記録と成果物</a>
-  <a class="sub" href="#docs-readers">5人の読者</a>
-  <a class="sub" href="#docs-layers">.md の5層</a>
-  <a class="sub" href="#docs-figures">figures/</a>
-  <a href="#claude">5. .claude/ — 自動化</a>
+  <a href="#docs">5. docs/ — 記録と成果物</a>
+  <a href="#claude">6. .claude/ — 自動化</a>
   <a href="#cheat">付録: 早見表</a>
 </nav>
 
@@ -158,10 +166,11 @@ footer{margin-top:5rem;padding-top:2rem;border-top:1px solid var(--line);font-si
 
 <div class="tree">pokemonabc/
 ├── <b>CLAUDE.md</b>            <span class="c">セッション起動時の規約。playbook.md の読了を強制する</span>
-├── <b>src/</b>          75MB   <span class="c">提出物そのもの（デッキ × パイロット）</span>
-├── <b>verification/</b> 1.5MB  <span class="c">出す前に測るツールボックス</span>
-├── <b>replay_analysis/</b>695MB<span class="c">出した後に検死する解析室</span>
-├── <b>docs/</b>         1.0MB  <span class="c">意思決定ログ + レポート原稿（＝成果物）</span>
+├── <b>src/</b>          160MB  <span class="c">提出物そのもの（デッキ × パイロット）＝ 作る</span>
+├── <b>verification/</b>  30MB  <span class="c">出す前に測るツールボックス ＋ <b>練習相手（他人のagent）</b></span>
+├── <b>replay_analysis/</b>9.5GB<span class="c">出した後に本番の対戦記録で検死する解析室</span>
+├── <b>docs/</b>         1.9MB  <span class="c">意思決定ログ + レポート原稿（＝賞金部門の成果物）</span>
+├── <b>docs-for-you/</b>        <span class="c">NotebookLM 投入用に厳選した素材セット</span>
 ├── <b>.claude/</b>             <span class="c">スキル / サブエージェント / ワークフロー定義</span>
 └── submission_*.tar.gz  <span class="c">提出済みアーカイブ（gitignore）</span></div>
 
@@ -169,87 +178,414 @@ footer{margin-top:5rem;padding-top:2rem;border-top:1px solid var(--line);font-si
   <div class="h">この構造を生んだ発見</div>
   <p>
     D27:<strong>ローカルの自己対戦は自分に甘い</strong>（族内ベンチは相手操縦者との実力差に比例して
-    +8〜+62pt 過大評価する）。この一点が、<code>verification/</code> に較正の仕組みを、
+    +8〜+62pt 過大評価する）。この一点が、<code>verification/</code> に<strong>他人のエージェント</strong>を、
     <code>replay_analysis/</code> に本番検死を、<code>docs/</code> に主張台帳を要求した。
-    3ディレクトリすべてが同じ問題への対処になっている。
+    3ディレクトリすべてが同じ問題への対処になっている。詳細は <a href="#why">§3</a>。
   </p>
 </div>
 </section>
 
 <!-- ============ 1 ============ -->
 <section id="src">
-<h2><span class="path">src/</span> <span class="tag">75MB / 13デッキ</span></h2>
+<h2><span class="path">src/</span> <span class="tag">160MB / 30デッキディレクトリ</span></h2>
 <p>
   提出物置き場。<strong>エージェント ＝ デッキ（60枚）× パイロット（main.py）</strong>なので、
-  1実験 = 1ディレクトリ。パスが <code>src/input/datasets/decks/</code> なのは
+  <strong>1実験 = 1ディレクトリ</strong>。パスが <code>src/input/datasets/decks/</code> なのは
   Kaggle 側の <code>/kaggle/input/...</code> を模しているから。
 </p>
 
-<div class="tree">src/input/datasets/decks/starmie-clockguard/
-├── <b>main.py</b>       42KB  <span class="c">agent(obs) -&gt; list[int] を返す本体</span>
-├── <b>deck.csv</b>      259B  <span class="c">60枚のカードID</span>
-├── <b>cg/</b>                 <span class="c">ゲームエンジン（C製 libcg.dylib/.so/.dll + ctypes ラッパ）</span>
-├── <b>GATES.md</b>            <span class="c">このデッキが通した受入基準の記録</span>
-└── run_acceptance.sh + acceptance_*.log</div>
+<div class="tree">src/input/datasets/decks/deckswap-tarountula-pilotfix/
+├── <b>main.py</b>             <span class="c">agent(obs) -&gt; list[int] を返す本体＝「パイロット」</span>
+├── <b>deck.csv</b>            <span class="c">60行、1行1カードID＝「デッキ」</span>
+└── <b>cg/</b>                 <span class="c">ゲームエンジン（C製 libcg.dylib/.so/.dll + ctypes ラッパ）</span>
+                       <span class="c">※ バイナリは gitignore。無ければ sample_submission からコピー</span></div>
 
-<h3>13デッキの内訳</h3>
+<div class="callout">
+  <div class="h">デッキディレクトリに置いてはいけないもの</div>
+  <p>
+    ここは<strong>提出時にそのまま tar される場所</strong>。トレース <code>*.jsonl</code> やログを置くと
+    提出物に混入する（2026-08-08 に v2 ディレクトリから 8本8.4MB を退避した）。
+    測定の出力は scratchpad か <code>docs/memo/</code> へ。
+  </p>
+</div>
+
+<h3 id="src-md5">30デッキ・16グループ — 「それぞれ別のロジックなの？」への答え</h3>
+<p>
+  <strong>半分近くは <code>main.py</code> がバイト単位で同一</strong>。
+  <code>md5 -q */main.py | sort | uniq -c</code> で数えると 30ディレクトリが 16グループになる。
+</p>
+
 <table>
-<thead><tr><th>系統</th><th>ディレクトリ</th><th>目的</th></tr></thead>
+<thead><tr><th>main.py の md5</th><th>行数</th><th>本数</th><th>正体</th></tr></thead>
 <tbody>
-<tr><td><strong>本命</strong></td><td><code>starmie-aggro</code> / <code>starmie-clockguard</code> / <code>starmie-widthprobe</code></td><td>現行の主力と、進行中のプローブ実験</td></tr>
-<tr><td><strong>アブレーション</strong></td><td><code>starmie-aggro-evalablate</code> / <code>starmie-belt-e1</code> / <code>starmie-boss-e2</code> / <code>alakazam-e3</code></td><td>1要素だけ差し替えて効果を測る対照群</td></tr>
-<tr><td><strong>較正</strong></td><td><code>lucario-calib</code> / <code>dragapult-calib</code></td><td>族外の絶対水準アンカーを取るための提出</td></tr>
-<tr><td><strong>旧世代</strong></td><td><code>v2-search</code> / <code>v3-mcts</code> / <code>starmie-aggro-metadecks</code> / <code>mega-starmie-ex-deck</code></td><td>過去のパイロット世代（v3 は棄却済み、素材として保存）</td></tr>
+<tr><td><code>725ef4c9…</code></td><td>948</td><td><strong>12</strong></td><td><strong>王者パイロット</strong>。<code>starmie-aggro</code> が原本で、そのバイト同一コピー</td></tr>
+<tr><td><code>3f55780b…</code></td><td>1142</td><td><strong>4</strong></td><td><strong>pilotfix パイロット</strong>（ロケット団修理版）。今ラダーに載っている腕とその派生</td></tr>
+<tr><td colspan="2">残り14グループ</td><td>各 1</td><td>固有ロジック（下の表で個別に説明）</td></tr>
 </tbody>
 </table>
 
-<div class="callout">
-  <div class="h">注意</div>
-  <p><code>cg/</code> のバイナリ（<code>*.dylib / *.so / *.dll</code>）は gitignore 済み。
-  無ければ Kaggle の sample_submission からコピーする。<br>
-  また<strong>デッキ合法性（同名4枚制限）はエンジンが検査しない</strong>（6枚入りを受理することを実測済み）。手で確認する。</p>
+<div class="callout key">
+  <div class="h">なぜコピーが16本もあるのか — これは散らかりではなく実験設計</div>
+  <p>
+    このプロジェクトの測定は<strong>「変数を1個だけ動かす」</strong>ことで成立している。だから2種類のコピーが生まれる：
+  </p>
+  <ul>
+    <li><strong>デッキ実験</strong>（<code>deckswap-*</code> / <code>deckcand-*</code>）＝
+      <code>main.py</code> を<strong>1バイトも変えず</strong>にコピーし、<code>deck.csv</code> だけ差し替える。
+      → 差が出たら、それは<strong>デッキの効果</strong></li>
+    <li><strong>パイロット実験</strong>（<code>-pilotfix</code> / <code>-toolfix</code> / <code>-v2</code>）＝
+      <code>deck.csv</code> を<strong>固定</strong>し、<code>main.py</code> だけ変える。
+      → 差が出たら、それは<strong>操縦の効果</strong></li>
+  </ul>
+  <p>
+    2026-08-08 の実ラダー対照実験がこの形の完成例：<code>deck.csv</code> が <code>a246be4f</code> でバイト同一、
+    <code>main.py</code> だけ <code>725ef4c9</code>（素）→ <code>3f55780b</code>（修理版）に差し替えた2提出を、
+    本番ラダーで走らせて比べた。
+  </p>
+</div>
+
+<h3 id="src-state">どれが現役で、どれが負債か</h3>
+
+<table>
+<thead><tr><th>状態</th><th>ディレクトリ</th><th>何者か</th></tr></thead>
+<tbody>
+<tr><td><span class="pill live">ラダー稼働中</span><br>触るな</td>
+    <td><code>deckswap-tarountula-pilotfix</code></td>
+    <td>いま本番に載っている腕（ref 55308422）。<code>main.py 3f55780b</code></td></tr>
+
+<tr><td><span class="pill warn">凍結</span><br>触るな</td>
+    <td><code>starmie-aggro</code><br><code>deckswap-tarountula</code></td>
+    <td><strong>王者</strong>（メガスターミー、確定レート783/793.9）と <strong>P9提出物</strong>（ref 55236642、本番53戦の実測付き）。
+        どちらも過去の数値の再現性を保つため<strong>1バイトも変えない</strong>。実験は複製ディレクトリで行う</td></tr>
+
+<tr><td><span class="pill live">現役の作業場</span></td>
+    <td><code>deckswap-tarountula-v2</code><br><code>deckswap-v2-control</code><br>
+        <code>deckcand-alakazam</code><br><code>deckcand-archaludon</code><br><code>deckcand-lucario</code></td>
+    <td><strong>v2</strong> = 3修理（costfix / I1 / VETO、各独立トグル）を実装済み・<strong>掃引は未実行</strong>。
+        <strong>v2-control</strong> = その対照（変更前 <code>ce8aef63</code> を復元）。<br>
+        <strong><code>deckcand-*</code></strong>（2026-08-09新設）= 実ラダー最頻出デッキを<strong>我々が持つ</strong>側に置いた候補。
+        パイロットは pilotfix とバイト同一＝デッキ軸だけを見る腕</td></tr>
+
+<tr><td><span class="pill you">他人のもの</span></td>
+    <td><code>mega-starmie-ex-deck</code></td>
+    <td><strong>りょーちんのデッキ</strong>（<code>remotes/origin/mega-starmie-ex-deck</code>、author: Ryohei Hara）。
+        <strong><code>src/</code> の中で我々が書いていないのはここだけ</strong>。りょーちん管理・こちらから編集しない</td></tr>
+
+<tr><td><span class="pill arch">証拠として保持</span><br>18本</td>
+    <td><code>deckswap-{crustle, crustle-probe, garchomp, grimmsnarl, grimmsnarl-abilityfix, honchkrow, honchkrow-probe, tarountula-sweep, tarountula-toolfix}</code><br>
+        <code>starmie-{belt-e1, boss-e2, retreatcost, aggro-evalablate, clockguard, widthprobe}</code><br>
+        <code>alakazam-e3</code> / <code>lucario-calib</code> / <code>dragapult-calib</code></td>
+    <td>終わった実験の腕。<strong>消してはいけない</strong> —
+        data.md に書かれた数値を再現するにはこのディレクトリが要る。
+        棄却された腕（<code>alakazam-e3</code>、<code>deckswap-honchkrow</code>）も
+        <strong>「失敗の記録」として同じ価値がある</strong></td></tr>
+
+<tr><td><span class="pill arch">旧世代＝負債</span></td>
+    <td><code>v2-search</code> / <code>v3-mcts</code> / <code>starmie-aggro-metadecks</code></td>
+    <td>過去のパイロット世代。<code>v3-mcts</code>（MCTS、1442行）は D18–D21 で棄却、
+        <code>metadecks</code>（相手デッキ推定辞書）も棄却済み。研究比較の素材としてのみ残す</td></tr>
+</tbody>
+</table>
+
+<div class="callout bad">
+  <div class="h">デッキ合法性 — 2026-08-03 に前版の記述を撤回した</div>
+  <p>
+    このガイドの前版（2026-08-02）は「<strong>同名4枚制限をエンジンは検査しない</strong>（6枚入りを受理する）」と
+    書いていた。<strong>これは falsified。</strong> 実測し直した結果、
+    <code>battle_start(...).errorType</code> は違反を返す：
+  </p>
+  <ul>
+    <li><code>2</code> = コピー数違反（同一IDが5枚、<strong>同名を共有する2種で合計6枚</strong>、特殊エネ&gt;4）</li>
+    <li><code>3</code> = たねポケモン不在　／　<code>4</code> = ACE SPEC違反（種類が違っても2枚はダメ）</li>
+  </ul>
+  <p>
+    違反デッキは <code>errorPlayer &gt;= 0</code> になり、ランナーがエージェントを <strong>INVALID</strong> と判定 →
+    <strong>reward −1</strong>。つまり<strong>不正なデッキは「無視される」のではなく試合を落とす</strong>。
+    検査には <code>verification/conformance.py</code> を使う（このパスを既に呼んでいる）。<br>
+    <span class="pill warn">未追随</span> <code>verification/README.md:100</code> にも同じ旧記述が残っている（T8案件）。
+  </p>
 </div>
 </section>
 
 <!-- ============ 2 ============ -->
 <section id="verification">
-<h2><span class="path">verification/</span> <span class="tag">出す前に測る</span></h2>
-<p>提出ゲートを通すための道具一式。仕様書は <code>verification/README.md</code>。</p>
+<h2><span class="path">verification/</span> <span class="tag">30MB / 出す前に測る</span></h2>
+<p>
+  提出ゲートを通すための道具一式（<code>.py</code> 17本）と、<strong>対戦相手そのもの</strong>。仕様書は
+  <code>verification/README.md</code>。
+</p>
 
 <table>
 <thead><tr><th>ファイル</th><th>役割</th></tr></thead>
 <tbody>
-<tr><td><code>bench.py</code> / <code>parbench.py</code></td><td>勝率 + 95%CI の測定（並列版あり）</td></tr>
-<tr><td><code>selfplay.py</code></td><td>自己対戦ドライバ</td></tr>
-<tr><td><strong><code>cew.py</code> / <code>cew_stats.py</code></strong></td><td><strong>CEW（較正済み遭遇加重スコア）— 効果量の正式な判定指標</strong></td></tr>
-<tr><td><code>conformance.py</code> / <code>kaggle_conformance_notebook.py</code></td><td>提出形式・エージェント契約の検査</td></tr>
-<tr><td><code>donk_meter.py</code></td><td>ドンク（先攻速攻）率の計測</td></tr>
-<tr><td><code>probe.py</code> / <code>probe_metadecks.py</code> / <code>infamily_probe.py</code></td><td>メタデッキ相手のプローブ</td></tr>
-<tr><td><code>gauges/</code></td><td>族外ゲージ相手エージェント 2種（alakazam, grimmsnarl）</td></tr>
-<tr><td><code>decks/</code></td><td>対戦相手デッキ 34種（公式サンプル・メタ読み・実験変種）</td></tr>
+<tr><td><strong><code>bench.py</code></strong></td><td><strong>測定の入口</strong>。勝率 + 95% Wilson信頼区間。<code>--opponent</code> で相手を指定する</td></tr>
+<tr><td><code>parbench.py</code> / <code>test_parbench_guard.py</code></td><td>プロセス並列版。並列安全条件（安全弁未到達・腕のsha256一致）を<strong>構造で強制</strong>する</td></tr>
+<tr><td><strong><code>selfplay.py</code></strong></td><td><strong>対戦ハーネス</strong>。エンジンを叩いて1試合／N試合を回す唯一の場所</td></tr>
+<tr><td><strong><code>cew.py</code> / <code>cew_stats.py</code></strong></td><td><strong>CEW — 効果量の正式な判定指標</strong>（<a href="#v-cew">後述</a>）。CI・検出力つき</td></tr>
+<tr><td><code>conformance.py</code></td><td>本番ランナー準拠の検査。<strong><code>agent()</code> のデッキ返却経路を叩く唯一のツール</strong></td></tr>
+<tr><td><code>donk_meter.py</code></td><td>ドンク（先攻速攻）率＝5ターン以内の負けの割合</td></tr>
+<tr><td><code>infamily_probe.py</code></td><td><strong>族内測定の汚染そのものを測る</strong>（同じ試合を「壊れた版」「直した版」で走らせて差を見る）</td></tr>
+<tr><td><code>probe.py</code> / <code>probe_metadecks.py</code> / <code>sham_search_probe.py</code></td><td>定型ボイラープレート／相手デッキ推定の計装／RNG汚染のプラセボ対照</td></tr>
+<tr><td><code>card_support_scan.py</code> / <code>card_effect_probe.py</code> / <code>api_surface_audit.py</code></td><td>カード2,022枚のエンジン受理走査／効果が実際に発火するかの3値判定／API面の未使用候補列挙</td></tr>
+<tr><td><span class="pill you">相手</span> <strong><code>reference/</code></strong></td><td><strong>他人が書いた実物のエージェント 10本</strong>（うち9本が族外）。<span class="pill warn">検証専用・提出禁止</span></td></tr>
+<tr><td><span class="pill arch">相手</span> <code>gauges/</code></td><td><strong>我々の自作</strong>ゲージ 2本（alakazam / grimmsnarl）＝<strong>族内</strong>。スクリーニング専用</td></tr>
+<tr><td><code>reference/_inbox/</code></td><td>公開ノートブックを一括取得した 299本の生体（gitignore）。<strong>まだ対戦相手にしていない在庫</strong></td></tr>
+<tr><td><code>decks/</code></td><td>対戦相手デッキ 48種（公式サンプル・実ラダー最頻出 <code>meta_*_800_*.csv</code>・実験変種）</td></tr>
 <tr><td><code>data/</code></td><td>カードDB（<code>EN_Card_Data.csv</code> / <code>JP_Card_Data.csv</code>）＝ <code>/lookup-card</code> の参照元</td></tr>
-<tr><td><code>reference/</code></td><td>公開サードパーティ agent 5本 — <span class="pill warn">研究用のみ・提出禁止</span></td></tr>
+</tbody>
+</table>
+
+<h3 id="v-chain">対戦の呼び出し連鎖 — 「実際にどう戦わせているのか」</h3>
+<p>新しいデッキを測るとき、走るのはこれだけ：</p>
+
+<div class="tree"><span class="c"># 自分のデッキディレクトリ（main.py + deck.csv + cg/ がある場所）に入って呼ぶ</span>
+cd src/input/datasets/decks/<b>deckswap-tarountula-v2</b>
+REPO=/Users/yujiinoue/Documents/products/pokemonabc
+
+<span class="c"># ① 安全ゲート（相手＝ランダム。攻撃的な相手は自滅バグを隠すので必ず先に）</span>
+python3 $REPO/verification/bench.py 120
+
+<span class="c"># ② 本番の測定（相手＝他人が書いた実物のエージェント）</span>
+python3 $REPO/verification/bench.py 200 \
+  <span class="g">--opponent</span>      $REPO/verification/reference/<b>alakazam_ryota_agent.py</b> \
+  <span class="g">--opponent-deck</span> $REPO/verification/decks/ryota_alakazam_2026-07-05.csv</div>
+
+<p>裏で起きていること。<strong>1プロセスの中で、我々の <code>agent()</code> と他人の <code>agent()</code> が交互に呼ばれるだけ</strong>：</p>
+
+<div class="tree"><b>bench.py:72</b>  import main                     <span class="c">← 我々の agent()（cwd のデッキdirから）</span>
+<b>bench.py:79</b>  load_agent_from_path(--opponent) <span class="c">← 相手の agent()（importlib で .py を直接読む）</span>
+<b>bench.py:85</b>  deck     = load_deck()           <span class="c">← 我々の60枚（cwd の deck.csv）</span>
+<b>bench.py:86</b>  opp_deck = load_deck(--opponent-deck)
+<b>bench.py:94</b>  selfplay.run_series(N, deck, opp_deck, our_agent, opp_agent)
+       │
+       ├─ <b>selfplay.py:92-99</b>  for i in range(N):
+       │       i%2==0 → 我々が先攻 ／ i%2==1 → <span class="hl">席を入れ替えて勝敗を反転</span>
+       │       <span class="c">（先攻有利を均すため。だから agent0_wins は常に「我々の勝ち数」）</span>
+       │
+       └─ <b>selfplay.py:46</b>  run_match()
+              ├─ <b>:54</b>  battle_start(deck0, deck1)
+              │      └─ <b>cg/game.py:19</b> → <b>:35</b> lib.BattleStart(120枚のint配列)
+              │             └─ <b>cg/sim.py:29</b> ctypes.cdll.LoadLibrary(<span class="hl">libcg.dylib</span>)  <span class="c">C製エンジン</span>
+              ├─ <b>:80</b>  choice = agents[<span class="hl">o.current.yourIndex</span>](obs)  <span class="c">← 手番の側に判断させる</span>
+              ├─ <b>:81</b>  obs = battle_select(choice)
+              └─ <b>:83</b>  battle_finish()
+
+<span class="c">出力: WINRATE= / CI_LOW= / CRASH=0|1  （終了コード 0=OK 1=基準線割れ 2=クラッシュ）</span></div>
+
+<div class="callout">
+  <div class="h">なぜ並列で回してはいけないか</div>
+  <p>
+    <code>cg/sim.py:74</code> の <code>Battle.battle_ptr</code> は<strong>モジュール全体で1個</strong>。
+    1プロセス＝1試合しか持てない。しかも思考時間が実時間予算に依存する腕は、CPU を取り合うと
+    <strong>エラーを出さずに数値だけ静かに汚れる</strong>。だから並列は
+    <code>parbench.py</code>（プロセス並列＋安全条件の実証）経由のみ。
+  </p>
+</div>
+
+<h3 id="v-family">族内 / 族外 — この区別が全部の土台</h3>
+<p>
+  コード上、族を切り替えるスイッチは <strong><code>--opponent</code> に何を渡すか、それ1個だけ</strong>
+  （<code>bench.py:75-79</code>）。自動判定は無く、<strong>規律で守っている</strong>。
+</p>
+
+<table>
+<thead><tr><th>族</th><th>相手に渡すもの</th><th>誰が判断ロジックを書いたか</th><th>使ってよい用途</th></tr></thead>
+<tbody>
+<tr><td><span class="pill warn">族内<br>in-family</span></td>
+    <td><code>--opponent main.py</code>（自分自身）<br><code>gauges/*.py</code>（自作2本）<br><code>reference/grimmsnarl_infamily_agent.py</code></td>
+    <td><strong>我々</strong>。相手のデッキリストを正確にコピーしても、<strong>それを動かすのは我々のコード</strong></td>
+    <td><span class="pill warn">スクリーニングのみ</span><br>採否判断・記事の数値に使うのは禁止</td></tr>
+<tr><td><span class="pill live">族外<br>out-of-family</span></td>
+    <td><code>reference/&lt;他人&gt;_agent.py</code> ＋ その人のデッキCSV</td>
+    <td><strong>他人</strong>（Kaggle 公開ノートブックの作者、または運営）</td>
+    <td><strong>採否判断はこれだけ</strong></td></tr>
+</tbody>
+</table>
+
+<div class="callout key">
+  <div class="h">前版の誤りを訂正</div>
+  <p>
+    2026-08-02 版はこの表の <code>gauges/</code> を<strong>「族外ゲージ相手エージェント2種」</strong>と書いていた。
+    <strong>逆である。</strong> <code>verification/gauges/alakazam_agent.py</code> と
+    <code>grimmsnarl_agent.py</code> はどちらも<strong>我々が書いた ≈200行の貪欲AI＝族内</strong>で、
+    <code>verification/README.md</code> により<strong>スクリーニング専用</strong>と定められている。
+  </p>
+</div>
+
+<h3 id="v-roster">練習相手の名簿 — <code>verification/reference/</code></h3>
+<p>
+  中身は<strong>パッケージではなく、他人が書いた <code>main.py</code> そのもの</strong>。
+  <code>kaggle kernels pull</code> で公開ノートブックのソースを 299本ダウンロードして
+  <code>_inbox/</code> に置き、そのうち<strong>本番と数字が合ったものだけ</strong>を昇格させている。
+  改変は2点のみ（<code>%%writefile</code> 除去 ／ デッキ読込の絶対パス化）。
+</p>
+
+<table>
+<thead><tr><th>相手</th><th>agent</th><th>出どころ</th><th>状態</th></tr></thead>
+<tbody>
+<tr><td><strong>フーディン</strong><br>Alakazam</td><td><code>alakazam_ryota_agent.py</code></td>
+    <td>ryotasueyoshi / sue124「Rule-based, not psychic: Alakazam (Best: 5th)」89票</td>
+    <td><span class="pill live">較正済み</span> 実ラダー51.7% を 57.3% で再現</td></tr>
+<tr><td><strong>オーロンゲ</strong><br>Grimmsnarl</td><td><code>tetsutani_grimmsnarl_agent.py</code></td>
+    <td>tetsutani。<strong>公開ノートブックに base64 で畳まれていた</strong>方策バンドルを展開</td>
+    <td><span class="pill live">2026-08-09 新設</span> pilotfix vs これで 39.0% [32.5,45.9]</td></tr>
+<tr><td><strong>イワパレス</strong><br>Crustle</td><td><code>soutasakurai_crustle_agent.py</code></td>
+    <td>soutasakurai「Max Elo 1208 LibraryOut w/ Crustle Great Tusk」</td>
+    <td><span class="pill live">現役</span></td></tr>
+<tr><td><strong>メガルカリオ</strong><br>Lucario</td><td><code>makthanithin_lucario_agent.py</code></td>
+    <td>makthanithin。タイトルの「LB1084.5」は自己申告で裏取り不能と<strong>ヘッダに明記</strong></td>
+    <td><span class="pill live">較正済み</span> 実ラダー15.4% を 14.0% で再現</td></tr>
+<tr><td><strong>ブリジュラス</strong><br>Archaludon</td><td><code>tomato_archaludon_agent.py</code></td>
+    <td>masamikobayashi / TOMATOMATO、93票</td>
+    <td><span class="pill live">現役</span> 実ラダーの相手とデッキ60/60一致×2</td></tr>
+<tr><td>ブリジュラス（副）</td><td><code>steel_agent.py</code></td>
+    <td>plamen06「Pokemon steel」Apache 2.0、公開LB 820.6</td>
+    <td><span class="pill warn">直列必須</span> 実時間依存。CEW からは外れた</td></tr>
+<tr><td>ドラパルト<br>ユキノオー</td><td><code>official_dragapult_agent.py</code><br><code>official_abomasnow_agent.py</code></td>
+    <td>Kaggle 運営の公式サンプル（kiyotah）</td>
+    <td><span class="pill arch">CEW から外れた</span> 現在の帯シェアが 2.1% / 出現なし</td></tr>
+<tr><td><s>メガルカリオ（旧）</s></td><td><code>official_lucario_agent.py</code></td>
+    <td>運営公式サンプル</td>
+    <td><span class="pill warn">勝率判定に使用禁止</span> <strong>本物より +45pt 甘いと実証済み</strong>（D61）</td></tr>
+<tr><td>オーロンゲ（族内）</td><td><code>grimmsnarl_infamily_agent.py</code></td>
+    <td><strong>我々の</strong> <code>deckswap-grimmsnarl-abilityfix</code> パイロット × 実ラダー最頻出デッキ</td>
+    <td><span class="pill warn">族内</span> スクリーニング専用（名前に infamily と明記してある）</td></tr>
 </tbody>
 </table>
 
 <div class="quote">
-  効果量の判定は<strong>族外ゲージ上の CEW</strong> で行う。自前パイロットが相手デッキを操縦するゲージは
-  <strong>スクリーニング専用</strong>とし、絶対値を語らない。<br>
-  独立に判定してよいのは「妥当性」だけ： CRASH=0 ／ vs random ≥96% ／ <code>check.py --submission</code>。
-  <span class="src">CLAUDE.md「Team rules」/ D27・D29</span>
+  公式Lucario ゲージが <strong>60.5%</strong> と言っていた対面は、実ラダーでは <strong>2勝11敗＝15.4%</strong> だった。
+  外部知見（citerne §5.4）いわく「公式サンプル操縦者は、同一デッキを強い操縦者が回した場合より 18.6pt 弱い」。
+  <strong>族外に切り替えれば安全、ではない。族外ゲージ自体を実ラダーで較正し直し続ける必要がある。</strong>
+  <span class="src">docs/memo/data.md「2026-08-05 T1較正監査 / Lucario列の再測」</span>
+</div>
+
+<h3 id="v-cew">CEW — 採否を決める1個の数字</h3>
+<p>
+  <strong>CEW = 較正済み遭遇加重合成指標</strong>。族外ゲージ各面の勝率を、
+  <strong>実ラダーでその相手に当たる確率</strong>で加重して1本にまとめたもの。
+  計算は必ず <code>verification/cew.py</code> を通す（手計算だと重み1個の付け忘れで採否が反転しうるため）。
+</p>
+
+<div class="tree">CEW = Σ(重みᵢ × 勝率ᵢ) / Σ(重みᵢ)          <span class="c">cew.py:87-92</span>
+
+<span class="c">現行の重み（2026-08-09 T3再較正・第2版。出典: 800-1099帯の実フィールド構成</span>
+<span class="c"> 側 n=6,341・自チーム除外 / 斥候72体・4,263エピソード）</span>
+  alakazam   (フーディン)     share 29.2%  →  <b>0.3399</b>
+  grimmsnarl (オーロンゲ)     share 19.3%  →  <b>0.2247</b>
+  crustle    (イワパレス)     share 13.5%  →  <b>0.1572</b>
+  lucario    (メガルカリオ)   share 13.2%  →  <b>0.1537</b>
+  archaludon (ブリジュラス)   share 10.7%  →  <b>0.1246</b>
+                              <span class="c">覆域 85.9% を再正規化</span>
+
+  基準線 <b>59.70</b>  <span class="c">= いまラダーに載っている腕（pilotfix）のセル実測を新重みで合成</span>
+  閾値   <b>+2pt</b>   <span class="c">※「魔法の壁」ではない。CI を必ず併記する</span>
+  配分   Neyman 合計 <b>N=3,200</b>   80%検出力の <b>MDE 1.87pt</b></div>
+
+<div class="callout bad">
+  <div class="h">重みは古びる。実際に大きく狂っていた</div>
+  <p>
+    2026-08-09 の再較正で、旧重み（2026-07-26）がどれだけズレていたかが判明した：
+    <strong>Lucario 3.4倍 / Archaludon 3.2倍 / Dragapult 7.4倍の過大</strong>、
+    <strong>Abomasnow に至っては 800-1099帯の census に1体も出現しない</strong>のに 5.6% の重みがあった。
+    逆に<strong>実シェア最大の フーディン(29.2%) と イワパレス(13.5%) は重み0で入っていなかった</strong>。
+    総Nを変えずに配分を直すだけで <strong>MDE が 2.67pt → 1.87pt に 30% 改善</strong>した
+    ——ズレていたぶんが、そのまま検出力の損失だった。
+  </p>
+  <p>
+    <span class="pill warn">未追随</span>
+    <code>verification/README.md</code> は<strong>同日の第1版</strong>（4ゲージ・覆域66.6%・基準線66.75）のまま。
+    <code>.claude/skills/bench/SKILL.md:52</code> は<strong>さらに2世代前</strong>（基準線41.03%・配分1712/1024/272/192）。
+    <strong>実行される正典は <code>cew.py</code></strong>。T8（ツーリング追随）案件として未処理。
+  </p>
 </div>
 </section>
 
 <!-- ============ 3 ============ -->
+<section id="why">
+<h2>3. なぜセルフ対戦をやめたのか <span class="tag">このプロジェクト最大の教訓</span></h2>
+
+<p>
+  よくある誤解を先に潰しておく。捨てたのは<strong>「自分のパイロットが、相手のデッキも動かす」測り方</strong>であって、
+  「自分のデッキ同士」ではない。そして<strong>置き換えたのは「我々が書いた別のデッキ」ではない —— それこそが捨てた側</strong>。
+</p>
+
+<div class="grid">
+  <div class="card"><div class="n">第1幕 / 6-28 D5</div><div class="t">「速いから測れる」</div>
+    <p><code>selfplay.py</code> を採用。9ms/戦で何千戦も回せる。だが介入が<strong>7件連続で棄却</strong>される。
+    ローカルではブリジュラスに 82% 勝っているのに、実ラダーでは 20%。</p></div>
+  <div class="card"><div class="n">第2幕 / 7-21 D27</div><div class="t">「計器が壊れていた」</div>
+    <p>デッキを固定して<strong>操縦者だけ</strong>入れ替えたら、族内 82% / 族外 20% / <strong>実ラダー 20%</strong>。
+    族内は 62pt 過大評価、族外は<strong>誤差2pt以内で本番を予測</strong>した。</p></div>
+  <div class="card"><div class="n">第3幕 / 8-02 D61 →</div><div class="t">「その計器にも嘘があった」</div>
+    <p>外部摂取(T5)が1ヶ月止まっていたと発覚。公式Lucarioゲージが <strong>+45pt 甘い</strong>と判明し世代交代。
+    較正は<strong>一度やって終わりではなく、走り続ける保守作業</strong>だと分かった。</p></div>
+</div>
+
+<h3>数字で見る — D61 の三段分解（N=300/腕）</h3>
+<table>
+<thead><tr><th>測り方</th><th>デッキ</th><th>パイロット</th><th>勝率</th></tr></thead>
+<tbody>
+<tr><td>族内・自作デッキ</td><td>我々の想像</td><td><strong>我々</strong></td><td>96.0%</td></tr>
+<tr><td>族内・実物デッキ</td><td><strong>実ラダーの本物</strong></td><td><strong>我々</strong></td><td>89.0%</td></tr>
+<tr><td><strong>族外</strong></td><td><strong>実ラダーの本物</strong></td><td><strong>本物</strong></td><td><strong>57.3%</strong></td></tr>
+</tbody>
+</table>
+<p>
+  → <strong>デッキ差 7.0pt に対し、操縦者差 31.7pt。操縦者が 4.5倍効く。</strong>
+  相手のデッキリストを60枚完璧にコピーしても、<strong>それを動かすのが我々の下手なコードである限り無意味</strong>。
+  族内の甘さは<strong>相手操縦者と我々の実力差に比例</strong>する（steel +62pt / 公式Lucario +41pt / りょーちんagent +8pt）。
+</p>
+
+<h3>何が置き換わったのか（2層構造）</h3>
+<table>
+<thead><tr><th>候補</th><th>判定</th><th>理由</th></tr></thead>
+<tbody>
+<tr><td>(a) 我々が書いた別のデッキ</td><td><span class="pill warn">✗ これが捨てた側</span></td>
+    <td>デッキをどれだけ正確にコピーしても、操縦者が我々なら +8〜+62pt 甘い</td></tr>
+<tr><td><strong>(b) 第三者のエージェント</strong></td><td><span class="pill live">✓ 日々の判定</span></td>
+    <td><code>verification/reference/</code>。速く何百戦も回せる。<strong>ただしこれ自体が仮説</strong></td></tr>
+<tr><td><strong>(c) 実 Kaggle ラダー</strong></td><td><span class="pill live">✓ 較正の錨</span></td>
+    <td><code>replay_analysis/</code>。遅く N=50〜60 しか取れないが、<strong>これだけが真実</strong>。
+        (b) が正しいことを (c) で確認して初めて「較正済み」と呼ぶ</td></tr>
+</tbody>
+</table>
+
+<h3>セルフ対戦は「廃止」ではなく「格下げ」</h3>
+<p>いまも使う。ただし用途が限定されている（playbook §7.5 の層S）：</p>
+<ul>
+  <li><strong>正当性の検査</strong> — vs random ≥96% ／ CRASH=0 ／ 敵対的入力での robustness-guard</li>
+  <li><strong>機構の診断</strong> — トレースで「ロケットラッシュが盤面何体で発射されたか」を見る</li>
+  <li><strong>リファクタ無罪の証明</strong> — <strong>勝率ではなく決定の完全一致</strong>で証明する
+    （169,430決定が 100.00% 一致）。<strong>勝率50%より強い証拠</strong>で、しかも数分で済む
+    ——50%は「差を検出できなかった」に過ぎないが、完全一致は「差が無い」の直接証明</li>
+</ul>
+<p>禁じられているのは<strong>「族内の勝率を採否判断や記事の看板数値にすること」</strong>だけ。</p>
+
+<div class="callout bad">
+  <div class="h">2026-08-08 — この規律を破ると何が起きるかの実例</div>
+  <p>
+    「v2 デッキの差分は実質ゼロ（+0.04pt）」という記録は、<strong>重みに族内オーロンゲゲージを 19.3% 混ぜていた</strong>ための誤りだった。
+    族外のみで再計算すると <strong>−2.70pt（符号が反転）</strong>。<br>
+    同じ日、ローカル計器で <strong>+4.09pt</strong> と出た操縦者修理は、実ラダーの対照実験では
+    <strong>+1.7pt・CI ほぼ完全重複</strong>だった。これは「効果が無い」ではなく
+    <strong>「この N ではそもそも +4pt は原理的に見えない」</strong>（覆域差のSE ≈ 13pt）という意味。
+  </p>
+</div>
+</section>
+
+<!-- ============ 4 ============ -->
 <section id="replay">
-<h2><span class="path">replay_analysis/</span> <span class="tag">695MB / 出した後に検死する</span></h2>
+<h2><span class="path">replay_analysis/</span> <span class="tag">9.5GB / 出した後に検死する</span></h2>
 <p>
   Kaggle 本番（実ラダー）の試合記録をダウンロードして解剖する<strong>検死室</strong>。
   リプレイは <code>https://www.kaggle.com/competitions/episodes/{id}/replay.json</code> で<strong>公開</strong>されている。
+  <code>.py</code> は31本。
 </p>
 <p>
-  なぜ必要か。ローカルが信用できないなら、<strong>本物の対戦記録だけが真実</strong>になるから。
-  作戦文書は「免許表」としてこう定めている：
+  なぜ必要か。<strong>ローカルが信用できないなら、本物の対戦記録だけが真実</strong>になるから。
+  そして <a href="#v-cew">CEW の重み</a>はここから来ている —— 実ラダーで誰に何回当たったかを数えて、
+  <code>cew.py</code> に定数として書き写す。
 </p>
 
 <table>
@@ -261,57 +597,29 @@ footer{margin-top:5rem;padding-top:2rem;border-top:1px solid var(--line);font-si
 </tbody>
 </table>
 
-<h3 id="replay-pycache">__pycache__/ — 気にしなくていいもの</h3>
-<p>
-  Python が <code>.py</code> を実行する際に自動生成するバイトコードのキャッシュ。
-  <strong>作ったものでもデータでもない</strong>。gitignore 済みで、消しても次回実行時に再生成される。
-</p>
-<p>
-  ひとつだけ読み取れる情報がある —
-  ここに <code>.pyc</code> がある5本（<code>damage_accuracy</code> / <code>damage_pairing_diff</code> /
-  <code>extract_decks</code> / <code>prize_race</code> / <code>trace_replay</code>）は
-  <strong>他のスクリプトから import された＝部品として再利用されている</strong>ということ。
-</p>
-
 <h3 id="replay-eps">eps〇〇/ — 提出1本ぶんのリプレイ倉庫</h3>
 <p>
-  <code>〇〇</code> は <strong>Kaggle の提出ID（submission ID）</strong>。
-  <code>eps55163442/</code> なら「提出 #55163442 が実ラダーで戦った試合を全部集めた箱」。
+  <code>〇〇</code> は <strong>Kaggle の提出ID</strong>。<code>eps55308422/</code> なら
+  「提出 #55308422 が実ラダーで戦った試合を全部集めた箱」。1試合 2〜4MB の JSON が数十本。
 </p>
-
-<div class="tree">eps55163442/                <span class="c">123MB</span>
-├── <span class="hl">curl.cfg</span>             <span class="c">ダウンロード指示書（URL一覧）</span>
-├── <span class="hl">curl_new.cfg</span>         <span class="c">追加分（後から到着した試合）</span>
-├── ep89334624.json     <span class="c">1試合ぶんの完全な記録（2.0MB）</span>
-├── ep89334721.json     <span class="c">3.7MB</span>
-└── ...  約48試合</div>
 
 <table>
 <thead><tr><th>ディレクトリ</th><th>中身</th><th>サイズ</th></tr></thead>
 <tbody>
 <tr><td><code>eps54943911/</code></td><td>lucario-calib（較正提出）</td><td>136MB</td></tr>
-<tr><td><code>eps54961048/</code></td><td>王者再提出 #2</td><td>157MB</td></tr>
+<tr><td><code>eps54961048/</code></td><td>王者再提出 #2</td><td>158MB</td></tr>
 <tr><td><code>eps55058443/</code></td><td>王者再提出 #3</td><td>154MB</td></tr>
-<tr><td><code>eps55060473/</code></td><td>dragapult-calib</td><td><strong>8KB</strong>（meta.txt のみ）</td></tr>
-<tr><td><code>eps55163442/</code></td><td>P1 clockguard <span class="pill live">進行中</span></td><td>123MB</td></tr>
-<tr><td><code>eps55169074/</code></td><td>P2 widthprobe <span class="pill live">進行中</span></td><td>125MB</td></tr>
+<tr><td><code>eps55060473/</code></td><td>dragapult-calib</td><td><strong>80KB</strong>（meta.txt のみ）</td></tr>
+<tr><td><code>eps55163442/</code> / <code>eps55169074/</code></td><td>P1 clockguard / P2 widthprobe</td><td>147MB / 143MB</td></tr>
+<tr><td><code>eps55236642/</code></td><td><strong>P9 tarountula</strong>（本番53戦）</td><td>232MB</td></tr>
+<tr><td><code>eps55308422/</code></td><td><strong>pilotfix</strong>（本番47戦）<span class="pill live">最新</span></td><td>183MB</td></tr>
 </tbody>
 </table>
-
-<p><strong>JSON 1本の中身</strong>はこうなっている：</p>
-<div class="tree">top keys: ['configuration','rewards','statuses','steps', ...]
-steps:    85              <span class="c">85ステップ = 試合の全経過</span>
-rewards:  [1, -1]         <span class="c">我々の勝ち</span>
-statuses: ['DONE','DONE'] <span class="c">どちらもクラッシュせず完走</span></div>
-<p>
-  各 step に<strong>その瞬間の盤面（<code>observation.current</code>）と、実際に選んだ手（<code>action</code>）</strong>が
-  丸ごと入っている。だから「あの局面で何を選んだか」を後から完全に再現できる。これが検死の材料。
-</p>
 
 <div class="callout">
   <div class="h">本体は meta.txt の方</div>
   <p>
-    <code>eps55060473/</code> が 8KB しかないのに注目。JSON 本体は捨ててあり、レシピだけが残っている。
+    <code>eps55060473/</code> が 80KB しかないのに注目。JSON 本体は捨ててあり、レシピだけが残っている。
   </p>
   <div class="tree" style="margin:.8rem 0 .6rem">meta.txt:
 88652311:0:1:SELF,  88652365:0:-1:53853843,  88652869:1:1:54990484, ...
@@ -319,96 +627,84 @@ statuses: ['DONE','DONE'] <span class="c">どちらもクラッシュせず完�
   <p>
     <strong>.gitignore の記述</strong>：「検死用リプレイJSON本体（1提出あたり約150MB）。公開エンドポイントから
     再取得でき、<strong>meta.txt + autopsy_*.py があれば検死は完全に再現できる</strong>ので追跡しない。」<br>
-    → 695MB のうち Git に入っているのは実質ゼロ。<strong>重いデータはレシピに圧縮して保存する</strong>設計。
+    → 9.5GB のうち Git に入っているのは実質ゼロ。<strong>重いデータはレシピに圧縮して保存する</strong>設計。
   </p>
 </div>
 
-<p>
-  <strong>誰がどう見るか</strong>：人間は直接開かない（2〜4MB の JSON が50本）。
-  読むのは常にスクリプト経由で、<strong>Claude が解析を走らせて要約を <code>docs/memo/data.md</code> に書き込む</strong>。
-  あなたが目にするのはその要約。例外は <code>trace_replay.py</code> で、これだけは人間が1試合を物語として読むための道具。
-</p>
-
-<h3 id="replay-py">18本の .py — 5つの役割</h3>
-<p>日付とファイル名を並べると、<strong>3ヶ月で関心がどう移ったか</strong>がそのまま見える。</p>
-
+<h3>.py の5つの役割</h3>
 <div class="grid">
-  <div class="card"><div class="n">① 7/13</div><div class="t">基盤ツール</div><p>リプレイを読む・分類する・相手デッキを抽出する。ここから <code>verification/decks/meta_*.csv</code> が生まれた。</p></div>
-  <div class="card"><div class="n">② 7/22 →</div><div class="t">T1判定（主砲）</div><p>提出前に固定した予測と実測を突き合わせる。writeup の一番の売りを生産する装置。</p></div>
-  <div class="card"><div class="n">③ 7/22 →</div><div class="t">機構の検死</div><p>勝率ではなく「なぜ負けたのか」の構造を見る。</p></div>
-  <div class="card"><div class="n">④ 7/30-31</div><div class="t">自分の計器の監査</div><p>測定対象ではなく、自分の測定スクリプトを疑う。バグ2件を自己摘発。</p></div>
-  <div class="card"><div class="n">⑤ 7/29</div><div class="t">運用データ</div><p>提出後に何時間監視すればスコアが確定するか。</p></div>
+  <div class="card"><div class="n">① 基盤ツール</div><div class="t">読む・分類する・抽出する</div>
+    <p><code>trace_replay.py</code>（1試合を人間が読める物語に）／<code>classify_replays.py</code>／
+    <strong><code>extract_meta_decks.py</code></strong> — 実ラダーの最頻出60枚を
+    <code>verification/decks/meta_*_800_*.csv</code> として書き出す。<strong>本番→計器の直通路</strong>。</p></div>
+  <div class="card"><div class="n">② T1判定（主砲）</div><div class="t">予測は当たったか</div>
+    <p>提出<strong>前</strong>に凍結した予測と実測を突き合わせる。<code>probe_autopsy.py</code> に共通ツール化されている
+    （<code>OUR_TEAM_SUBS</code> は提出のたび追記）。writeup の一番の売りを生産する装置。</p></div>
+  <div class="card"><div class="n">③ 機構の検死</div><div class="t">なぜ負けたのか</div>
+    <p>勝率ではなく構造を見る。<code>mechanism_autopsy.py</code>／<code>prize_race.py</code>／
+    <code>shutout_anatomy.py</code>／<code>alakazam_autopsy.py</code>。</p></div>
+  <div class="card"><div class="n">④ 自分の計器の監査</div><div class="t">測定器を疑う</div>
+    <p><code>damage_accuracy.py</code>／<code>damage_pairing_diff.py</code>／<code>semantic_check.py</code>／
+    <code>decision_census.py</code>。<strong>自分のバグ修正が「都合よく直りすぎている」ことを確率で検出</strong>し、
+    計測バグ2件を自己摘発した（D59・台帳#30/#31）。</p></div>
+  <div class="card"><div class="n">⑤ メタ計測と運用</div><div class="t">場を数える</div>
+    <p><code>band_meta_census.py</code>（帯別の遭遇分布＝<strong>CEW重みの出どころ</strong>）／
+    <code>ladder_scout.py</code>／<code>p9_mining.py</code>／<code>episode_arrival.py</code>（提出後48〜56hで確定）。</p></div>
 </div>
 
-<table>
-<thead><tr><th>層</th><th>ファイル</th><th>問い / 役割</th></tr></thead>
-<tbody>
-<tr><td rowspan="3">①<br>基盤</td><td><code>trace_replay.py</code></td><td>1試合を人間が読める物語に変換</td></tr>
-<tr><td><code>classify_replays.py</code></td><td>全試合を「どう勝った/負けた」で分類</td></tr>
-<tr><td><code>extract_decks.py</code></td><td><strong>相手デッキを抽出</strong>してアーキタイプ集計 → CEW の遭遇重みの元</td></tr>
-
-<tr><td rowspan="5">②<br>T1判定</td><td><code>t1_verdict.py</code></td><td>原型。較正ゲージは実ラダーを予測するか</td></tr>
-<tr><td><code>calib_verdict_54943911.py</code></td><td>lucario-calib の判定</td></tr>
-<tr><td><code>autopsy_54961048.py</code></td><td>王者再提出 #2</td></tr>
-<tr><td><code>autopsy_2026-07-29.py</code></td><td>2提出同時（#3 + dragapult）</td></tr>
-<tr><td><strong><code>probe_autopsy.py</code></strong> <span class="pill live">8/2</span></td><td><strong>キャンペーン共通ツール化</strong>。T1判定 + タイミング + ガード挙動 + CRASH検査を一本化</td></tr>
-
-<tr><td rowspan="4">③<br>機構</td><td><code>mechanism_autopsy.py</code></td><td>EXP8 の挙動は本番に転移したか（→ 転換85%、台帳#6）</td></tr>
-<tr><td><code>prize_race.py</code></td><td>サイドレース収支の全数集計</td></tr>
-<tr><td><code>shutout_anatomy.py</code></td><td>サイド0完封負け7戦は「押し負け」か「立ち上がり不成立」か</td></tr>
-<tr><td><code>alakazam_autopsy.py</code></td><td><strong>計器の最大の盲点</strong>の解剖（遭遇1位・敗北1位・較正ゲージ不在）</td></tr>
-
-<tr><td rowspan="5">④<br>自己監査</td><td><code>damage_accuracy.py</code></td><td>ダメージ予測器は当たっているか</td></tr>
-<tr><td><code>damage_pairing_diff.py</code></td><td>off-by-one 補正は本当に「ずれていただけ」か</td></tr>
-<tr><td><code>semantic_check.py</code></td><td>補正後の対応付けは<em>意味論的に</em>正しいか</td></tr>
-<tr><td><code>decision_census.py</code></td><td>公表した「12,506決定点」が独立計数と4.7倍乖離 → 二重計数では？</td></tr>
-<tr><td><code>damage_placement_audit.py</code></td><td>ダメカン配置規則は実ラダーで何回効いたか（<strong>0件なら実装しないと事前固定</strong>）</td></tr>
-
-<tr><td>⑤ 運用</td><td><code>episode_arrival.py</code></td><td>提出後どのくらい監視すればスコアが確定するか（→ 48〜56h）</td></tr>
-</tbody>
-</table>
-
-<div class="callout key">
-  <div class="h">④が一番効いている層</div>
-  <p><code>damage_pairing_diff.py</code> の docstring：</p>
-  <div class="quote" style="margin:.7rem 0 .5rem">
-    新規回収54件の誤りが0件なら、回収群は元の186件と<strong>系統的に異なる</strong>（0.876<sup>54</sup> ≈ 0.08%）。
-    <strong>「対応がずれていただけ」では説明にならない。</strong>
-  </div>
+<div class="callout">
+  <div class="h">外部APIの作法（2026-08-05制定・429事故の再発防止）</div>
   <p>
-    自分のバグ修正が「都合よく直りすぎている」ことを確率で検出しにいっている。
-    この監査から<strong>計測バグ2件を自己摘発</strong>して D59 / 台帳 #30・#31 に記録された。
+    Kaggle の EpisodeService へは <code>replay_analysis/kaggle_gate.py</code> 経由のみ。
+    <strong>直列1本・最小間隔8秒・429 を1回受けたら再試行せず4時間停止</strong>（状態は
+    <code>gate_state.json</code> でプロセスを跨いで永続）。
+    並列バーストで IP ごと1日レート制限された事故を受けた設計で、<strong>対策は量の削減ではなく行儀の構造化</strong>。
   </p>
 </div>
 </section>
 
-<!-- ============ 4 ============ -->
+<!-- ============ 5 ============ -->
 <section id="docs">
 <h2><span class="path">docs/</span> <span class="tag">記録であり、成果物でもある</span></h2>
 <p>
-  <code>docs/memo/</code> は「メモ」ではない。<strong>5種類の読者に向けた5種類の文書が同居している場所</strong>で、
-  しかも一部は<strong>Kaggle に出す最終成果物そのもの</strong>。
+  <code>docs/memo/</code>（<code>.md</code> 43本）は「メモ」ではない。
+  <strong>賞金は Strategy 部門の記事</strong>なので、ここに残した記録が<strong>そのまま提出物になる</strong>。
 </p>
 
-<h3 id="docs-readers">読み手は5人いる</h3>
+<h3>常設の台帳 — 日付が名前に入っていないものが「生きている」</h3>
+<table>
+<thead><tr><th>ファイル</th><th>行数</th><th>役割</th></tr></thead>
+<tbody>
+<tr><td><code>playbook.md</code> <span class="pill auto">必読</span></td><td>226</td>
+    <td><strong>運用規範</strong>。CLAUDE.md が「開発・測定の計画前に必ず読め」と強制。
+        測定規律・バイアス対策・監査トリガー(T1〜T8)・検証の3層(S/A/B)</td></tr>
+<tr><td><code>decisions.md</code></td><td>1628</td><td><strong>意思決定ログ D1〜</strong>。何を・なぜ決めたか。冒頭に「最小読了セット」のナビ</td></tr>
+<tr><td><code>data.md</code></td><td>5430</td><td><strong>数値の正典</strong>。全実測が N・CI つきで日付順。<strong>誤りは上書きせず「訂正」として追記</strong></td></tr>
+<tr><td><code>claims-ledger.md</code></td><td>87</td><td><strong>主張台帳</strong>。writeup に書く全数値がここを通る関門</td></tr>
+<tr><td><code>journal.md</code> / <code>report-outline.md</code></td><td>227 / 91</td><td>作業ログ／審査基準から逆算した記事の骨子</td></tr>
+<tr><td><code>handover-YYYY-MM-DD.md</code></td><td>—</td><td><strong>最新1本が現在地</strong>。セッションを跨ぐ申し送り</td></tr>
+</tbody>
+</table>
+
+<h3>読み手は5人いる</h3>
 <table>
 <thead><tr><th>読者</th><th>読む文書</th><th>いつ</th></tr></thead>
 <tbody>
 <tr><td><strong>① 未来の Claude</strong><br><span class="pill auto">自動</span></td>
-    <td><code>playbook.md</code> / <code>decisions.md</code> / <code>plan-*.md</code> / <code>handover-*.md</code></td>
+    <td><code>playbook.md</code> / <code>decisions.md</code> / <code>handover-*.md</code></td>
     <td>セッション起動時（CLAUDE.md が強制）</td></tr>
 <tr><td><strong>② ゆうじ</strong><br><span class="pill you">承認</span></td>
     <td>HTML 解説群 / <code>plan-*.md</code> の承認ブロック / <code>data.md</code> の提出履歴</td>
     <td>GO/NO-GO 判断、現在地の把握</td></tr>
 <tr><td><strong>③ りょーちん</strong></td>
-    <td><code>team-share-*.md</code> / <code>prompt-v2-for-ryochin-*.md</code> / <code>review-ryochin-v8-*.md</code></td>
-    <td>合意が必要な時だけ（期限つき依頼状）</td></tr>
+    <td><code>team-guide-battles-and-decks.md</code> / <code>team-report-*.md</code> / <code>prompt-v2-for-ryochin-*.md</code></td>
+    <td>合意が必要な時／測定方法を共有する時</td></tr>
 <tr><td><strong>④ 外部レビュワー</strong><br>（別モデル）</td>
-    <td><code>review-request-fable5-*.md</code> / <code>t7-panel-*-verdict.md</code></td>
-    <td>大きな設計判断を実行に移す直前（T7）</td></tr>
+    <td><code>review-request-*.md</code> / <code>t7-panel-*-verdict.md</code></td>
+    <td>大きな設計判断を実行に移す<strong>直前</strong>（T7）</td></tr>
 <tr><td><strong>⑤ Kaggle 審査員</strong></td>
-    <td><code>writeup-v1-fulldraft.md</code> / <code>report-outline.md</code> / <code>figures/</code></td>
-    <td>締切 2026-09-13（Model 70% / Deck 20% / Report 10%）</td></tr>
+    <td><code>writeup-*.md</code> / <code>report-outline.md</code> / <code>figures/</code></td>
+    <td>締切 2026-09-14（Model 70% / Deck 20% / Report 10%）</td></tr>
 </tbody>
 </table>
 
@@ -419,33 +715,6 @@ statuses: ['DONE','DONE'] <span class="c">どちらもクラッシュせず完�
   <strong>そういう結論に到達することを明示的に歓迎します。</strong>
   <span class="src">review-request-fable5-full.md §0（④宛の文書の書き出し）</span>
 </div>
-
-<h3 id="docs-layers">.md 34本は5層に分かれている</h3>
-<p>乱雑に見えるのは、<strong>寿命の違う文書が同じ棚にフラットに並んでいる</strong>から。ファイル名で見分けられる。</p>
-
-<table>
-<thead><tr><th>層</th><th>命名</th><th>本数</th><th>誰が読むか</th></tr></thead>
-<tbody>
-<tr><td><strong>1. 常設の台帳</strong></td><td>日付なし</td><td>6</td><td><span class="pill auto">Claude が自動</span> ＋ あなた</td></tr>
-<tr><td><strong>2. その日の作戦</strong></td><td><code>plan-YYYY-MM-DD-*</code></td><td>11</td><td>最新1本のみ生存、残りは履歴</td></tr>
-<tr><td><strong>3. 誰か宛の手紙</strong></td><td>宛先が名前に入る</td><td>9</td><td>渡した時点で役目終了 <span class="pill arch">アーカイブ</span></td></tr>
-<tr><td><strong>4. 単発の測定レポート</strong></td><td>主題名だけ</td><td>4</td><td>data.md の詳細版</td></tr>
-<tr><td><strong>5. 成果物</strong></td><td><code>writeup-*</code></td><td>2</td><td>Kaggle 審査員</td></tr>
-</tbody>
-</table>
-
-<p><strong>層1（常設の台帳）の中身</strong>：</p>
-<table>
-<thead><tr><th>ファイル</th><th>行数</th><th>役割</th></tr></thead>
-<tbody>
-<tr><td><code>playbook.md</code> <span class="pill auto">必読</span></td><td>212</td><td>運用規範。<strong>CLAUDE.md が「開発・測定の計画前に必ず読め」と強制</strong></td></tr>
-<tr><td><code>decisions.md</code></td><td>1374</td><td>D1〜D59 の意思決定ログ。冒頭に「最小読了セット」のナビあり</td></tr>
-<tr><td><code>data.md</code></td><td>3363</td><td>測定の生値・提出履歴。<strong>数字の一次ソース</strong></td></tr>
-<tr><td><code>journal.md</code></td><td>227</td><td>作業ログ（時系列の経緯）</td></tr>
-<tr><td><code>claims-ledger.md</code></td><td>56</td><td><strong>主張台帳</strong>。writeup に書く全数値がここを通る関門</td></tr>
-<tr><td><code>report-outline.md</code></td><td>91</td><td>審査基準から逆算した骨子。「埋まっていない穴」＝実験計画</td></tr>
-</tbody>
-</table>
 
 <div class="callout key">
   <div class="h">claims-ledger.md の関門設計</div>
@@ -459,84 +728,98 @@ statuses: ['DONE','DONE'] <span class="c">どちらもクラッシュせず完�
     <li>「n=3 の外挿であることを明記。『法則』でなく『3アーキタイプで一致した観測』と書く」（台帳#1）</li>
     <li>「<strong>v3棄却は正しかった、と断定しない</strong>」（台帳#12）</li>
   </ul>
-  <p>実際にこれで +15.7pt（事後選択値）などの格下げが機能した。</p>
 </div>
 
-<h3 id="docs-figures">memo/figures/ — レポートに貼る図</h3>
-<p>
-  SVG 6枚 + 生成スクリプト 1本。<strong>手描きではなくコードから生成</strong>している。
-</p>
-<div class="tree">"""レポート用図表の生成（標準ライブラリのみ、SVG出力）。
-データは docs/memo/data.md の確定値を転記（出典コメント付き）。数値を更新したら再実行。
-    python3 docs/memo/figures/make_figures.py
-"""</div>
-<p>matplotlib すら使わず SVG タグを文字列で組んでいる。数値には必ず出典コメントが付き、data.md を更新して再実行すれば図が追随する。</p>
-
-<table>
-<thead><tr><th>ファイル</th><th>何の図</th><th>状態</th></tr></thead>
-<tbody>
-<tr><td><code>fig_calibration_gap.svg</code></td><td>族内 / 族外 / 実ラダーの3本棒（<strong>主砲</strong>）</td><td><span class="pill live">現役</span></td></tr>
-<tr><td><code>fig_prospective.svg</code></td><td>前向き検証（予測 vs 実測）</td><td><span class="pill live">現役</span></td></tr>
-<tr><td><code>fig_search_ablation.svg</code></td><td>探索 ON/OFF 対照 +13.62pt</td><td><span class="pill live">現役</span></td></tr>
-<tr><td><code>fig_eviction.svg</code></td><td>提出枠の押し出し機構（10提出のダンベル図）</td><td><span class="pill live">現役</span></td></tr>
-<tr><td><code>fig_rating_timeline.svg</code></td><td>提出ごとのレーティング推移</td><td><span class="pill warn">要更新</span></td></tr>
-<tr><td><code>fig_deck_matrix.svg</code></td><td>D21 の8対面ヒートマップ</td><td><span class="pill warn">単体使用禁止</span></td></tr>
-</tbody>
-</table>
-
+<h3>memo/figures/ — レポートに貼る図</h3>
+<p>SVG + 生成スクリプト。<strong>手描きではなくコードから生成</strong>し、数値には必ず data.md への出典コメントが付く。</p>
 <div class="quote">
-  fig_deck_matrix.svg は<strong>単体使用禁止</strong>（族内数値）— 較正の物語の<strong>対比としてのみ</strong>。
-  <span class="src">writeup-draft.md ／ 族内測定を告発するレポートで族内測定の数値を誇らしげに貼るのは自己矛盾（D30）</span>
+  <code>fig_deck_matrix.svg</code> は<strong>単体使用禁止</strong>（族内数値）— 較正の物語の<strong>対比としてのみ</strong>。
+  <span class="src">D30 ／ 族内測定を告発するレポートで族内測定の数値を誇らしげに貼るのは自己矛盾</span>
 </div>
 </section>
 
-<!-- ============ 5 ============ -->
+<!-- ============ 6 ============ -->
 <section id="claude">
 <h2><span class="path">.claude/</span> <span class="tag">この作業場の自動化</span></h2>
 <table>
 <thead><tr><th>場所</th><th>中身</th></tr></thead>
 <tbody>
-<tr><td><code>skills/</code></td><td><code>/bench</code> <code>/council</code> <code>/try-heuristic</code> <code>/lookup-card</code> <code>/submission-check</code> <code>/agent-api</code> <code>/kaggle-coach</code> <code>/loop-discipline</code></td></tr>
-<tr><td><code>agents/</code></td><td><code>robustness-guard.md</code> — agent() のクラッシュ・不正手を監査するサブエージェント</td></tr>
-<tr><td><code>workflows/</code></td><td><code>t7-panel.js</code> — 設計レビューのパネル型ワークフロー（斥候 → 4レンズ発見 → 検証 → 裁定）</td></tr>
+<tr><td><code>skills/</code></td><td><code>/bench</code> <code>/council</code> <code>/try-heuristic</code> <code>/lookup-card</code>
+    <code>/submission-check</code> <code>/agent-api</code> <code>/kaggle-coach</code> <code>/loop-discipline</code> <code>/t7-panel</code></td></tr>
+<tr><td><code>agents/</code></td><td><code>robustness-guard.md</code> — <code>agent()</code> のクラッシュ・不正手を監査するサブエージェント。
+    <strong>agent のロジックを変えたら必ず走らせる</strong></td></tr>
+<tr><td><code>skills/submission-check/scripts/check.py</code></td><td>提出前の実体検査（デッキ合法性・import純度・tar構造・20戦スモーク）。
+    <strong><code>verification/</code> ではなくここにある</strong></td></tr>
 </tbody>
 </table>
+
+<div class="callout key">
+  <div class="h">/council — バイアスを組織的に外す儀式</div>
+  <p>
+    大きな方針決定・行き詰まり・数回の反復で改善しない時に起動する。
+    <strong>4役（戦略／赤チーム／ドメイン／実装）のサブエージェントに一次資料を直接読ませ</strong>、
+    既存決定への遠慮を明示的に禁じて独立見解を取る。
+    <strong>要約を渡さない —— 要約は自分のバイアスを運ぶから。</strong>
+    D19（方針転換）、D24（iter4却下）、D36（「予算終了の根拠は汚染統計だった」の自己修正）が実績。
+  </p>
+</div>
 </section>
 
 <!-- ============ cheat ============ -->
 <section id="cheat">
 <h2>付録：早見表</h2>
 
+<h3>ゆうじの質問 → 答えの場所</h3>
+<table>
+<thead><tr><th>知りたいこと</th><th>開く場所</th></tr></thead>
+<tbody>
+<tr><td><strong>いまの現在地</strong></td><td><code>docs/memo/handover-*.md</code>（<strong>日付が一番新しいもの</strong>）</td></tr>
+<tr><td>実際の数字</td><td><code>docs/memo/data.md</code>（末尾から遡る）</td></tr>
+<tr><td>なぜ今この形なのか</td><td><code>docs/memo/decisions.md</code>（末尾から遡る）</td></tr>
+<tr><td>どの主張が記事に使えるか</td><td><code>docs/memo/claims-ledger.md</code></td></tr>
+<tr><td><strong>どうやって対戦させるのか</strong></td><td><a href="#v-chain">本ページ §2</a> ／ <code>docs/memo/team-guide-battles-and-decks.md</code>（コピペ用）</td></tr>
+<tr><td>デッキの中身（日本語カード名）</td><td><code>docs-for-you/notebooklm-sources/deck-catalog-*.md</code></td></tr>
+<tr><td>提出前に何を通すか</td><td><code>verification/README.md</code>（ゲート）＋ <code>/submission-check</code></td></tr>
+<tr><td>本番で今どう戦っているか</td><td><code>replay_analysis/probe_autopsy.py</code> を実行</td></tr>
+</tbody>
+</table>
+
 <h3>命名規則で寿命がわかる</h3>
 <table>
 <thead><tr><th>パターン</th><th>意味</th><th>例</th></tr></thead>
 <tbody>
 <tr><td><strong>日付なしの名前</strong></td><td>常設。生きている</td><td><code>playbook.md</code> <code>data.md</code></td></tr>
-<tr><td><strong>YYYY-MM-DD 入り</strong></td><td>使い捨て。最新1本以外は履歴</td><td><code>plan-2026-08-01-*.md</code></td></tr>
-<tr><td><strong>宛先が入る</strong></td><td>渡した時点で役目終了</td><td><code>team-share-*.md</code></td></tr>
-<tr><td><strong>eps + 数字</strong></td><td>Kaggle 提出ID ごとのリプレイ倉庫</td><td><code>eps55163442/</code></td></tr>
-<tr><td><strong>*_autopsy.py / *_verdict.py</strong></td><td>特定の提出に対する1回限りの検死</td><td><code>autopsy_54961048.py</code></td></tr>
-<tr><td><strong>__pycache__ / *.pyc</strong></td><td>自動生成。無視してよい</td><td>—</td></tr>
+<tr><td><strong>YYYY-MM-DD 入り</strong></td><td>使い捨て。最新1本以外は履歴</td><td><code>handover-2026-08-08.md</code></td></tr>
+<tr><td><strong>宛先が入る</strong></td><td>渡した時点で役目終了</td><td><code>prompt-v2-for-ryochin-*.md</code></td></tr>
+<tr><td><code>deckswap-*</code></td><td>デッキだけ差し替えた腕（パイロットはコピー）</td><td><code>deckswap-tarountula</code></td></tr>
+<tr><td><code>deckcand-*</code></td><td>実ラダー最頻出デッキを<strong>我々が持つ</strong>側に置いた候補</td><td><code>deckcand-lucario</code></td></tr>
+<tr><td><code>*-probe</code> / <code>*-sweep</code></td><td>凍結物を触らずに計装・測定するための複製</td><td><code>deckswap-crustle-probe</code></td></tr>
+<tr><td><strong>eps + 数字</strong></td><td>Kaggle 提出ID ごとのリプレイ倉庫</td><td><code>eps55308422/</code></td></tr>
+<tr><td><code>*_autopsy.py</code> / <code>*_verdict.py</code></td><td>特定の提出に対する1回限りの検死</td><td><code>autopsy_54961048.py</code></td></tr>
 </tbody>
 </table>
 
-<h3>今どうなっているか知りたい時、どこを開くか</h3>
+<h3>踏んではいけない地雷（実際に踏んだもの）</h3>
 <table>
-<thead><tr><th>知りたいこと</th><th>開く場所</th></tr></thead>
+<thead><tr><th>地雷</th><th>何が起きるか</th></tr></thead>
 <tbody>
-<tr><td>なぜ今この形なのか</td><td><code>docs/memo/decisions.md</code>（末尾から遡る）</td></tr>
-<tr><td>実際の数字</td><td><code>docs/memo/data.md</code>（提出履歴テーブル）</td></tr>
-<tr><td>いま何をやっているか</td><td><code>docs/memo/plan-2026-08-01-probe-campaign.md</code>（現在の正典）</td></tr>
-<tr><td>レポートの現状</td><td><code>docs/memo/writeup-v1-fulldraft.md</code>（v5、約1,950語）</td></tr>
-<tr><td>どの主張が使えるか</td><td><code>docs/memo/claims-ledger.md</code></td></tr>
-<tr><td>本番で今どう戦っているか</td><td><code>replay_analysis/probe_autopsy.py</code> を実行</td></tr>
+<tr><td>ベンチを<strong>並列</strong>で回す</td><td>CPU を取り合って数値が汚れる。<strong>エラーは出ない</strong>ので気づけない</td></tr>
+<tr><td><strong>自己対戦</strong>で対照実験を組む</td><td>両側が探索を回すので数十倍遅い。400戦で3時間26分走って未完了。
+    → <strong>決定レベルの突合</strong>に差し替えれば数分・かつ強い証拠</td></tr>
+<tr><td>族内ゲージの数値を採否に使う</td><td>+8〜+62pt 甘い。2026-08-08 に符号が反転した実例あり</td></tr>
+<tr><td><code>env $vars cmd</code> と書く</td><td><strong>zsh はクォートしない <code>$var</code> を単語分割しない</strong>。
+    先頭のトグルしか適用されず、<strong>数値は正常に見える</strong></td></tr>
+<tr><td>凍結ディレクトリを編集する</td><td>過去の記録が再現不能になる。実験は必ず複製ディレクトリで</td></tr>
+<tr><td>デッキdirに <code>*.jsonl</code> を置く</td><td>提出時に tar へ混入する</td></tr>
+<tr><td>N=200 で 3pt 差を語る</td><td>SE ≈ 3.5pt。効果量5ptの検出には N≈800 が要る</td></tr>
 </tbody>
 </table>
 
 <div class="callout">
   <div class="h">一行でまとめると</div>
   <p>
-    <strong>src が作り、verification が測り、replay_analysis が本番で答え合わせし、docs がその判断を残す。</strong>
+    <strong>src が作り、verification が他人のエージェントと戦わせて測り、replay_analysis が本番で答え合わせし、
+    docs がその判断を残す。</strong>
     そして docs に残した記録が、そのまま Strategy 部門の提出物になる —
     <strong>規律を守るために書いたログが、そのまま点数になる</strong>構造になっている。
   </p>
@@ -547,8 +830,9 @@ statuses: ['DONE','DONE'] <span class="c">どちらもクラッシュせず完�
 </div>
 
 <footer>
-  docs/directory-guide.html ／ 作成 2026-08-02 ／ 対象: commit d2fa8d8 (branch yuji/verify-infra)<br>
-  ファイル数・サイズは作成時点の実測値。構成が変わったら実測し直すこと。
+  docs/directory-guide.html ／ 改訂 2026-08-09（前版 2026-08-02）／ 対象: commit 3a699bd (branch yuji/verify-infra)<br>
+  ファイル数・サイズ・md5グループは改訂時点の実測値。構成が変わったら実測し直すこと。<br>
+  数値の正典は docs/memo/data.md ／ 決定は decisions.md ／ 現在地は最新の handover-*.md。
 </footer>
 
 </div>

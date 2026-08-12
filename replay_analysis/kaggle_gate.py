@@ -21,6 +21,8 @@ import json
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -29,6 +31,9 @@ LISTS = HERE / "ladder_scout" / "lists"
 MIN_INTERVAL = 8.0          # 秒/リクエスト
 COOLDOWN_H = 4.0            # 429後の完全停止時間
 HEAD_BYTES = 3 * 1024 * 1024
+MAX_HEAD_BYTES = 12 * 1024 * 1024   # 適応読みの上限(既存 head モードの --max-filesize と同値)
+CHUNK_BYTES = 2 * 1024 * 1024       # この粒度で stop_when を試す
+UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 
 
 def _state():
@@ -119,6 +124,54 @@ def fetch_replay(ep_id, out_path, full=False):
             raise Cooldown(f"replay取得失敗 ep{ep_id} → {COOLDOWN_H}h停止")
     _mark(ok=True)
     return out_path
+
+
+def fetch_replay_prefix(ep_id, max_bytes=MAX_HEAD_BYTES, stop_when=None):
+    """本体をディスクに残さず、必要な分だけ読んで文字列で返す。
+
+    リプレイは2〜24MB あるが、デッキ抽出に要るのは steps[0..1] だけ。`Range` は
+    サーバが無視して全量を返す(2026-08-03実測)ため、**ストリームを途中で打ち切って
+    接続を閉じる**ことで転送量を落とす。
+
+    固定長で切ってはいけない(2026-08-09実測): ladder_scout の 3MB 固定では
+    ep90550696 のように **steps[0] だけで3MBを超える**譜を取りこぼす(ローカル48件で
+    約20%)。steps[0] の大きさは初期観測に載る両者のカード情報で決まるので、
+    対面によって膨らむ。よって `stop_when` が真を返した時点で切る**適応読み**にする。
+
+    Args:
+        stop_when: 累積テキストを受け取り「もう読まなくてよい」なら真を返す述語。
+                   None なら max_bytes まで読む。
+    Returns: 読めたテキスト。取得できなければ None。
+    """
+    rem = _gate()
+    if rem > 0:
+        raise Cooldown(f"cooldown 残り{rem/60:.0f}分")
+    url = f"https://www.kaggle.com/competitions/episodes/{ep_id}/replay.json"
+    try:
+        with urllib.request.urlopen(
+                urllib.request.Request(url, headers={"User-Agent": UA}), timeout=120) as r:
+            buf = b""
+            while len(buf) < max_bytes:
+                chunk = r.read(CHUNK_BYTES)
+                if not chunk:
+                    break
+                buf += chunk
+                if stop_when is not None:
+                    txt = buf.decode("utf-8", "ignore")
+                    if stop_when(txt):
+                        _mark(ok=True)
+                        return txt
+    except urllib.error.HTTPError as e:
+        if e.code in (429, 403):
+            _mark(ok=False)
+            raise Cooldown(f"replay {e.code} ep{ep_id} → {COOLDOWN_H}h停止(永続)")
+        _mark(ok=True)          # 404等は行儀の問題ではないので全体を止めない
+        return None
+    except (urllib.error.URLError, TimeoutError, ConnectionError, OSError):
+        _mark(ok=True)
+        return None
+    _mark(ok=True)
+    return buf.decode("utf-8", "ignore") if len(buf) > 1000 else None
 
 
 def main():

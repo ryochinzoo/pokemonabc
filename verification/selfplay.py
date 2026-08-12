@@ -62,7 +62,8 @@ def _record_path(path):
 
 
 def run_match(deck0: list[int], deck1: list[int], agent0, agent1,
-              max_steps: int = 200000, record=None, record_meta=None) -> dict:
+              max_steps: int = 200000, record=None, record_meta=None,
+              record_types=None) -> dict:
     """1試合を最後まで回す。
 
     Args:
@@ -75,6 +76,10 @@ def run_match(deck0: list[int], deck1: list[int], agent0, agent1,
             random からは届かない — 2026-08-09実測)。よって対照は決定列のバイト一致では
             なく、旧版との統計的同等性で取る(playbook §1)。
         record_meta: record 時に各行へ混ぜる追加情報(試合番号など)。
+        record_types: 残す LogType の集合(None なら全部)。**全部残すと 81KB/戦** で、
+            12,048戦の掃引なら約1GBになる(2026-08-09実測)。内訳は MOVE_CARD と
+            *_REVERSE だけで42%を占めるので、知りたいことが決まっているなら絞ること。
+            例: `record_types={LogType.ATTACK, LogType.HP_CHANGE, LogType.RESULT}`。
 
     Returns:
         dict: winner(0/1/2=引き分け/-1=不明), reason, decisions, turns
@@ -106,7 +111,8 @@ def run_match(deck0: list[int], deck1: list[int], agent0, agent1,
                          "from": lg.fromArea, "to": lg.toArea,
                          "aid": lg.attackId, "val": lg.value,
                          "dmg": lg.putDamageCounter}
-                        for lg in (o.logs or []))
+                        for lg in (o.logs or [])
+                        if record_types is None or lg.type in record_types)
 
             # このターンまでに起きた出来事(logs)に「試合終了」が含まれていないか確認
             for log in (o.logs or []):
@@ -138,18 +144,20 @@ def run_match(deck0: list[int], deck1: list[int], agent0, agent1,
     return result
 
 
-def run_series(n: int, deck0, deck1, agent0, agent1, record=None) -> dict:
+def run_series(n: int, deck0, deck1, agent0, agent1, record=None, record_types=None) -> dict:
     """n試合まわして勝敗を集計（先攻/後攻の有利を均すため半分ずつ入れ替える）。"""
     wins = [0, 0]
     draws = 0
     for i in range(n):
         meta = {"i": i, "swapped": i % 2 == 1} if record is not None else None
         if i % 2 == 0:
-            r = run_match(deck0, deck1, agent0, agent1, record=record, record_meta=meta)
+            r = run_match(deck0, deck1, agent0, agent1, record=record, record_meta=meta,
+                          record_types=record_types)
             w = r["winner"]
         else:
             # 席を入れ替えて agent0 を後攻側に
-            r = run_match(deck1, deck0, agent1, agent0, record=record, record_meta=meta)
+            r = run_match(deck1, deck0, agent1, agent0, record=record, record_meta=meta,
+                          record_types=record_types)
             w = (1 - r["winner"]) if r["winner"] in (0, 1) else r["winner"]
         if w == 0:
             wins[0] += 1

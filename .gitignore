@@ -22,3 +22,6 @@ replay_analysis/ladder_scout/
 
 # トレース(デッキディレクトリは提出用に tar されるので混入させない — handover 2026-08-08 §4.2)
 src/input/datasets/decks/*/trace*.jsonl
+
+# ラダー悉皆調査の種(leaderboard から再生成できる。rival_decks.jsonl 本体は追跡する)
+replay_analysis/lake/targets.json
