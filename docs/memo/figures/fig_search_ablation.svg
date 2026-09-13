@@ -25,7 +25,7 @@
 <text x="238" y="94.0" text-anchor="end" class="ink">search + override layer ON</text>
 <path d="M250,78 H555.76 a4,4 0 0 1 4,4 V98 a4,4 0 0 1 -4,4 H250 Z" class="s1"/>
 <text x="567.76" y="94.0" class="ink" font-weight="bold">38.72%</text>
-<text x="238" y="148.0" text-anchor="end" class="ink">layer OFF (V2_NO_SEARCH=1)</text>
+<text x="238" y="148.0" text-anchor="end" class="ink">layer OFF</text>
 <path d="M250,132 H446.72 a4,4 0 0 1 4,4 V152 a4,4 0 0 1 -4,4 H250 Z" class="s2"/>
 <text x="458.72" y="148.0" class="ink" font-weight="bold">25.09%</text>
 <line x1="450.72" y1="250" x2="559.76" y2="250" class="axis" stroke-width="2"/>
@@ -33,5 +33,5 @@
 <line x1="450.72" y1="245" x2="450.72" y2="255" class="axis" stroke-width="2"/>
 <text x="505.24" y="236" text-anchor="middle" font-size="13" font-weight="bold" class="ink">+13.62pt</text>
 <text x="505.24" y="272" text-anchor="middle" font-size="11" class="ink2">95% CI [+11.40, +15.84] &#183; 12.0&#963;</text>
-<text x="24" y="324" font-size="10" class="ink2">Until month seven this component had never been ablated: its only evidence was one in-family run of N=200. Ledger #26.</text>
+<text x="24" y="324" font-size="10" class="ink2">Until late July this component had never been ablated: its only evidence was one in-family run of N=200.</text>
 </svg>

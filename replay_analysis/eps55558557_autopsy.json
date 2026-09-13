@@ -1,0 +1,3748 @@
+{
+ "eps_dir": "/Users/yujiinoue/Documents/products/pokemonabc/replay_analysis/eps55558557",
+ "deck_dir": "/Users/yujiinoue/Documents/products/pokemonabc/src/input/datasets/decks/starmie-aqua-bosslogic",
+ "totals": {
+  "games": 1000,
+  "L": 482,
+  "decisions": 43081,
+  "main": 24429,
+  "P2_boss_played": 809,
+  "P2e_boss_ok": 779,
+  "P2_boss_ok": 760,
+  "P2_boss_ok_v1": 709,
+  "P1_boss_target": 809,
+  "P1_denom_multi": 689,
+  "P1_cat_KO": 577,
+  "P1_conform": 809,
+  "P1e_conform": 709,
+  "W": 512,
+  "P1_cat_EVOLVABLE": 184,
+  "P4_rush_raw": 1374,
+  "P4_v1_approved": 1374,
+  "P1e_nonconform": 100,
+  "P1_koable_flips_with_energy": 243,
+  "P2e_misfire": 30,
+  "P1_cat_WEAKEST": 32,
+  "P2_boss_ok_search": 51,
+  "P1_cat_BIND": 16,
+  "P2_misfire": 49,
+  "P2_misfire_search": 49,
+  "D": 6
+ },
+ "verdicts": {
+  "P0 CRASH": {
+   "pred": "0",
+   "k": 0,
+   "n": 1000,
+   "verdict": "PASS"
+  },
+  "P5 END stall": {
+   "pred": "0",
+   "k": 0,
+   "n": 24429,
+   "verdict": "PASS"
+  },
+  "P2 Boss misfire": {
+   "pred": "0",
+   "k": 49,
+   "n": 809,
+   "verdict": "FAIL"
+  },
+  "P1 Boss target": {
+   "pred": "100%",
+   "k": 809,
+   "n": 809,
+   "verdict": "PASS"
+  },
+  "P3 Rider split": {
+   "pred": "100%",
+   "k": 0,
+   "n": 0,
+   "verdict": "n/a (分母0)"
+  },
+  "P2e misfire(energy)": {
+   "pred": "0",
+   "k": 30,
+   "n": 809,
+   "verdict": "FAIL"
+  },
+  "P1e target(energy)": {
+   "pred": "100%",
+   "k": 709,
+   "n": 809,
+   "verdict": "FAIL"
+  },
+  "P4 Attack rush": {
+   "pred": "0",
+   "k": 0,
+   "n": 24429,
+   "verdict": "PASS"
+  }
+ },
+ "events": [
+  [
+   "ep100033923.json",
+   31,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -70,
+     -10
+    ],
+    "best": [
+     0,
+     0,
+     0,
+     1,
+     -330,
+     -210
+    ],
+    "dmg_e": 0,
+    "n": 3
+   }
+  ],
+  [
+   "ep100046251.json",
+   95,
+   "P2e_MISFIRE_ONLY_WHEN_ENERGY_COUNTED",
+   {
+    "dmg_rule": 210,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 120
+   }
+  ],
+  [
+   "ep100046251.json",
+   96,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -150,
+     -200
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     1,
+     -100,
+     -120
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep100148176.json",
+   62,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -90,
+     -1070
+    ],
+    "dmg_e": 0,
+    "n": 4
+   }
+  ],
+  [
+   "ep100199927.json",
+   93,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     2,
+     0,
+     -130,
+     -3080
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -50,
+     -30
+    ],
+    "dmg_e": 120,
+    "n": 2
+   }
+  ],
+  [
+   "ep100261638.json",
+   89,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -170,
+     -60
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -90,
+     -1070
+    ],
+    "dmg_e": 120,
+    "n": 2
+   }
+  ],
+  [
+   "ep100261638.json",
+   116,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -40,
+     -1070
+    ],
+    "dmg_e": 0,
+    "n": 4
+   }
+  ],
+  [
+   "ep100340820.json",
+   73,
+   "P2e_MISFIRE_ONLY_WHEN_ENERGY_COUNTED",
+   {
+    "dmg_rule": 210,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 120
+   }
+  ],
+  [
+   "ep100340820.json",
+   74,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -140
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -110,
+     -50
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep100426866.json",
+   46,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -1040
+    ],
+    "dmg_e": 120,
+    "n": 2
+   }
+  ],
+  [
+   "ep100475786.json",
+   85,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -220
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -50,
+     -30
+    ],
+    "dmg_e": 120,
+    "n": 5
+   }
+  ],
+  [
+   "ep100505593.json",
+   32,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep100520578.json",
+   79,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 210,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep100528266.json",
+   28,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "dmg_e": 0,
+    "n": 5
+   }
+  ],
+  [
+   "ep100528266.json",
+   68,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -90,
+     -2070
+    ],
+    "dmg_e": 0,
+    "n": 5
+   }
+  ],
+  [
+   "ep100567265.json",
+   95,
+   "P2e_MISFIRE_ONLY_WHEN_ENERGY_COUNTED",
+   {
+    "dmg_rule": 210,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": null,
+    "combo": false,
+    "dmg": 120
+   }
+  ],
+  [
+   "ep100576644.json",
+   32,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 0,
+    "active_key": [
+     1,
+     2
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep100601374.json",
+   73,
+   "P2e_MISFIRE_ONLY_WHEN_ENERGY_COUNTED",
+   {
+    "dmg_rule": 210,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 120
+   }
+  ],
+  [
+   "ep100601374.json",
+   74,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     3,
+     0,
+     -180,
+     -1030
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -60,
+     -50
+    ],
+    "dmg_e": 120,
+    "n": 2
+   }
+  ],
+  [
+   "ep100714833.json",
+   104,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     1,
+     0,
+     -50,
+     -10
+    ],
+    "dmg_e": 120,
+    "n": 5
+   }
+  ],
+  [
+   "ep100767280.json",
+   17,
+   "P2e_MISFIRE_ONLY_WHEN_ENERGY_COUNTED",
+   {
+    "dmg_rule": 210,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     2
+    ],
+    "best_bench": null,
+    "combo": false,
+    "dmg": 120
+   }
+  ],
+  [
+   "ep100779073.json",
+   92,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep100844502.json",
+   37,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep100877394.json",
+   46,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "dmg_e": 0,
+    "n": 4
+   }
+  ],
+  [
+   "ep100962824.json",
+   150,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 210,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     2,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep101073078.json",
+   107,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 120,
+    "active_key": [
+     3,
+     0
+    ],
+    "best_bench": [
+     3,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep101073078.json",
+   108,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -200,
+     -1270
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -110,
+     -50
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep101111541.json",
+   88,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     2,
+     1,
+     -130,
+     -80
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -50,
+     -30
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep101131642.json",
+   58,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep101131642.json",
+   139,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 210,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep101212498.json",
+   139,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep101232994.json",
+   56,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -90,
+     -70
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep101334711.json",
+   43,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     2
+    ],
+    "best_bench": null,
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep101499131.json",
+   58,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -170,
+     -60
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -40,
+     -1070
+    ],
+    "dmg_e": 120,
+    "n": 5
+   }
+  ],
+  [
+   "ep101648702.json",
+   85,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -180,
+     -3180
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -110,
+     -60
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep101686377.json",
+   29,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     2
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep101794913.json",
+   142,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -170,
+     -60
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -90,
+     -70
+    ],
+    "dmg_e": 0,
+    "n": 5
+   }
+  ],
+  [
+   "ep101806941.json",
+   89,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -190,
+     -2260
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -100,
+     -40
+    ],
+    "dmg_e": 0,
+    "n": 5
+   }
+  ],
+  [
+   "ep101854501.json",
+   50,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     2,
+     1,
+     -130,
+     -80
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -50,
+     -30
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep101893032.json",
+   75,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -180,
+     -270
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -60,
+     -50
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep101916616.json",
+   39,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     2
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep101938725.json",
+   47,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -160,
+     -1200
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "dmg_e": 120,
+    "n": 2
+   }
+  ],
+  [
+   "ep101957558.json",
+   47,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep101957558.json",
+   92,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -60,
+     0
+    ],
+    "best": [
+     0,
+     0,
+     0,
+     1,
+     -280,
+     -160
+    ],
+    "dmg_e": 0,
+    "n": 4
+   }
+  ],
+  [
+   "ep101964365.json",
+   100,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -160,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -1040
+    ],
+    "dmg_e": 120,
+    "n": 2
+   }
+  ],
+  [
+   "ep101994616.json",
+   60,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": null,
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep102137435.json",
+   53,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 210,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep102146912.json",
+   79,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep102195613.json",
+   104,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -170,
+     -60
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -90,
+     -70
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep102217985.json",
+   108,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 210,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep102230063.json",
+   93,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     3,
+     0
+    ],
+    "best_bench": [
+     3,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep102230063.json",
+   94,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -1150
+    ],
+    "best": [
+     1,
+     1,
+     3,
+     0,
+     -70,
+     -20
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep102267456.json",
+   98,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 120,
+    "active_key": [
+     3,
+     0
+    ],
+    "best_bench": [
+     1,
+     1
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep102447507.json",
+   99,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 0,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep102516533.json",
+   49,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -40,
+     -70
+    ],
+    "dmg_e": 0,
+    "n": 4
+   }
+  ],
+  [
+   "ep102528151.json",
+   28,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 210,
+    "active_key": [
+     1,
+     3
+    ],
+    "best_bench": [
+     1,
+     3
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep102565683.json",
+   73,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -1040
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep102614711.json",
+   132,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 0,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep102758333.json",
+   54,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -40,
+     -70
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep102769939.json",
+   130,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     1,
+     0,
+     -80,
+     -30
+    ],
+    "dmg_e": 120,
+    "n": 5
+   }
+  ],
+  [
+   "ep102810464.json",
+   54,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -140
+    ],
+    "best": [
+     1,
+     1,
+     1,
+     1,
+     -70,
+     0
+    ],
+    "dmg_e": 120,
+    "n": 2
+   }
+  ],
+  [
+   "ep102867151.json",
+   77,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     1,
+     0,
+     -50,
+     -10
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep102974502.json",
+   124,
+   "P2e_MISFIRE_ONLY_WHEN_ENERGY_COUNTED",
+   {
+    "dmg_rule": 210,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": null,
+    "combo": false,
+    "dmg": 120
+   }
+  ],
+  [
+   "ep102977325.json",
+   124,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep102993860.json",
+   58,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -1100
+    ],
+    "best": [
+     1,
+     1,
+     1,
+     0,
+     -70,
+     -20
+    ],
+    "dmg_e": 120,
+    "n": 5
+   }
+  ],
+  [
+   "ep103014655.json",
+   49,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     3,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep103062221.json",
+   63,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -90,
+     -1070
+    ],
+    "dmg_e": 0,
+    "n": 4
+   }
+  ],
+  [
+   "ep103090936.json",
+   30,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     2,
+     0,
+     -130,
+     -3080
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -100,
+     -30
+    ],
+    "dmg_e": 120,
+    "n": 2
+   }
+  ],
+  [
+   "ep103228857.json",
+   97,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 0,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep103307739.json",
+   28,
+   "P2e_MISFIRE_ONLY_WHEN_ENERGY_COUNTED",
+   {
+    "dmg_rule": 210,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": null,
+    "combo": false,
+    "dmg": 120
+   }
+  ],
+  [
+   "ep103394594.json",
+   37,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     1
+    ],
+    "best_bench": [
+     1,
+     1
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep103412802.json",
+   93,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     3,
+     0
+    ],
+    "best_bench": [
+     1,
+     1
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep103454929.json",
+   55,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep103466565.json",
+   69,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     2,
+     1,
+     -130,
+     -80
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -80,
+     -3080
+    ],
+    "dmg_e": 120,
+    "n": 2
+   }
+  ],
+  [
+   "ep103492296.json",
+   104,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -90,
+     -70
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep103586057.json",
+   87,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 120,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep103659944.json",
+   106,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     2
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep103753205.json",
+   25,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     0,
+     0,
+     0,
+     0,
+     -110,
+     -100
+    ],
+    "dmg_e": 0,
+    "n": 2
+   }
+  ],
+  [
+   "ep103805688.json",
+   152,
+   "P2e_MISFIRE_ONLY_WHEN_ENERGY_COUNTED",
+   {
+    "dmg_rule": 210,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": null,
+    "combo": false,
+    "dmg": 120
+   }
+  ],
+  [
+   "ep103876036.json",
+   118,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -150,
+     -140
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -10,
+     -1120
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep103887596.json",
+   115,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 210,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep103938285.json",
+   98,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "dmg_e": 0,
+    "n": 4
+   }
+  ],
+  [
+   "ep104057882.json",
+   55,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 210,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep104178166.json",
+   98,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     1,
+     0,
+     -50,
+     -10
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep104222924.json",
+   51,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -40,
+     -2070
+    ],
+    "dmg_e": 0,
+    "n": 3
+   }
+  ],
+  [
+   "ep104222924.json",
+   119,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     2,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep104222924.json",
+   120,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -170,
+     -60
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -1040
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep104234913.json",
+   47,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 210,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep104327384.json",
+   16,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 0,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep104338997.json",
+   126,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep104338997.json",
+   127,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -130,
+     0
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -80,
+     -30
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep104400571.json",
+   114,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 0,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep104409045.json",
+   47,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     1,
+     0,
+     -50,
+     -10
+    ],
+    "dmg_e": 120,
+    "n": 5
+   }
+  ],
+  [
+   "ep96548470.json",
+   76,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -2100
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "dmg_e": 120,
+    "n": 5
+   }
+  ],
+  [
+   "ep96632122.json",
+   82,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -90,
+     -70
+    ],
+    "dmg_e": 0,
+    "n": 5
+   }
+  ],
+  [
+   "ep96691425.json",
+   67,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -110,
+     -50
+    ],
+    "best": [
+     0,
+     0,
+     0,
+     1,
+     -340,
+     -270
+    ],
+    "dmg_e": 0,
+    "n": 3
+   }
+  ],
+  [
+   "ep96746373.json",
+   131,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep96844715.json",
+   44,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -1040
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep96882547.json",
+   132,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -40,
+     -1070
+    ],
+    "dmg_e": 0,
+    "n": 4
+   }
+  ],
+  [
+   "ep97045442.json",
+   44,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -1040
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep97093668.json",
+   145,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     3,
+     0
+    ],
+    "best_bench": [
+     1,
+     3
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep97168716.json",
+   51,
+   "P2e_MISFIRE_ONLY_WHEN_ENERGY_COUNTED",
+   {
+    "dmg_rule": 210,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     1
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 120
+   }
+  ],
+  [
+   "ep97168716.json",
+   52,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -120,
+     -2120
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep97168716.json",
+   70,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -170,
+     -60
+    ],
+    "best": [
+     1,
+     1,
+     1,
+     0,
+     -80,
+     -1030
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep97279590.json",
+   92,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep97296250.json",
+   94,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -90,
+     -2070
+    ],
+    "dmg_e": 0,
+    "n": 2
+   }
+  ],
+  [
+   "ep97334708.json",
+   52,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     2
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep97334708.json",
+   53,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     2,
+     1,
+     -130,
+     -80
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -50,
+     -30
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep97428812.json",
+   18,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 0,
+    "active_key": [
+     1,
+     3
+    ],
+    "best_bench": [
+     1,
+     3
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep97460227.json",
+   69,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -90,
+     -70
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep97471495.json",
+   49,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -90,
+     -70
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep97483355.json",
+   111,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     0,
+     0,
+     1,
+     0,
+     -70,
+     -20
+    ],
+    "dmg_e": 0,
+    "n": 5
+   }
+  ],
+  [
+   "ep97495159.json",
+   66,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 0,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     2,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep97495159.json",
+   67,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -170,
+     -60
+    ],
+    "best": [
+     0,
+     0,
+     0,
+     1,
+     -110,
+     -140
+    ],
+    "dmg_e": 0,
+    "n": 5
+   }
+  ],
+  [
+   "ep97622941.json",
+   62,
+   "P2e_MISFIRE_ONLY_WHEN_ENERGY_COUNTED",
+   {
+    "dmg_rule": 210,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     2
+    ],
+    "best_bench": null,
+    "combo": false,
+    "dmg": 120
+   }
+  ],
+  [
+   "ep97681133.json",
+   92,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 210,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep97759968.json",
+   87,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -140
+    ],
+    "best": [
+     1,
+     1,
+     3,
+     1,
+     -30,
+     -30
+    ],
+    "dmg_e": 120,
+    "n": 5
+   }
+  ],
+  [
+   "ep97791145.json",
+   49,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -10,
+     -30
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "dmg_e": 0,
+    "n": 4
+   }
+  ],
+  [
+   "ep97802898.json",
+   87,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     3,
+     0
+    ],
+    "best_bench": [
+     1,
+     3
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep97862858.json",
+   124,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -200,
+     -180
+    ],
+    "best": [
+     0,
+     0,
+     1,
+     0,
+     -70,
+     -10
+    ],
+    "dmg_e": 0,
+    "n": 3
+   }
+  ],
+  [
+   "ep97886963.json",
+   74,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -150,
+     -210
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -90,
+     -3070
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep97887925.json",
+   66,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     1,
+     0,
+     -70,
+     -20
+    ],
+    "dmg_e": 120,
+    "n": 5
+   }
+  ],
+  [
+   "ep97962027.json",
+   74,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -150,
+     -210
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -110,
+     -50
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep98036300.json",
+   116,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 0,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep98138152.json",
+   47,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 210,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     2,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep98194624.json",
+   75,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     1,
+     2,
+     0,
+     0,
+     -90,
+     -2100
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep98233799.json",
+   84,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     3,
+     0
+    ],
+    "best_bench": [
+     3,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep98290417.json",
+   95,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -90,
+     -1070
+    ],
+    "dmg_e": 0,
+    "n": 5
+   }
+  ],
+  [
+   "ep98449967.json",
+   130,
+   "P2e_MISFIRE_ONLY_WHEN_ENERGY_COUNTED",
+   {
+    "dmg_rule": 210,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 120
+   }
+  ],
+  [
+   "ep98449967.json",
+   131,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -200,
+     -270
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -110,
+     -1070
+    ],
+    "dmg_e": 120,
+    "n": 2
+   }
+  ],
+  [
+   "ep98524405.json",
+   55,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep98586058.json",
+   103,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -1160
+    ],
+    "best": [
+     1,
+     1,
+     1,
+     0,
+     -60,
+     -30
+    ],
+    "dmg_e": 120,
+    "n": 5
+   }
+  ],
+  [
+   "ep98626030.json",
+   133,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -30
+    ],
+    "best": [
+     0,
+     0,
+     0,
+     1,
+     -330,
+     -240
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep98637878.json",
+   68,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     1,
+     0,
+     -70,
+     -20
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep98851693.json",
+   74,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     2,
+     1,
+     -130,
+     -80
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -60,
+     -1080
+    ],
+    "dmg_e": 120,
+    "n": 2
+   }
+  ],
+  [
+   "ep98863516.json",
+   20,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": null,
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep98903922.json",
+   117,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     0,
+     0,
+     1,
+     0,
+     -70,
+     -20
+    ],
+    "dmg_e": 0,
+    "n": 2
+   }
+  ],
+  [
+   "ep98905731.json",
+   92,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -170,
+     -60
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -70,
+     -20
+    ],
+    "dmg_e": 120,
+    "n": 5
+   }
+  ],
+  [
+   "ep98937476.json",
+   28,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -170,
+     -60
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "dmg_e": 0,
+    "n": 4
+   }
+  ],
+  [
+   "ep99113741.json",
+   64,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     1,
+     0,
+     -50,
+     -10
+    ],
+    "dmg_e": 120,
+    "n": 5
+   }
+  ],
+  [
+   "ep99134378.json",
+   80,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep99139001.json",
+   136,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -20,
+     -2040
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep99150812.json",
+   39,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -190,
+     -20
+    ],
+    "best": [
+     0,
+     0,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "dmg_e": 0,
+    "n": 3
+   }
+  ],
+  [
+   "ep99214855.json",
+   57,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -1100
+    ],
+    "best": [
+     0,
+     0,
+     1,
+     0,
+     -70,
+     -20
+    ],
+    "dmg_e": 0,
+    "n": 5
+   }
+  ],
+  [
+   "ep99218211.json",
+   53,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -40,
+     -70
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep99219708.json",
+   116,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 210,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep99330369.json",
+   111,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     1,
+     0,
+     -50,
+     -10
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep99354047.json",
+   69,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     2,
+     0
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep99389573.json",
+   100,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -200,
+     -2270
+    ],
+    "best": [
+     0,
+     0,
+     1,
+     0,
+     -80,
+     -1030
+    ],
+    "dmg_e": 0,
+    "n": 5
+   }
+  ],
+  [
+   "ep99549740.json",
+   71,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -40,
+     -70
+    ],
+    "dmg_e": 120,
+    "n": 5
+   }
+  ],
+  [
+   "ep99549740.json",
+   115,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -170,
+     -60
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -40,
+     -70
+    ],
+    "dmg_e": 120,
+    "n": 5
+   }
+  ],
+  [
+   "ep99693393.json",
+   164,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 210,
+    "active_key": [
+     1,
+     0
+    ],
+    "best_bench": [
+     1,
+     0
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep99717522.json",
+   56,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -2200
+    ],
+    "best": [
+     0,
+     0,
+     0,
+     1,
+     -90,
+     -30
+    ],
+    "dmg_e": 0,
+    "n": 3
+   }
+  ],
+  [
+   "ep99757871.json",
+   54,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "dmg_e": 120,
+    "n": 5
+   }
+  ],
+  [
+   "ep99771240.json",
+   31,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     1,
+     -210,
+     -200
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "dmg_e": 120,
+    "n": 5
+   }
+  ],
+  [
+   "ep99845333.json",
+   61,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     2,
+     1,
+     -130,
+     -80
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -100,
+     -30
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ],
+  [
+   "ep99857175.json",
+   41,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     2,
+     0,
+     -170,
+     -40
+    ],
+    "best": [
+     1,
+     1,
+     1,
+     0,
+     -70,
+     -20
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep99882395.json",
+   28,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     2,
+     1,
+     -130,
+     -80
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -100,
+     -30
+    ],
+    "dmg_e": 120,
+    "n": 2
+   }
+  ],
+  [
+   "ep99899006.json",
+   108,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     0,
+     0,
+     -210,
+     -100
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -1040
+    ],
+    "dmg_e": 120,
+    "n": 2
+   }
+  ],
+  [
+   "ep99939347.json",
+   101,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     2,
+     0,
+     -130,
+     -1080
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -100,
+     -30
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ]
+ ],
+ "n_files": 1000,
+ "load_errors": []
+}

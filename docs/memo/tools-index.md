@@ -28,6 +28,10 @@
 | 1試合を人が読む形で | `battle_report.py <replay.json> --seat 0 --out x.md` | 各決定点の盤面＋**選べた手の全列挙**＋選んだ手 |
 | 1試合の出来事を時系列で | `trace_replay.py <replay.json>` | ドロー/プレイ/攻撃の物語 |
 | ミスを数える | `misplay_scan.py <epsDir>`（デッキdirから） | リーサル見逃し・手札リセットの空撃ち |
+| **初期状態にどう依存しているか**（先攻/後攻・コイントス・マリガン・Mega着地・相手レート帯） | `first_player_split.py <epsDir> <deck.csv> --list ladder_scout/lists/<提出ID>_list.json --out x.json` | Wilson CI 付きの集計。マリガンは engine logs の HAS_BASIC_POKEMON から（差分規則で検算）。対戦ゼロ・16秒/1,000譜（2026-09-09） |
+| キーカードが設計どおり使われたか（ミツル） | `wally_usage.py <epsDir> <deck.csv>` | 使用回数・ダメージ付き対象率・戻したエネ・順序違反。PLAY の option.index → hand[index].id で札を同定 |
+| 他チームの公開ノート（Writeup 型の偵察） | `kaggle_cli.py kernels [page]`（1リクエスト/200件、dateCreated 降順） | ref・題名・票数。中身は `kaggle_cli._run(["kernels","pull",ref,"-p",dir])`。転記例 = `docs/memo/external-writeups-2026-09-09/` |
+| **実盤面をカード絵付きで図にする**（公式ビジュアライザ） | `visualizer_shot.py <replay.json> <席 0/1> <step> <out.png> [--win 1180,1100]` | 手元の replay → ptcgvis.heroz.jp に POST → headless Chrome を CDP で駆動して PNG。Kaggle 不要・拡張権限不要。step は表示番号(visualize[k] = step k+1)。運営がスクショ利用を許可済み（Strategy discussion 738657） |
 
 ### 相手・メタ
 
@@ -49,12 +53,28 @@
 | 早期敗北率 | `donk_meter.py N our_deck.csv opp.py opp_deck.csv` | 5ターン以内に負けた率 |
 | 変更が無影響か（純関数層） | `equiv_probe.py` | 勝率でなく**決定の一致率**。数分で済む |
 
+### デッキと操縦者の噛み合い
+
+| 知りたいこと | コマンド | 返るもの |
+|---|---|---|
+| **この操縦者はこのデッキ用か** | `deck_fit_audit.py`（デッキdirから） | 定数ごとに 生きている/死んでいる/**誤爆**。**対戦0戦・0.3秒** |
+| 全dirを一覧で（記事の図） | `deck_fit_audit.py --all` | 35dir × 定数の行列。2026-08-13 実測: 追跡4定数132セルのうち **70%はそのデッキで到達しない** |
+| 定数を足したのに注釈し忘れた | `deck_fit_audit.py --strict` | 未分類があれば exit 1。**デッキ替え・提出前に通す** |
+| ワザIDの解決を信用していいか | `attackid_crosscheck.py`（デッキdirから） | エンジンと悉皆突合（1556ワザ/1267カード）。**ATTACK判定を引用する前に1回** |
+
+**なぜ要るか**: D76 副産物2 —「デッキを替える判断のたびに、過去の修理が転移するかを再点検する
+必要がある」という規則が、**計器を持たないまま置かれていた**。`preserve_deck <= 5` が
+tarountula 専用の較正値だったため、7/18 に直した自山切れがデッキ替えで **71.4% 復活**した。
+これがその再点検の計器。**効果量は測らない**（`MISFIRING` は「狙いが外れている」の証拠であって
+「有害」の証拠ではない。効果量は `bench.py` / `cew.py` のみ）。
+
 ### 提出前
 
 | 知りたいこと | コマンド |
 |---|---|
 | 本番ランナーに適合するか | `conformance.py`（デッキdirから） |
 | デッキが合法か | `conformance.py` が `battle_start().errorType` を見る。`2`=枚数違反 / `3`=たね無し / `4`=ACE SPEC違反 |
+| **定数がデッキと噛み合っているか** | `deck_fit_audit.py --strict`（デッキdirから。対戦0戦） |
 | 提出物の総点検 | `/submission-check` スキル |
 
 ### 資料をNotebookLMへ

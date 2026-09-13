@@ -33,7 +33,17 @@ OUR_TEAM_SUBS = {55163442, 55070495, 55060473, 55058443, 54961048, 54858780, 548
                  # これが欠けると**チーム内対戦が外部対面として集計される**(red-team-D §8.1 #3 と同種)。
                  55258782, 55260998, 55264776, 55270074,  # proto3 / proto4 / proto5 / v9
                  55308422,  # pilotfix
-                 55376467}  # 2026-08-09 v2(デッキ非ex化 + 3修理全ON)。T1事前登録は data.md
+                 55376467,  # 2026-08-09 v2(デッキ非ex化 + 3修理全ON)。T1事前登録は data.md
+                 # 2026-08-14 追記: 8/10-8/13 の6本(+ERROR1本)。欠けるとチーム内対戦が
+                 # 外部対面として集計される(red-team-D §8.1 #3 と同種)
+                 55379036, 55380898, 55396554,  # submission_final×2 + ERROR
+                 55411039, 55411045,  # starmie-aggro / starmie-mastercontrol (D75探り)
+                 55421865, 55468574,  # starmie-aqua 2ドロー
+                 55519487,  # 2026-08-15 endguard探り(V5/L6、D81)
+                 55527437,  # 2026-08-15/16 台帳外(りょーちん推定、submission_final)
+                 55552195,  # 2026-08-16 bosslogic挑戦(V5/L7-L9+)
+                 55554191,  # 2026-08-17 台帳外(りょーちん推定、submission_final 2本目)
+                 55558557}  # 2026-08-17 bosslogic最終(L7-L24、ゆうじ承認ccが実行)
 COVERED = {"Lucario", "Archaludon", "Abomasnow", "Dragapult"}  # 既定=旧CEW4面(argv[5]で上書き可)
 RULES = [
     ("Lucario", ["Mega Lucario ex"]),

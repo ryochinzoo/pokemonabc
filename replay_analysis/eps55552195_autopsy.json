@@ -1,0 +1,328 @@
+{
+ "eps_dir": "/Users/yujiinoue/Documents/products/pokemonabc/replay_analysis/eps55552195",
+ "deck_dir": "/Users/yujiinoue/Documents/products/pokemonabc/src/input/datasets/decks/starmie-aqua-bosslogic",
+ "totals": {
+  "games": 25,
+  "W": 14,
+  "decisions": 980,
+  "main": 554,
+  "P4_rush_raw": 39,
+  "P4_v1_approved": 28,
+  "L": 11,
+  "P2_boss_played": 13,
+  "P2e_boss_ok": 12,
+  "P2_boss_ok": 11,
+  "P2_boss_ok_v1": 9,
+  "P1_boss_target": 13,
+  "P1_denom_multi": 10,
+  "P1_cat_KO": 11,
+  "P1_conform": 12,
+  "P1e_conform": 11,
+  "P1_koable_flips_with_energy": 3,
+  "P4_L12_violation": 11,
+  "P1_cat_EVOLVABLE": 2,
+  "P2_boss_ok_search": 2,
+  "P2_misfire": 2,
+  "P2_misfire_search": 2,
+  "P1e_nonconform": 2,
+  "P2e_misfire": 1,
+  "P1_nonconform": 1
+ },
+ "verdicts": {
+  "P0 CRASH": {
+   "pred": "0",
+   "k": 0,
+   "n": 25,
+   "verdict": "PASS"
+  },
+  "P5 END stall": {
+   "pred": "0",
+   "k": 0,
+   "n": 554,
+   "verdict": "PASS"
+  },
+  "P2 Boss misfire": {
+   "pred": "0",
+   "k": 2,
+   "n": 13,
+   "verdict": "FAIL"
+  },
+  "P1 Boss target": {
+   "pred": "100%",
+   "k": 12,
+   "n": 13,
+   "verdict": "FAIL"
+  },
+  "P3 Rider split": {
+   "pred": "100%",
+   "k": 0,
+   "n": 0,
+   "verdict": "n/a (分母0)"
+  },
+  "P2e misfire(energy)": {
+   "pred": "0",
+   "k": 1,
+   "n": 13,
+   "verdict": "FAIL"
+  },
+  "P1e target(energy)": {
+   "pred": "100%",
+   "k": 11,
+   "n": 13,
+   "verdict": "FAIL"
+  },
+  "P4 Attack rush": {
+   "pred": "0",
+   "k": 11,
+   "n": 554,
+   "verdict": "FAIL"
+  }
+ },
+ "events": [
+  [
+   "ep93626386.json",
+   91,
+   "P4_ATTACK_RUSH_L12",
+   {
+    "v1_type": 7,
+    "avail": [
+     7,
+     10
+    ]
+   }
+  ],
+  [
+   "ep93628219.json",
+   116,
+   "P4_ATTACK_RUSH_L12",
+   {
+    "v1_type": 7,
+    "avail": [
+     7
+    ]
+   }
+  ],
+  [
+   "ep93629118.json",
+   23,
+   "P4_ATTACK_RUSH_L12",
+   {
+    "v1_type": 7,
+    "avail": [
+     7
+    ]
+   }
+  ],
+  [
+   "ep93631838.json",
+   39,
+   "P4_ATTACK_RUSH_L12",
+   {
+    "v1_type": 9,
+    "avail": [
+     7,
+     9,
+     10
+    ]
+   }
+  ],
+  [
+   "ep93631838.json",
+   93,
+   "P4_ATTACK_RUSH_L12",
+   {
+    "v1_type": 7,
+    "avail": [
+     7,
+     10
+    ]
+   }
+  ],
+  [
+   "ep93632748.json",
+   50,
+   "P4_ATTACK_RUSH_L12",
+   {
+    "v1_type": 7,
+    "avail": [
+     7,
+     8,
+     10
+    ]
+   }
+  ],
+  [
+   "ep93634564.json",
+   69,
+   "P4_ATTACK_RUSH_L12",
+   {
+    "v1_type": 7,
+    "avail": [
+     7,
+     8
+    ]
+   }
+  ],
+  [
+   "ep93635483.json",
+   95,
+   "P4_ATTACK_RUSH_L12",
+   {
+    "v1_type": 7,
+    "avail": [
+     7
+    ]
+   }
+  ],
+  [
+   "ep93636401.json",
+   23,
+   "P4_ATTACK_RUSH_L12",
+   {
+    "v1_type": 9,
+    "avail": [
+     9
+    ]
+   }
+  ],
+  [
+   "ep93637019.json",
+   43,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": false,
+    "dmg_e": 120,
+    "active_key": [
+     1,
+     2
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep93637019.json",
+   44,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     0,
+     0,
+     2,
+     1,
+     -130,
+     -80
+    ],
+    "best": [
+     1,
+     1,
+     0,
+     0,
+     -50,
+     -30
+    ],
+    "dmg_e": 120,
+    "n": 3
+   }
+  ],
+  [
+   "ep93637019.json",
+   72,
+   "P2_BOSS_MISFIRE",
+   {
+    "v1_boss": false,
+    "misfire_energy_aware": true,
+    "dmg_e": 210,
+    "active_key": [
+     1,
+     2
+    ],
+    "best_bench": [
+     1,
+     2
+    ],
+    "combo": false,
+    "dmg": 210
+   }
+  ],
+  [
+   "ep93637347.json",
+   23,
+   "P4_ATTACK_RUSH_L12",
+   {
+    "v1_type": 7,
+    "avail": [
+     7
+    ]
+   }
+  ],
+  [
+   "ep93638255.json",
+   46,
+   "P4_ATTACK_RUSH_L12",
+   {
+    "v1_type": 7,
+    "avail": [
+     7,
+     8
+    ]
+   }
+  ],
+  [
+   "ep93662273.json",
+   166,
+   "P1_BOSS_TARGET_NONCONFORM",
+   {
+    "chosen": [
+     1,
+     1,
+     0,
+     0,
+     -70,
+     -20
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "n": 4
+   }
+  ],
+  [
+   "ep93662273.json",
+   166,
+   "P1e_NONCONFORM_WHEN_ENERGY_COUNTED",
+   {
+    "chosen": [
+     1,
+     1,
+     0,
+     0,
+     -70,
+     -20
+    ],
+    "best": [
+     1,
+     1,
+     2,
+     0,
+     -70,
+     -40
+    ],
+    "dmg_e": 120,
+    "n": 4
+   }
+  ]
+ ],
+ "n_files": 25,
+ "load_errors": []
+}

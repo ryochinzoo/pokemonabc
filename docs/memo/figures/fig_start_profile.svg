@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="500" font-family="Helvetica,Arial" font-size="12">
+<style>
+  .s1{fill:#2a78d6} .s1s{stroke:#2a78d6} .s2{fill:#eb6834} .s2s{stroke:#eb6834}
+  .ink{fill:#0b0b0b} .ink2{fill:#52514e} .grid{stroke:#dcdcd8} .axis{stroke:#b8b8b2}
+  .surf{fill:#fcfcfb} .surfs{stroke:#fcfcfb}
+  @media (prefers-color-scheme: dark){
+    .s1{fill:#3987e5} .s1s{stroke:#3987e5} .s2{fill:#d95926} .s2s{stroke:#d95926}
+    .ink{fill:#ffffff} .ink2{fill:#c3c2b7} .grid{stroke:#33332f} .axis{stroke:#55554f}
+    .surf{fill:#1a1a19} .surfs{stroke:#1a1a19}
+  }
+</style>
+<rect width="960" height="500" class="surf"/>
+<text x="24" y="28" font-size="15" font-weight="bold" class="ink">Where the final agent depends on the start of the game (last 1,000 ladder games, 95% Wilson intervals)</text>
+<text x="24" y="48" class="ink2">Overall 51.2%. It wins going first, pays for its four Basics in mulligans, loses a quarter of its losses without taking a prize,</text>
+<text x="24" y="64" class="ink2">and holds its rate against opponents of its own rating.</text>
+<text x="24" y="96" font-weight="bold" class="ink">Going first or second</text>
+<line x1="270.0" y1="108" x2="270.0" y2="252.0" class="axis" stroke-dasharray="4,3"/>
+<text x="112" y="125.0" text-anchor="end" class="ink2" font-size="11">Going first</text>
+<rect x="120" y="114.0" width="173.0" height="38.7" rx="3" class="s1"/>
+<line x1="281.5" y1="133.3" x2="304.3" y2="133.3" class="axis" stroke-width="1.2"/>
+<text x="310.3" y="125.0" class="ink" font-size="11" font-weight="bold">57.7%</text>
+<text x="352.3" y="125.0" class="ink2" font-size="10">372/645</text>
+<text x="112" y="171.66666666666666" text-anchor="end" class="ink2" font-size="11">Going second</text>
+<rect x="120" y="160.66666666666666" width="120.3" height="38.7" rx="3" class="s2"/>
+<line x1="225.3" y1="180.0" x2="256.0" y2="180.0" class="axis" stroke-width="1.2"/>
+<text x="262.0" y="171.66666666666666" class="ink" font-size="11" font-weight="bold">40.1%</text>
+<text x="304.0" y="171.66666666666666" class="ink2" font-size="10">140/349</text>
+<text x="112" y="218.33333333333331" text-anchor="end" class="ink2" font-size="11">Whoever went first</text>
+<rect x="120" y="207.33333333333331" width="175.4" height="38.7" rx="3" class="s1"/>
+<line x1="286.1" y1="226.7" x2="304.4" y2="226.7" class="axis" stroke-width="1.2"/>
+<text x="310.4" y="218.33333333333331" class="ink" font-size="11" font-weight="bold">58.5%</text>
+<text x="352.4" y="218.33333333333331" class="ink2" font-size="10">581/994</text>
+<text x="24" y="258" class="ink2" font-size="10">It went first in 65% of games: it always takes first after winning the toss; opponents did 349 of 477 times.</text>
+<text x="24" y="271" class="ink2" font-size="10">By coin toss, a randomized comparison: won the toss 60.2%, lost it 42.1%.</text>
+<text x="500" y="96" font-weight="bold" class="ink">Mulligans before the game (four Basics: 59.9% of games)</text>
+<line x1="739.0" y1="108" x2="739.0" y2="252.0" class="axis" stroke-dasharray="4,3"/>
+<text x="588" y="125.0" text-anchor="end" class="ink2" font-size="11">0</text>
+<rect x="596" y="114.0" width="154.9" height="20.0" rx="3" class="s1"/>
+<line x1="736.8" y1="124.0" x2="764.7" y2="124.0" class="axis" stroke-width="1.2"/>
+<text x="770.7" y="125.0" class="ink" font-size="11" font-weight="bold">54.2%</text>
+<text x="812.7" y="125.0" class="ink2" font-size="10">215/397</text>
+<text x="588" y="153.0" text-anchor="end" class="ink2" font-size="11">1</text>
+<rect x="596" y="142.0" width="159.1" height="20.0" rx="3" class="s1"/>
+<line x1="737.3" y1="152.0" x2="772.4" y2="152.0" class="axis" stroke-width="1.2"/>
+<text x="778.4" y="153.0" class="ink" font-size="11" font-weight="bold">55.6%</text>
+<text x="820.4" y="153.0" class="ink2" font-size="10">138/248</text>
+<text x="588" y="181.0" text-anchor="end" class="ink2" font-size="11">2</text>
+<rect x="596" y="170.0" width="137.9" height="20.0" rx="3" class="s2"/>
+<line x1="710.8" y1="180.0" x2="757.3" y2="180.0" class="axis" stroke-width="1.2"/>
+<text x="763.3" y="181.0" class="ink" font-size="11" font-weight="bold">48.2%</text>
+<text x="805.3" y="181.0" class="ink2" font-size="10">68/141</text>
+<text x="588" y="209.0" text-anchor="end" class="ink2" font-size="11">3</text>
+<rect x="596" y="198.0" width="123.0" height="20.0" rx="3" class="s2"/>
+<line x1="690.6" y1="208.0" x2="749.2" y2="208.0" class="axis" stroke-width="1.2"/>
+<text x="755.2" y="209.0" class="ink" font-size="11" font-weight="bold">43.0%</text>
+<text x="797.2" y="209.0" class="ink2" font-size="10">37/86</text>
+<text x="588" y="237.0" text-anchor="end" class="ink2" font-size="11">4+</text>
+<rect x="596" y="226.0" width="126.6" height="20.0" rx="3" class="s2"/>
+<line x1="698.3" y1="236.0" x2="747.9" y2="236.0" class="axis" stroke-width="1.2"/>
+<text x="753.9" y="237.0" class="ink" font-size="11" font-weight="bold">44.3%</text>
+<text x="795.9" y="237.0" class="ink2" font-size="10">54/122</text>
+<text x="500" y="258" class="ink2" font-size="10">The hypergeometric expectation is 60.1%; games with a mulligan won 4.4 points less</text>
+<text x="500" y="271" class="ink2" font-size="10">(95% CI −1.9 to +10.7); opponents mulligan in 31% of games.</text>
+<text x="24" y="292" font-weight="bold" class="ink">Mega Starmie ex on the board by its own second turn</text>
+<line x1="270.0" y1="304" x2="270.0" y2="448.0" class="axis" stroke-dasharray="4,3"/>
+<text x="112" y="321.0" text-anchor="end" class="ink2" font-size="11">in wins</text>
+<rect x="120" y="310.0" width="276.0" height="38.7" rx="3" class="s1"/>
+<line x1="387.9" y1="329.3" x2="402.1" y2="329.3" class="axis" stroke-width="1.2"/>
+<text x="408.1" y="321.0" class="ink" font-size="11" font-weight="bold">92.0%</text>
+<text x="450.1" y="321.0" class="ink2" font-size="10">471/512</text>
+<text x="112" y="367.6666666666667" text-anchor="end" class="ink2" font-size="11">in losses</text>
+<rect x="120" y="356.6666666666667" width="222.8" height="38.7" rx="3" class="s1"/>
+<line x1="330.6" y1="376.0" x2="353.9" y2="376.0" class="axis" stroke-width="1.2"/>
+<text x="359.9" y="367.6666666666667" class="ink" font-size="11" font-weight="bold">74.3%</text>
+<text x="401.9" y="367.6666666666667" class="ink2" font-size="10">358/482</text>
+<text x="112" y="414.3333333333333" text-anchor="end" class="ink2" font-size="11">losses, going second</text>
+<rect x="120" y="403.3333333333333" width="195.2" height="38.7" rx="3" class="s1"/>
+<line x1="295.2" y1="422.7" x2="333.6" y2="422.7" class="axis" stroke-width="1.2"/>
+<text x="339.6" y="414.3333333333333" class="ink" font-size="11" font-weight="bold">65.1%</text>
+<text x="381.6" y="414.3333333333333" class="ink2" font-size="10">136/209</text>
+<text x="24" y="454" class="ink2" font-size="10">Going second it landed in 90.7% of wins and 65.1% of losses. It never landed in 1 win</text>
+<text x="24" y="467" class="ink2" font-size="10">and 86 losses; 123 of 482 losses ended without a prize taken.</text>
+<text x="500" y="292" font-weight="bold" class="ink">Win rate by opponent rating (median opponent 651.6)</text>
+<line x1="739.0" y1="304" x2="739.0" y2="448.0" class="axis" stroke-dasharray="4,3"/>
+<text x="588" y="321.0" text-anchor="end" class="ink2" font-size="11">500s</text>
+<rect x="596" y="310.0" width="159.3" height="27.0" rx="3" class="s1"/>
+<line x1="733.0" y1="323.5" x2="776.8" y2="323.5" class="axis" stroke-width="1.2"/>
+<text x="782.8" y="321.0" class="ink" font-size="11" font-weight="bold">55.7%</text>
+<text x="824.8" y="321.0" class="ink2" font-size="10">88/158</text>
+<text x="588" y="356.0" text-anchor="end" class="ink2" font-size="11">600s</text>
+<rect x="596" y="345.0" width="150.0" height="27.0" rx="3" class="s1"/>
+<line x1="734.3" y1="358.5" x2="757.5" y2="358.5" class="axis" stroke-width="1.2"/>
+<text x="763.5" y="356.0" class="ink" font-size="11" font-weight="bold">52.4%</text>
+<text x="805.5" y="356.0" class="ink2" font-size="10">302/576</text>
+<text x="588" y="391.0" text-anchor="end" class="ink2" font-size="11">700s</text>
+<rect x="596" y="380.0" width="127.1" height="27.0" rx="3" class="s2"/>
+<line x1="703.8" y1="393.5" x2="743.0" y2="393.5" class="axis" stroke-width="1.2"/>
+<text x="749.0" y="391.0" class="ink" font-size="11" font-weight="bold">44.4%</text>
+<text x="791.0" y="391.0" class="ink2" font-size="10">88/198</text>
+<text x="588" y="426.0" text-anchor="end" class="ink2" font-size="11">800s</text>
+<rect x="596" y="415.0" width="42.9" height="27.0" rx="3" class="s2"/>
+<line x1="611.0" y1="428.5" x2="699.1" y2="428.5" class="axis" stroke-width="1.2"/>
+<text x="705.1" y="426.0" class="ink" font-size="11" font-weight="bold">15.0%</text>
+<text x="747.1" y="426.0" class="ink2" font-size="10">3/20</text>
+<text x="500" y="454" class="ink2" font-size="10">Interquartile range of opponents 610–695: the 51.2% is earned against peers;</text>
+<text x="500" y="467" class="ink2" font-size="10">above 700 it won 44.4% (95% CI 37.7–51.4), 3 of 20 in the 800s.</text>
+<text x="24" y="490" class="ink2" font-size="10">Source: replays and episode list of submission 55558557 (Aug 22–31); first player and mulligans from the engine's own logs; zero games were replayed for this figure.</text>
+</svg>

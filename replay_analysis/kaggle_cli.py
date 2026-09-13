@@ -121,6 +121,41 @@ def leaderboard(top=100, comp=COMP):
             for i, r in enumerate(rows[:top], 1)]
 
 
+def leaderboard_download(out_dir="replay_analysis/lake/leaderboard", comp=COMP):
+    """順位表**全件**を1リクエストで取る(`--download` は zip の CSV)。
+
+    `leaderboard()` は `--page-size` 上限200で上位しか見えず、我々の帯(600〜700)は圏外。
+    2026-09-02 追加(記事の「r位 / T チーム」用)。
+
+    Returns: (csv_path, rows)  rows = [{"teamId","teamName","submissionDate","score"}, ...]
+    """
+    import zipfile
+    out = Path(out_dir); out.mkdir(parents=True, exist_ok=True)
+    _run(["competitions", "leaderboard", "-c", comp, "--download", "-p", str(out)])
+    zips = sorted(out.glob("*.zip"), key=lambda z: z.stat().st_mtime)
+    if not zips:
+        raise RuntimeError(f"順位表の zip が {out} に無い")
+    with zipfile.ZipFile(zips[-1]) as zf:
+        names = [n for n in zf.namelist() if n.lower().endswith(".csv")]
+        if not names:
+            raise RuntimeError(f"zip に CSV が無い: {zf.namelist()}")
+        data = zf.read(names[0]).decode("utf-8", "replace")
+    csv_path = out / (Path(names[0]).stem + "_" + zips[-1].stem + ".csv")
+    csv_path.write_text(data)
+    rows = []
+    for r in csv.DictReader(io.StringIO(data)):
+        k = {kk.strip().lower(): vv for kk, vv in r.items() if kk}
+        rows.append({"teamId": k.get("teamid"), "teamName": k.get("teamname"),
+                     "submissionDate": k.get("submissiondate"), "score": _num(k.get("score"))})
+    return csv_path, rows
+
+
+def rank_of(score, rows):
+    """`rank = 1 + #{score > ours}`(同点は同順位)。Returns: (rank, n_teams)"""
+    scored = [r["score"] for r in rows if r["score"] is not None]
+    return 1 + sum(1 for x in scored if x > score), len(scored)
+
+
 def team_submissions(team_id):
     """あるチームの**稼働中の**提出を返す(シミュレーション競技では現役の全提出)。
 
@@ -142,6 +177,14 @@ def our_submissions(comp=COMP):
              "status": r["status"], "score": _num(r["publicScore"]),
              "desc": (r.get("description") or "").strip()}
             for r in _rows(out, "ref,")]
+
+
+def kernels_list(comp=COMP, sort_by="dateCreated", page=1, page_size=200):
+    """公開ノートブック一覧(1リクエスト/ページ)。2026-09-09 新設: 8/3 以降に公開された Strategy 系ノートの偵察用。"""
+    out = _run(["kernels", "list", "--competition", comp, "--sort-by", sort_by, "--page-size", str(page_size), "-p", str(page), "-v"])
+    rows = _rows(out, "ref,")
+    return [{"ref": r.get("ref"), "title": r.get("title"), "author": r.get("author"),
+             "lastRunTime": r.get("lastRunTime"), "totalVotes": r.get("totalVotes")} for r in rows]
 
 
 def agent_logs(ep_id, agent_index, out_dir):
@@ -184,12 +227,31 @@ def main():
         n = int(sys.argv[2]) if len(sys.argv) > 2 else 20
         for t in leaderboard(n):
             print(f"{t['rank']:>4}  {t['score']:>7.1f}  team{t['teamId']}  {t['teamName']}")
+    elif cmd == "leaderboard-download":
+        # 使い方: kaggle_cli.py leaderboard-download [score]  → 全件CSV(1リクエスト)+順位
+        path, rows = leaderboard_download()
+        print(f"saved {path}  teams={len(rows)}")
+        if len(sys.argv) > 2:
+            rk, n = rank_of(float(sys.argv[2]), rows)
+            print(f"score {sys.argv[2]} → rank {rk} / {n} (top {100*rk/n:.1f}%)")
+    elif cmd == "rank-of":
+        # 使い方: kaggle_cli.py rank-of <score> [csv]  → リクエストなし(保存済みCSVを読む)
+        csvs = sorted(Path("replay_analysis/lake/leaderboard").glob("*.csv"), key=lambda z: z.stat().st_mtime)
+        src = Path(sys.argv[3]) if len(sys.argv) > 3 else csvs[-1]
+        rows = [{"score": _num((r.get("Score") or r.get("score")))} for r in csv.DictReader(open(src))]
+        rk, n = rank_of(float(sys.argv[2]), rows)
+        print(f"{src.name}: score {sys.argv[2]} → rank {rk} / {n} (top {100*rk/n:.1f}%)")
     elif cmd == "team-submissions":
         for s in team_submissions(int(sys.argv[2])):
             print(f"  sub{s['sub']}  {s['score']}  {s['dateSubmitted']}")
     elif cmd == "submit":
         # 使い方: kaggle_cli.py submit <tar> <message>
         print(submit(sys.argv[2], sys.argv[3]))
+    elif cmd == "kernels":
+        # 使い方: kaggle_cli.py kernels [page]  → 公開ノート一覧(dateRun 降順、100件/ページ、1リクエスト)
+        pg = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+        for k in kernels_list(page=pg):
+            print(f"  {k['lastRunTime'][:10] if k['lastRunTime'] else '?':<10} {str(k['totalVotes']):>4}  {k['ref']:<60} {k['title']}")
     elif cmd == "our-submissions":
         for s in our_submissions():
             print(f"  sub{s['sub']}  {str(s['score']):>7}  {s['status']:<28} {s['file']}")

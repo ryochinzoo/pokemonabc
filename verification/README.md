@@ -42,9 +42,12 @@ python3 ../../../../../verification/bench.py 300 --deck ../../../../../verificat
 
 ## 並列実行の可否（2026-07-25 D51、playbook §2改訂）
 
-- **`reference/steel_agent.py` を使う測定は直列のみ**（唯一の壁時計依存物）。
-- CEW4成分（official_lucario / tomato_archaludon / official_dragapult /
-  official_abomasnow）は**壁時計非依存を全数監査済み**。
+- **壁時計依存物は2本**（2026-08-09 T8訂正、playbook §2）: ①`reference/steel_agent.py`
+  ②`reference/grimmsnarl_infamily_agent.py`（`_SEARCH_BUDGET_SEC=0.6`）。これらを使う測定は直列のみ。
+  **我々自身の提出物(`main.py`)も壁時計依存** — ゲージが非依存でも我々側が依存していれば直列。
+- 旧CEW4成分（official_lucario / tomato_archaludon / official_dragapult / official_abomasnow）の
+  壁時計非依存監査は済んでいるが、**現行CEWの alakazam_ryota / soutasakurai_crustle /
+  makthanithin_lucario は未監査** → 監査するまで直列運用（playbook §2）。
 - 我々のパイロットが**仕事量予算**で駆動する構成なら並列可。ただし許可条件は実証：
   ①全探索呼び出しで安全弁が未到達である全数ログ ②並列時最悪でも余裕3倍以上
   ③これを出力しない並列ハーネスは使用禁止。
@@ -57,7 +60,7 @@ python3 ../../../../../verification/bench.py 300 --deck ../../../../../verificat
 | 層 | 用途 | 事前登録 | T7 | 出力 |
 |---|---|---|---|---|
 | S | スクリーニング・機構診断・計器監査 | 不要 | 不要 | **引用禁止** |
-| A | パラメータ掃引（**CEW-lite＝フーディン+メガルカリオ＝重みの63.7%**。2026-08-09更新） | 必要（格子・N・傾向判定） | 単独 | 曲線のみ。採用判断には使わない |
+| A | パラメータ掃引（**CEW-lite＝フーディン+メガルカリオ**＝最大セル+最大の床。4面時代の重み63.7%、**5面正典では49.4%**） | 必要（格子・N・傾向判定） | 単独 | 曲線のみ。採用判断には使わない |
 | B | 採用判定 | 必要 | パネル型 | 台帳経由 |
 
 ## 提出前ゲート（2026-07-21改訂、decisions.md D29準拠）
@@ -66,33 +69,37 @@ python3 ../../../../../verification/bench.py 300 --deck ../../../../../verificat
 我々の操縦者の実力差に比例して勝率を+8〜+62pt過大評価する（steel相手+62pt / 公式Lucario
 相手+41pt / りょーちんagent相手+8pt、実測）。**採否の判定は必ず較正済みの族外ゲージで行う。**
 
-1. **効果量の判定 = 較正済み遭遇加重合成指標（CEW）**（D29、**2026-08-09 T3再較正**）。
-   族外ゲージ4種を 800-1099帯の実遭遇率で加重した1指標
+1. **効果量の判定 = 較正済み遭遇加重合成指標（CEW）**（D29）。**正典は `verification/cew.py` —
+   本表はその転記であり、食い違ったら cew.py が勝つ**（2026-08-14 正典化。旧表は4面第1版のまま
+   基準線66.75を掲げており、古い基準線で判定する事故リスクがあった）。
+   現行 = **2026-08-09 T3再較正・第2版（5面）**。族外ゲージ5種を 800-1099帯の実遭遇率で加重
    （data.md:3995-3998、側 n=6,341・自チーム除外・斥候72体/4,263エピソード）:
 
    | ゲージ | 対面 | 帯シェア | 重み | agent |
    |---|---|---|---|---|
-   | alakazam | フーディン | 29.2% | **0.4384** | `reference/alakazam_ryota_agent.py` |
-   | crustle | イワパレス | 13.5% | **0.2027** | `reference/soutasakurai_crustle_agent.py` |
-   | lucario | メガルカリオ | 13.2% | **0.1982** | `reference/makthanithin_lucario_agent.py` |
-   | archaludon | ブリジュラス | 10.7% | **0.1607** | `reference/tomato_archaludon_agent.py` |
+   | alakazam | フーディン | 29.2% | **0.3399** | `reference/alakazam_ryota_agent.py` |
+   | grimmsnarl | オーロンゲ | 19.3% | **0.2247** | `reference/tetsutani_grimmsnarl_agent.py` |
+   | crustle | イワパレス | 13.5% | **0.1572** | `reference/soutasakurai_crustle_agent.py` |
+   | lucario | メガルカリオ | 13.2% | **0.1537** | `reference/makthanithin_lucario_agent.py` |
+   | archaludon | ブリジュラス | 10.7% | **0.1246** | `reference/tomato_archaludon_agent.py` |
 
-   覆域 **66.6%**。**基準線 66.75%**＝**実ラダーに現在載っている腕**
-   (pilotfix `3f55780b` + deck `a246be4f`) のセル実測 94.0/97.5/19.0/12.5 を新重みで合成。
-   閾値 +2pt。**Neyman配分 合計N=3,200 (alakazam1248/crustle380/lucario934/archaludon638、
-   全セル偶数)**。腕SE **0.471pt** / 頭対頭2腕差SE **0.667pt** / **80%検出力のMDE 1.87pt**。
-   CIは `cew_stats.py`。計算は必ず `cew.py` で行う。
+   覆域 **85.9%**。**基準線 59.70**＝pilotfix (main.py `3f55780b` + deck `a246be4f`) の5面実測
+   92.25/39.0/98.25/17.0/12.25 の合成（族外4面は独立2反復の合算 N=400/セル、
+   ⚠オーロンゲのみ単一測定 N=200 — 第2反復が未取得、cew.py 注記参照）。閾値 **+2.0pt**（D29据え置き）。
+   **5面のMDE80 ≈ 3.29〜3.65pt**（playbook §3.1）。⚠cew.py 記載のNeyman配分
+   (N=3,200 = 1248/380/934/638) は**4面時代の導出で5面には未更新** — 掃引ごとの事前登録で
+   セル配分を明記すること（直近の aqua/variant 掃引は 142/94/64/52/48×8ブロックで運用）。
+   CIは `cew_stats.py`。計算は必ず `cew.py` で行う（手計算は重み1つの付け忘れで採否が反転する）。
 
-   ⚠ **2026-08-09 の訂正（上書きせず残す）**: 旧重みは
-   Lucario45.1/Archaludon33.8/**Dragapult15.5**/**Abomasnow5.6**% だったが、
-   現在の帯では Dragapult は実シェア **2.1%**(重みは7.4倍過大)、
-   Abomasnow は **census に出現しない**(56倍過大)。逆に実シェア最大の
-   alakazam(29.2%) と crustle(13.5%) が**重み0で入っていなかった**。
-   これが D62 の χ²=37.68 の中身であり、「層Bの受け皿が無い」の正体。
-   **同じ総N=3,200 のまま MDE が 2.67pt → 1.87pt に 30% 改善する**
-   （配分が実フィールドとズレていたぶんが、そのまま検出力の損失だった）。
-   grimmsnarl(19.3%) は較正済みの**族外**ゲージが存在しない（公開notebook 291件中0件、D64）
-   ため判定に入れない。族内 `grimmsnarl_infamily_agent.py` は**スクリーニング専用**。
+   ⚠ **履歴（上書きせず残す）**:
+   - **4面第1版（2026-08-09 同日）**: alakazam .4384 / crustle .2027 / lucario .1982 /
+     archaludon .1607、覆域66.6%、基準線66.75（反復1のみ）→ のち合算65.70。同日中に
+     「grimmsnarl の族外ゲージは構築不能（D64）」が誤りと判明（公開notebook内に base64 で
+     畳まれた実装があった）ため、オーロンゲを加えた第2版に置換。**単一測定を基準線にすると
+     採用ゲートが約1ptずれる** — 基準線は必ず複数反復の合算で置く。
+   - **旧重み（2026-07-26）**: Lucario45.1/Archaludon33.8/Dragapult15.5/Abomasnow5.6%。
+     現在の帯では Dragapult 実シェア2.1%(7.4倍過大)、Abomasnow は census に出現しない
+     (56倍過大)。実シェア最大の alakazam・crustle が重み0だった。これが D62 の χ²=37.68 の中身。
    ※CEWの重みは現在の帯の実遭遇分布に紐づく。帯が変われば再計算する（playbook §2/§7 T3）。
 2. **正当性の検査**（効果量ではない、独立に残す）: CRASH=0 / vs random ≥96% / `check.py`。
    ※donk_meterやゲージ勝率を独立ゲートとして課さない（D29: 独立4条件で真に効果ゼロでも

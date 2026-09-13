@@ -1,4 +1,29 @@
-# Writeup 全文ドラフト v5 (v1=2026-07-28 / v2=G1・G5・G7反映 / v3=2026-07-30 / v4=打点構造訂正 / v5=2026-07-31外部レビュー反映)
+# Writeup 全文ドラフト v7 (v7=2026-09-02 終戦後清書 / v1=2026-07-28 / v2=G1・G5・G7反映 / v3=2026-07-30 / v4=打点構造訂正 / v5=2026-07-31外部レビュー反映 / v6=2026-08-14 aqua凍結追随)
+
+> **v7 の変更(2026-09-02 深夜、第1稿。計画 = ~/.claude/plans/2-ai-concurrent-catmull.md)**:
+> ①語数規準を **`wc -w` 全文込み ≤1,960** に変更(v6の「≈1,985」は外挿値で、実測は 2,079 だった)
+> ②刈り込み C1-C12(§2 マージン120の二重記述を統合 / §3 前向き表を Fig.3 へ / §1・§3・§4・§6 の圧縮 / §5 頑健性文を最終夜へ吸収)
+> ③挿入 I1 §5 "The final night"(**行動のみ・効果量なし**。`{P0}`〜`{P4}` は検死完了後に k/n で埋める)/
+> I2 §6 "Two lines, one horizon problem"(りょーちん独立線、匿名版。実名は本人同意後)/ I3 §2 ENDガード(#37)/ I4 §7 一文
+> ④T6: 未引用段落に引用を付けた(§4 リプレイ訂正 → #30 / §6 辞書修理 → #43(新設)/ §6 限界 → #22,#44(新設))、#9 と #34 に本文の数値を追記
+> ⑤図番号を出現順に振り直し(Fig.1 探索対照 / 2 較正ギャップ / 3 前向き / 4 打ち切り / 5 支出明細 / 6 検死 / 7 地平×不確実性、`make_figures.CAPTIONS`)
+> ⑥物語3箇所(§2 退却の発見 / §5 最終夜 / §5 ボスの価値序列)は **ゆうじ自筆で差し替える予定**(9/7)。本稿はその足場。
+> v6 本文は git(a2cb966 以降の作業ツリー)と本ファイルの履歴に残る。
+
+> **v6の変更(2026-08-14、D78の記事側実装 = writeup-v6-plan-2026-08-14.md をゆうじ承認で適用)**:
+> ①§2末尾に退却物語(#27完結編。#32/#33、帰属保留を明示) ②§4冒頭を最終リスト(水単aqua、祖先から
+> 12枚差)へ差し替え+凍結直前1枚差し実験(#34、pilot-scoped表現) ③§5を効果量カルテット化+頑健性行を
+> 最終2提出の実測へ(**{N}は凍結後の実測で埋める**。8/14時点83) ④**T6: 8/2先行研究監査(台帳:60-88行)の
+> 必須項目を反映** — #26にsham対照併記(+0.42 [−3.27,+4.10]) / §6に必須限界3件(非推移性・帯層別・
+> プロセス隔離)+1bアンカー弱点 / #1を「発見」から降ろし独立公開の同型観測に言及 / #8に公開反証
+> (74.4% N=1,000)併記でpilot-scoped化 / #9を「紙の定説への反証」に強化 / #20の§1表現を外部報告と
+> 自前実測の併記に修正 / §1の定石失敗を3→5例に更新(#34) ⑤語数超過のため全節を圧縮
+> (**v6計画の語数会計は約120語の計算誤り**: 1,998−150+253=2,101であり計画の言う≈1,981にならない。
+> 圧縮はC1/C3/C4/C5+全節の刈り込みで対応)。L-a/L-b(+85語)は取り下げ(ゆうじ承認、台帳行生存・9月復活可)。
+> 発見者の匿名表記("A teammate spotted")とタイトル据え置きもゆうじ承認済み(2026-08-14)。
+> **着地語数: v5と同一の測り方で ≈1,985語(v5=1,998)** — 罫線・記号除外のトークン数 2,046 vs v5の2,059、
+> 差 −13。正確な最終計数はKaggle投稿形式での9月清書時にT6で確定する。Fig.5参照はv5時点から本文に不在
+> (v3チェンジログの「5点」と不整合、G9で照合予定 — v6で壊したものではない)。
 
 > **v5の変更(2026-07-31、外部レビューループの成果。数値ゼロ or 台帳済みの編集のみ)**:
 > ①タイトルに第2の背骨(deck orthodoxy)を明示 ②§4のルール断定2件を訂正
@@ -29,198 +54,104 @@
 
 ---
 
-## Measure Before You Believe: Calibration Against the Real Ladder, and Why Human Deck Orthodoxy Fails an AI Pilot
+> **v8 の変更(2026-09-02、外部評議会 D85 の裁定を実装)**: 主役を最終エージェントに置き換え(§1 で提出物・成績・テーゼ)。
+> §2 に60枚と勝ち筋(Fig.2)、§3 に実局面 ep102267456 T10 → ボスの価値序列 → 上書き経路の家系 → 検死とレビューの発見
+> (KO判定がエネを見ない: 709/809・30/809・反転30%)、§4 に対面プロファイル(Fig.3、ルカリオ36.1%・ブリジュラス26.9%)と
+> ブロック勝率、§5 は計器を1節に圧縮(探索+13.62 は7月の門なし層で測定と明記)、§6 に未測定・辞書5→10本・死んだ規則・
+> 限界・独立2線。落としたもの: 押し出し図・支出明細図・自己監査三部作・「defend hardest」等の手続きの告白・±150–400。
+> 図は8枚(決定フロー/デッキ/対面/較正/前向き/探索/検死/独立2線)、脚注から台帳参照を全削除。タイトル変更。
 
-### 1. Approach Overview
+> **v8.2 の変更(2026-09-09、材料の旅 = plan simulations-strategy-wild-beaver、ゆうじ承認)**: 運営回答「表・図・Gallery の文字は語数外」を受けて、
+> ①冒頭に審査基準→証拠の対応表 ②§4 の対面列挙を表に移し、対戦ゼロで測った初期状態プロファイル(先攻/後攻 57.7/40.1、マリガン 59.9%、Mega着地 67/46、相手レート帯)を追加(#53〜#56、Fig.11)
+> ③§2 に12枚系譜(#58、Fig.9)・ミツル 755/755(#57)・専門家予測の符号逆(#7)・Kahneman & Klein 2009 ④§5 に Nosek 2018 ⑤§1 にレート分布の中央値(#59、Fig.10)
+> ⑥§4 に時間バンク 587s(#38)と決定一致率 4.28%(#42)⑦§6 りょーちんを実名(ryoheihara、本人承諾 9/8)⑧圧縮: §2 内訳列挙・§3 END文・§5 冒頭と判定規則段落・§6 辞書文。
+> 語数規準を「全文 wc -w ≤2,000 かつ 地の文 ≤1,900」に改定(t6_check --prose-limit)。図 8→11 枚。v8.1 は git と本ファイルの履歴に残る。
+> **v8.3(2026-09-10 未明)**: de-AI パス 11 段落(ゆうじ承認、de-ai-pass-2026-09-09.md)+ 評議会「編集長」裁定(§1 冒頭の分割、自己言及3文の削除、§3/§4/§5 の1文目反転、§7 はテーゼで終える、対応表の最終行)。数値不変。Fig.12(公式ビジュアライザの実盤面)追加で図 12 枚。
+> **v8.4(2026-09-10 未明)**: 審査員ペルソナ評議会(J-MI / J-TPC / 赤チーム、plan-2026-09-10-council-writeup.md)の裁定を実装。訂正: Mega 着地を「自分の2ターン目まで」で再集計(92.0/74.3、旧 67.2/46.1 は通し番号の混同で撤回、#55)/ T10 に Hero's Cape と返しの Aura Jab 130(両ラインとも負け、#39/#60)/ 「自己対戦ゼロ」にドスク直接対決の例外を明記 / 専門家予測 → 自前の事前予測(出所 D19 ペルソナ、#7)/ たね実験を screening N=300 に等身大化(#9)/ マリガン代償 4.4pt(CI は 0 を含む、#54)/ 規則は「1規則+1門」(#49)/ Cinderace は removed でなく rejected / Night Stretcher +3(#58)/ Marnie's Grimmsnarl ex / ryoheihara → Ryohei Hara。追加: §2 設計段落(1エネ攻撃とミツル・Ignition・Beach、#60)/ §4 対面の算術(#60)と先攻の基準線 58.5%(#53)/ §6 最終枠の理由1文。移動: §5 判定規則監査 → Fig.5 caption、§6 MC 再審 → Fig.6 caption、§7 の −3.29 再掲を削除。
 
-Our central problem was not "how do we make the agent stronger" but that **we could not tell
-whether it had become stronger.** A Pokémon TCG match is high-variance, and the obvious measuring
-device — our own agent piloting the opponent's deck in self-play — is the one most likely to
-flatter us. It did: our in-family benchmarks overstated win rates by **+8 to +62 percentage
-points**, depending on who really pilots that deck on the ladder [#1].
+## What a Card Is Worth When an AI Plays It: A Mega Starmie ex Agent, Measured Against the Real Ladder
 
-So we inverted the usual order: build an instrument, calibrate it against the real Kaggle
-ladder, and require every proposed improvement to be pre-registered and judged on it. Then the
-step that matters most and that we nearly skipped — **we audited the judging rule itself,
-repeatedly, and reported what we found even when it reversed our own decisions.**
+| Judging criterion | Where the evidence is |
+|---|---|
+| Approach and its rationale | §1, §3, Fig. 1 |
+| Original and technically sound | §5, Figs. 4–6 |
+| Consistent under repeated matches | §4: blocks, latency, decision diff |
+| Not over-reliant on start or matchup | §4, Fig. 3, Fig. 11 |
+| Performance | §1, Fig. 10 |
+| Deck concept and key cards | §2, Fig. 2, Fig. 9 |
+| Report structure and figures | Figs. 1–12 inline beside the paragraphs that cite them; sourced captions at the end |
 
-That discipline produced a second class of result, in the game domain rather than the
-methodology: **human deck-building orthodoxy does not survive contact with an AI pilot.** Three
-times a combo that is standard in human play proved to be dead weight, and each time only the
-calibrated instrument could show it. Those two threads are this report's two backbones.
+### 1. The agent
 
-We treat the leaderboard score as evidence, not as the verdict: the same agent varies by
-**±150–400 rating points** across resubmissions [#20].
+This report is about one agent. Its deck is mono-Water Mega Starmie ex: two species, four Basic Pokémon, sixty cards. Its pilot is a hand-written greedy evaluator, fourteen rules a human player taught it, and a 0.6-second engine lookahead that may overrule the greedy choice behind eight one-way gates (Fig. 1). Over its last 1,000 ladder games it won 51.2%, finished at 656.7, rank 2,898 of 6,807 and above the field's median of 621.5 (Fig. 10), and never crashed [#38, #40, #59].
 
-### 2. Pilot Design
+The report has one idea: a card is worth nothing by itself. Its value belongs to the deck, the pilot and the field together, so we measured the three parts separately: the deck against its human-orthodox parent, the pilot on an instrument calibrated against the real ladder, the field by reading the last 1,000 replays.
 
-The agent is a greedy selector over a hand-written evaluator, wrapped in a
-**search-and-override layer** that uses the competition's own engine (officially released, and
-permitted in submissions) to look ahead by determinization and overrule the greedy choice when
-the two disagree by more than a margin. Two findings about this architecture are worth more than
-the architecture itself.
+### 2. The deck and its plan
 
-**First, we never ran the control experiment on our most important component until month
-seven.** The override layer had been justified by a single in-family measurement (N=200) taken
-*before* the calibration law was known. When we finally ran it as a proper ablation on the
-calibrated out-of-family instrument, the layer was worth **+13.62pt (95% CI [+11.40, +15.84],
-12.0σ, N=3,200 per arm)** [#26, Fig. 4]. The result vindicated the component and indicted the process:
-our own playbook said "control experiment first," and the rule had never once been applied to
-the layer that rule was written to protect.
+The list (Fig. 2) differs from its human-orthodox parent by twelve cards (Fig. 9) [#58]. The plan is a race built on one number: Jetting Blow costs a single Water. Mega Starmie ex takes three prizes from an opposing Mega ex, or two from an ex and one from a Basic with the 50-damage bench splash; Wally's Compassion heals it fully and returns its energy, which costs one attachment when the attack needs one, and it was played 755 times in 1,000 games, every time on a damaged Mega Starmie ex [#57, #60]. Ignition Energy alone pays for the three-energy Nebula Beam (210), the finisher and the only attack that goes through a Crustle's Mysterious Rock Inn; Surfing Beach is its only switch [#60]. Jetting Blow was 71.4% of its attacks, Nebula Beam 18.5% [#46]; the paper plan was a 210-damage deck and the replays say it is a 120-plus-50 deck [#30].
 
-**Second, our published diagnosis of that layer's failure mode was wrong.** We had attributed an
-earlier regression to "maximisation bias under unequal visit counts." Reading the code again
-seven months later, the override margin is `120.0` while a prize card is worth `±10,000` and a
-terminal state `±1e9` — the margin is **1.2% of one prize card** [#27]. The override was not
-making a trade-off; it was maximising a lottery ticket. The mechanism we had confidently named
-did not exist in the shipped agent.
+Measurement rejected three human-orthodox choices. The Dusknoir sacrifice engine takes six slots in most human lists, and our own forecast from the coaching canon, written down before the run, was that cutting it would cost 5 to 10 points; the list without it won 64.7% head-to-head (N=150) [#4, #7]. Cinderace energy acceleration, tried and dropped, saw 0.12 uses per game in our hands, while another team runs it as the core of a 74.4% agent, so that failure belongs to our pilot and not to the card [#8]. Eight or ten Basics instead of four cut the mulligan rate from 60.1% to 25.9% and did not help, 34.5 → 33.0 → 31.2 on the calibrated composite (a screening run, Fig. 2) [#9], so the list mulligans 60% of the time on purpose, 59.9% in production; games with a mulligan won 4.4 points less, an interval that includes zero [#54]. Kahneman and Klein (2009) trust expert intuition only where the expert has had fast feedback from a regular environment; the coaching canon's feedback came from human pilots, none from this one, so we measured each orthodoxy.
 
-The one pilot change we adopted came from behavioural diagnosis, not intuition. Ignition Energy
-supplies three colourless energy on an *evolved* Pokémon, putting Mega Starmie ex in range of its
-210-damage attack at once. Logging showed the agent took only 26% of the chances to attach it to
-the active evolved Pokémon, wasting the rest on Basics. A targeting rule lifted the calibrated composite by **+2.50pt
-(independent replications +2.18 / +2.81, N=1,600 per cell, 1.7σ)** [#5], and the behaviour
-transferred to production: **85% (56/66) of Ignition attachments converted into the intended
-attack, with 0.30 misfires per game across 60 ladder games** [#6]. The combo itself is known to
-human players; our contribution is the probe that found the agent was not executing it.
+The August list ran two Boss's Orders; a third copy, the most-adopted card among the 105 top-band teams we crawled, measured −1.53pt with the pilot byte-identical [#34]. That pilot had no idea whom to drag out. The final list runs three, with the targeting rules of §3; the effect of that combination, measured after the deadline, is in §6.
 
-### 3. Verification Infrastructure
+### 3. How it plays a turn, and where it disobeys itself
 
-This is the part of the project we would defend hardest, and it has two halves.
+Turn ten of a ladder game against Mega Lucario ex (Fig. 12). Our Mega Starmie ex sits at 60 HP with one Water; the opponent's Mega Lucario ex, wearing Hero's Cape, is at 90 of 440, two prizes from winning against our four; our hand is Buddy-Buddy Poffin and Boss's Orders. Jetting Blow for 120 knocks it out for three prizes. The agent played Boss's Orders instead, dragged the 80-HP Makuhita forward and took one; a Mega Lucario ex answered with Aura Jab for 130 and the game, as it would have answered the three-prize line [#39, #60]. It is here as the misfire at its simplest: three prizes on the table, one taken.
 
-**Half one: the instrument.** Measuring the same deck piloted by different agents showed the
-in-family error is not random — it scales with the skill gap between the real pilot and ours:
-**+62pt** against a strong public agent, **+41pt** against the host's sample agent, **+8pt**
-against a teammate's (N=300 each) [#1] — upper bounds: the in-family arm ran with a
-mis-configured opponent, and repairing it moved the largest cell by 0.00pt (95% CI ±6.4). That had a concrete consequence: the host's public
-sample Lucario agent is **not a proxy for our ladder opponents — it is one of them.** Its deck
-matches the list we actually face **60 cards out of 60**, and our win rate against it (44.0%,
-N=300) is consistent with the ladder's (50%, N=14, CI 26–74) [#2, Fig. 1]. We rebuilt the
-benchmark suite around opponents of that kind.
+The value ordering it should have used is the one a player uses, and it is in the code: knock out what you can knock out now, most prizes first; failing that, drag out the piece that will evolve into a threat, Riolu before it becomes Mega Lucario; failing that, the piece that cannot retreat, so the opponent's energy attachment is held hostage. Over the last 1,000 games the agent's 809 Boss's Orders went to knock-outs 577 times, to evolving threats 184 times, to bound targets 16 and to the weakest piece 32 [#39]. The turn above is not a failure of the ordering. The greedy layer did not propose Boss's Orders; the engine lookahead overrode it into Boss's Orders, and the gates let it: every gate protects the greedy choice from the lookahead, and none stops the lookahead from reaching for Boss's Orders on its own (Fig. 1).
 
-Then we required the instrument to make its living prospectively. Before each of four
-submissions, and before reading a single replay, we pre-registered **two numeric predictions**:
-what the calibrated out-of-family instrument implied, and what the in-family benchmark implied.
-The ladder then arbitrated (Fig. 2):
+The same unguarded direction had shown up before. In July a replay caught the agent retreating a fully-powered attacker instead of attacking a Mega Lucario it could not one-shot: on that board the production pilot chose RETREAT 12 of 12 times while the greedy layer said ATTACK, because an override margin of 120 sat against a prize term of ±10,000 and gated nothing [#27]. We repaired it, reproduced ATTACK 12 of 12, and the bundle it shipped in, a pilot layer plus a twelve-card deck change, measured +6.03pt (N=6,400, pre-registered) [#32]; then the registered falsification sensor fired, the matchup where retreat is most frequent got worse by 1.37pt [#33], so we kept the bundle and withdrew the mechanism story. Repairing a mechanism and moving a rating are different proofs.
 
-| Submission | Calibrated | In-family | Ladder actual |
-|---|---|---|---|
-| EXP8 pilot | **37.0%** | 84% | **35.0%** (N=20, CI 18–57) |
-| Second archetype | **35.58%** | 61.37% | **38.1%** (N=21, CI 20.8–59.1) |
-| Champion re-run | **42.12%** | 84.42% | **30.0%** (N=20, CI 14.5–51.9) |
-| Champion, re-weighted | **44.39%** | 85.12% | **33.3%** (N=21, CI 17.2–54.6) |
+The audit of the last 1,000 games (Fig. 7): 0 crashes, 0 END-stalls in 24,429 decisions, targets matching the rule's own first choice 809 of 809, and the one falsifiable prediction failed: 49 of 809 Boss plays were misfires by the rule's own count, every one a lookahead override [#39]. We wrote the Boss's Orders rules on the last night before the deadline and froze seven behavioural predictions first. Outside review then found its blind spot: the knock-out test used the printed maximum, 210, and ignored attached energy; counting energy, 243 of the 809 targets change status, 709 (87.6%) remain the best target and 30 plays remain misfires [#39]. The fix, measured after the deadline on the calibrated instrument: −2.42pt (95% CI [−5.85, +1.01]), a correct diagnosis and no detectable improvement [#51].
 
-In all four the in-family figure fell outside the confidence interval and the calibrated figure
-fell inside; deviations were −2.0 / +2.5 / −12.1 / −11.1pt with no systematic sign [#3]. The
-fourth was also the first forward test of encounter weights we had re-estimated retrospectively,
-and they held (χ²=6.74 against 7.815). We state the limit plainly: N≈20 covered games give
-±19pt intervals — absolute-level anchors only, excluding gross miscalibration, never our
-A-versus-B comparisons.
+### 4. Robustness, and where it still loses
 
-**Half two: the rule.** Our original adoption rule required four independent non-regression
-gates. Its operating characteristic: a change with truly zero effect is flagged as a regression
-**65.1%** of the time, against **68.8%** power to detect a real +5pt gain [#10] — rejecting good
-work about as often as recognising it. We replaced it with a single calibrated
-encounter-weighted composite.
+The rating is an average over opponents it meets at different rates (Fig. 3): earned against walls and Dragapult, lost to its two most frequent opponents [#45].
 
-We then audited the replacement, and it was also not good enough: its **+2.0pt adoption
-threshold is only about 1.09σ**, admitting a 6.5–14% false-adoption rate per experiment [#22].
-Reallocating the same games by Neyman allocation cut the standard error from 1.03 to 0.82pt for
-free, and confidence intervals became mandatory.
+| Opponent, last 1,000 games [#45] | Record | Win rate |
+|---|---|---|
+| Wall decks (Crustle) | 94–16 | 85.5% |
+| Dragapult ex | 68–31 | 68.7% |
+| Alakazam | 113–86 | 56.8% |
+| Mega Starmie ex (mirror) | 25–30 | 45.5% |
+| Marnie's Grimmsnarl ex | 29–44 | 39.7% |
+| Mega Lucario ex | 78–138 | 36.1% |
+| Archaludon ex | 29–79 | 26.9% |
 
-The third instalment is the least flattering. A screening gate we wrote for our last experiment
-— *stop if the control cell's misidentification rate rises* — fires **44% of the time when the
-true difference is zero** [#29]: at N=50 per arm, comparing point estimates is a coin toss. We
-found this only after the gate had killed that experiment, then argued from it that the kill be
-reopened. The review of that argument demanded a log we had not kept; producing it disconfirmed
-our own case and the kill stood. **We had rebuilt, inside a rule we wrote ourselves, the defect
-we removed two months earlier.**
+The two losing matchups have mechanisms we can name. Mega Lucario ex deals 400 in two turns, Mega Brave then Aura Jab, while Mega Starmie ex needs three Jetting Blows for its 340, and Nebula Beam plus Jetting Blow is 330, ten short; that is why the Boss's Orders ordering folds Riolu early, 184 of its 809 targets across all opponents [#39, #60]. Archaludon ex gives two prizes for our three and takes them in two Metal Defenders, so on paper every trade there is two-for-three against us [#19, #60]. The five matchups the instrument covers sum to 41.8% against 51.2% overall: the agent earns its rating outside the instrument's coverage, a limit of the instrument as much as of the deck [#45].
 
-The same scepticism caught our measurement procedure too: submissions do not decay, they are
-**evicted** by the team's next-but-one submission — all ten stopped within three hours *before*
-eviction [#28, Fig. 3].
+It does depend on the start of the game (Fig. 11): 57.7% going first, 40.1% going second, first in 64.9% of games [#53]. The seat effect is the environment's more than the deck's: whoever went first won 58.5% of these games [#53]. A quarter of its losses ended without a prize taken, and Mega Starmie ex was on the board by its own second turn in 92.0% of wins against 74.3% of losses, going second 90.7% against 65.1% [#55]. Its opponents' median rating was 651.6 [#56].
 
-### 4. Deck Construction
+What did hold, over the same 1,000 games:
 
-Our list is a Mega Starmie ex aggro build whose defining property is what we removed — every
-removal forced by measurement rather than theory.
+| Consistency check [#38, #47, #42, #20] | Result |
+|---|---|
+| Crashes or stderr | 0 in 1,000 games |
+| Worst per-game p99 decision time; lowest time bank | 602 ms; 587 of 600 s |
+| 200-game blocks (wins–losses), ratings 582–742 | 103–95, 103–97, 104–95, 105–93, 97–102 |
+| Last night's layer vs the earlier pilot, 4,575 replayed decisions (its Boss's Orders rules could not fire there) | 4.28% changed, 0 exceptions |
+| Three byte-identical resubmissions of the earlier champion | 783 to 747, a 36-point spread |
 
-**Human orthodoxy did not transfer, three times.** (1) The Dusknoir engine — six slots that
-exist for a sacrifice ability, not for attacking — is standard in human lists; the version without it won **64.7% head-to-head
-(N=150, CI 57–72)** [#4]. (2) Cinderace energy acceleration, present in winning human lists,
-fired **0.12 times per game** and moved nothing [#8]. (3) Raising Basic count cut mulligans from
-60.1% to 25.9% and made the agent *monotonically worse* (34.5 / 33.0 / 31.2 for 4 / 8 / 10
-Basics) — the engine does implement the mulligan penalty (the opponent may draw extra cards),
-and it still did not pay for the deck slots [#9]. A card's value is a property of
-the deck **and the pilot together**; a list validated by human play was validated on a different
-pilot.
+### 5. How we know: an instrument calibrated against the real ladder
 
-Three further interventions each died at a different stage, which is why we present them
-together. Swapping our ACE SPEC for Maximum Belt is mechanically real — we logged the +50
-threshold firing — yet as piloted it gave **−0.57pt (CI [−2.82, +1.68])** [#23]. A second did
-occur in play and still netted **−0.01pt (CI [−2.28, +2.26])** [#24]. A third had a genuine
-**+16.63pt** ceiling and died at the safety gate: its win rate against a random opponent fell to
-**90.5% (N=211, CI 85.8–93.8)**, below our 96% floor, because damage and self-mill drew on the
-same resource [#25]. Mechanism true, occurrence zero; occurrence real, effect zero; effect real,
-legitimacy absent.
+Apart from the Dusknoir head-to-head, none of the numbers above come from self-play, because self-play flatters. When different agents piloted the same opposing deck, our own pilot's benchmark overstated the win rate by +62 points against a strong public agent, by +41 against the host's sample and by +8 against a teammate's July build (N=300 each; upper bounds) [#1, Fig. 4]. The host's sample Lucario agent is itself a ladder opponent, 60 cards of 60, and our win rate against it (44.0%, N=300) agrees with the ladder's (50%, N=14, CI 26–74) [#2].
 
-Replay analysis then corrected our own account of the list. We had described it as a deck built
-to reach a 210-damage attack; across 55 ladder games that attack is **24% of our attacks and 29%
-of our damage**. The workhorse is the same Pokémon's one-energy attack — 120, plus 50 to a bench
-target — and the big one is a finisher. A deck's plan on paper and its plan in play are different
-objects, and only the replays told us which one we had.
+The instrument then had to predict. We borrowed the discipline psychology adopted after its replication crisis: predictions registered before the data, kill criteria fixed in advance (Nosek et al., 2018). Before each of four submissions we registered the calibrated number and the self-play number and let the ladder arbitrate (Fig. 5). Self-play fell outside the ladder's confidence interval four times out of four; the calibrated figure fell inside, with deviations −2.0 / +2.5 / −12.1 / −11.1 points and no systematic sign [#3]. With N≈20 covered games those intervals are ±19 points wide, so they rule out gross miscalibration only. Among the public analyses we could find, none had registered a ladder prediction before reading replays [#3].
 
-### 5. Results
+The engine lookahead is worth +13.62pt on that instrument (N=3,200 per arm), and a sham lookahead +0.42pt [#26, Fig. 6], measured in July, before any of its gates existed. The greedy layer's one measured rule, Ignition Energy attached to the evolved attacker rather than a Basic, added +2.50pt (replications +2.18 / +2.81) [#5] and converted 85% (56/66) of production attachments into the intended attack [#6].
 
-"How strong is the agent" is best answered by three calibrated effect sizes, one per component.
-**Deck**: beats its human-orthodox ancestor **64.7% head-to-head** [#4]. **Search-and-override
-layer**: **+13.62pt (CI [+11.40, +15.84], 12.0σ)**, the largest instrument-verified number in the project
-[#26]. **Pilot rule**: **+2.50pt**, independently replicated [#5]. Everything else we tried
-failed its pre-registered gate.
+### 6. What we did not measure, and what we got wrong
 
-On the ladder, byte-identical resubmissions of the champion scored **783, 765 and 747** — a
-spread that is itself our best evidence for treating single scores as noisy [#20].
-Against our four calibrated gauges it scores **47.3 / 26.8 / 80.7 / 26.7%**, an
-encounter-weighted composite of **44.39%** — the same figure the instrument staked
-prospectively above. We disclose the weak matchups rather than average them away, and note
-the gauges cover **38%** of what we actually meet. That
-transparency, plus **CRASH=0 across 60 consecutive ladder games** and no crash signature in any
-earlier submission [#14], is our answer on robustness.
+The submitted agent's effect size was not measured before the deadline; the effect sizes above belong to earlier pilots and decks, and the last night's rules cleared only the safety gates (no crash, 98.75% against random, a legal move on every decision) [#38]. We spent the final slot on it deliberately: a third Boss's Orders had measured negative under a pilot that could not use it, and only production could test the card with its rules, so we froze the behavioural predictions first. We measured it afterwards, on the same instrument, against the list our discipline would have submitted: **−3.29pt (95% CI [−5.19, −1.39])**, negative in all five matchups, worst against Mega Lucario (−7.62) [#50]. Holding the deck fixed and swapping only the pilot isolates the last night's rules: −2.78pt (95% CI [−3.97, −1.59]) [#52]. We submitted the weaker agent; the instrument measured it afterwards.
 
-The loop that produced the most value was **submit → autopsy → fix → re-measure**: replays
-showed the agent attacking a wall Pokémon for zero damage, and after a wall-ability detection patch
-that matchup went 7–2 with the loop absent [#15] — a behavioural claim, not a rating one.
+That night we also doubled, five to ten and unmeasured, the hard-coded list of opponent decks the lookahead samples from, although an earlier repair of that dictionary had been killed for misidentifying decks outside it (11%→22% pooled) [#43, #48]. One rule and one gate of that layer were wired to a selection type the engine never issued and did nothing in 1,000 games [#49].
 
-### 6. What Didn't Work, and Limitations
-
-Ten-plus registered experiments produced one adopted pilot change and one adopted deck change.
-
-The last one is the sharpest. The search's model of the opponent's deck had gone stale: against
-our two most frequent opponents it reconstructed the right list **0% of the time**, padding the
-unseen deck with placeholder energy instead. Repairing it worked exactly as designed — 100%
-identification — and we killed it anyway: a control cell showed the repaired version
-misidentifies decks *outside* its dictionary more often (11%→22% pooled). Separately, corrupting
-the search's model of *our own* deck changed nothing measurable. Proving a component is broken
-does not entitle you to the fix — and this search's value, whatever produces it, does not come
-from the fidelity of its model.
-
-The most useful item is a reversal. Our largest negative result — rejecting a general
-Monte-Carlo rewrite — did **not** survive re-examination on the calibrated instrument:
-**+2.62pt, 95% CI [−0.68, +5.93]**, so the sign now points toward the version we discarded,
-though the interval contains zero [#12]. We report it as an instrument success, not an
-embarrassment. One further line was closed by code inspection rather than measurement, and we
-label it so [#21]. Limits: the in-family bias law rests on **three** pilot pairs and is extrapolated, and matchup-level
-samples are small.
+The instrument's limits are in the caption of Fig. 4 [#22, #44]. Inside the team, Ryohei Hara built a second pilot independently, with no shared code, computing exactly what this turn can reach with hypergeometric odds and nothing beyond it; it converged on the same mono-Water list, and its blind spot was the next turn where ours was the same turn (Fig. 8) [#41].
 
 ### 7. Conclusion
 
-For a high-variance stochastic game, the measurement apparatus is not the scaffolding around
-the agent — it is the main body of work. What we would tell our past selves is narrower than
-"measure more": **calibrate against the environment you are actually scored in; pre-register
-the number you expect; then keep auditing the rule that decides, including after you have
-already fixed it once — and be ready for it to overturn a decision you were proud of.** The
-same instrument taught us the other half: a card's value is a property of the deck and the
-pilot together.
+If a deadline forces an unmeasured change, freeze the behavioural predictions first, measure it afterwards anyway, and publish both; ours came back negative. A card is worth what the deck, the pilot and the field make of it, and an AI pilot changes all three: the human list lost three of its orthodoxies to measurement, the human value ordering for Boss's Orders changed 809 decisions in the direction a player would choose [#39] and still shipped inside a bundle that measured worse than the list our rule would have submitted [#50], and the lookahead that adds +13.62pt [#26] is also where every unguarded mistake came from.
 
 ---
 ---
@@ -253,6 +184,9 @@ fig_rating_timeline の更新1点 / 8/17以降の清書とT6機械照合。
 ---
 
 # v5保留分(台帳行が立ってから本文へ。出典スクリプトは全て replay_analysis/ に永続化済み)
+
+> **v6(2026-08-14)**: L-a/L-b は**取り下げ**(ゆうじ承認)。語数枠は§2退却物語に振替。
+> 台帳行は生存しており、9月の清書で余語が出れば下記の検算済み文をそのまま復活できる。
 
 **必要な台帳行(起票案、ラベルはチーム判断)**:
 - L-a: サイド経済 — 総取得230vs229(56戦)/KOあたり1.35vs2.18枚/勝利中央値4KOターン・敗北3。
