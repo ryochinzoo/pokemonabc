@@ -1,0 +1,65 @@
+=== CELL H1_lucario 16:02:35 ===
+我々: main.py   相手: ../../../../../verification/reference/official_lucario_agent.py + ../../../../../verification/decks/official_lucario_2026-07-21.csv   対戦数: 300   (178.5秒, 594.9 ms/戦)
+結果: 76勝 224敗 0分
+勝率: 25.3%  (95%信頼区間 20.7%〜30.5%)   引分除く勝率: 25.3%
+WINRATE=0.2533
+CI_LOW=0.2074
+CRASH=0
+
+=== CELL H1_archaludon 16:05:33 ===
+我々: main.py   相手: ../../../../../verification/reference/tomato_archaludon_agent.py + ../../../../../verification/decks/tomato_archaludon_2026-07-22.csv   対戦数: 300   (186.4秒, 621.3 ms/戦)
+結果: 34勝 266敗 0分
+勝率: 11.3%  (95%信頼区間 8.2%〜15.4%)   引分除く勝率: 11.3%
+WINRATE=0.1133
+CI_LOW=0.0822
+CRASH=0
+
+=== CELL H1_dragapult 16:08:40 ===
+我々: main.py   相手: ../../../../../verification/reference/official_dragapult_agent.py + ../../../../../verification/decks/official_dragapult_2026-07-22.csv   対戦数: 300   (218.9秒, 729.8 ms/戦)
+結果: 75勝 225敗 0分
+勝率: 25.0%  (95%信頼区間 20.4%〜30.2%)   引分除く勝率: 25.0%
+WINRATE=0.2500
+CI_LOW=0.2044
+CRASH=0
+
+=== CELL H1_abomasnow 16:12:19 ===
+我々: main.py   相手: ../../../../../verification/reference/official_abomasnow_agent.py + ../../../../../verification/decks/official_abomasnow_2026-07-21.csv   対戦数: 300   (235.3秒, 784.3 ms/戦)
+結果: 79勝 221敗 0分
+勝率: 26.3%  (95%信頼区間 21.7%〜31.6%)   引分除く勝率: 26.3%
+WINRATE=0.2633
+CI_LOW=0.2167
+CRASH=0
+
+=== CELL H2_lucario 16:16:14 ===
+我々: main.py   相手: ./main.py + ../../../../../verification/decks/official_lucario_2026-07-21.csv   対戦数: 300   (468.0秒, 1560.0 ms/戦)
+結果: 131勝 169敗 0分
+勝率: 43.7%  (95%信頼区間 38.2%〜49.3%)   引分除く勝率: 43.7%
+WINRATE=0.4367
+CI_LOW=0.3817
+CRASH=0
+
+=== CELL H2_archaludon 16:24:02 ===
+我々: main.py   相手: ./main.py + ../../../../../verification/decks/tomato_archaludon_2026-07-22.csv   対戦数: 300   (306.0秒, 1020.0 ms/戦)
+結果: 168勝 132敗 0分
+勝率: 56.0%  (95%信頼区間 50.3%〜61.5%)   引分除く勝率: 56.0%
+WINRATE=0.5600
+CI_LOW=0.5034
+CRASH=0
+
+=== CELL H2_dragapult 16:29:08 ===
+我々: main.py   相手: ./main.py + ../../../../../verification/decks/official_dragapult_2026-07-22.csv   対戦数: 300   (474.8秒, 1582.7 ms/戦)
+結果: 148勝 152敗 0分
+勝率: 49.3%  (95%信頼区間 43.7%〜55.0%)   引分除く勝率: 49.3%
+WINRATE=0.4933
+CI_LOW=0.4372
+CRASH=0
+
+=== CELL H2_abomasnow 16:37:03 ===
+我々: main.py   相手: ./main.py + ../../../../../verification/decks/official_abomasnow_2026-07-21.csv   対戦数: 300   (435.5秒, 1451.6 ms/戦)
+結果: 149勝 151敗 0分
+勝率: 49.7%  (95%信頼区間 44.0%〜55.3%)   引分除く勝率: 49.7%
+WINRATE=0.4967
+CI_LOW=0.4405
+CRASH=0
+
+=== ALL DONE 16:44:19 ===

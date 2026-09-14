@@ -1,0 +1,90 @@
+=== ARM=deckswap-tarountula-pilotfix vs random N=120 ===
+結果: 120勝 0敗 0分
+勝率: 100.0%  (95%信頼区間 96.9%〜100.0%)   引分除く勝率: 100.0%
+WINRATE=1.0000
+CI_LOW=0.9690
+CRASH=0
+=== ARM=deckswap-tarountula-v2 vs random N=120 ===
+結果: 120勝 0敗 0分
+勝率: 100.0%  (95%信頼区間 96.9%〜100.0%)   引分除く勝率: 100.0%
+WINRATE=1.0000
+CI_LOW=0.9690
+CRASH=0
+=== ARM=deckswap-tarountula-pilotfix vs フーディン N=200 ===
+結果: 188勝 12敗 0分
+勝率: 94.0%  (95%信頼区間 89.8%〜96.5%)   引分除く勝率: 94.0%
+WINRATE=0.9400
+CI_LOW=0.8981
+CRASH=0
+=== ARM=deckswap-tarountula-pilotfix vs メガルカリオ N=200 ===
+結果: 38勝 162敗 0分
+勝率: 19.0%  (95%信頼区間 14.2%〜25.0%)   引分除く勝率: 19.0%
+WINRATE=0.1900
+CI_LOW=0.1417
+CRASH=0
+=== ARM=deckswap-tarountula-pilotfix vs ブリジュラス N=200 ===
+結果: 25勝 175敗 0分
+勝率: 12.5%  (95%信頼区間 8.6%〜17.8%)   引分除く勝率: 12.5%
+WINRATE=0.1250
+CI_LOW=0.0861
+CRASH=0
+=== ARM=deckswap-tarountula-pilotfix vs イワパレス N=200 ===
+結果: 195勝 5敗 0分
+勝率: 97.5%  (95%信頼区間 94.3%〜98.9%)   引分除く勝率: 97.5%
+WINRATE=0.9750
+CI_LOW=0.9428
+CRASH=0
+=== ARM=deckswap-tarountula-v2 vs フーディン N=200 ===
+結果: 187勝 13敗 0分
+勝率: 93.5%  (95%信頼区間 89.2%〜96.2%)   引分除く勝率: 93.5%
+WINRATE=0.9350
+CI_LOW=0.8920
+CRASH=0
+=== ARM=deckswap-tarountula-v2 vs メガルカリオ N=200 ===
+結果: 16勝 184敗 0分
+勝率: 8.0%  (95%信頼区間 5.0%〜12.6%)   引分除く勝率: 8.0%
+WINRATE=0.0800
+CI_LOW=0.0498
+CRASH=0
+=== ARM=deckswap-tarountula-v2 vs ブリジュラス N=200 ===
+結果: 15勝 185敗 0分
+勝率: 7.5%  (95%信頼区間 4.6%〜12.0%)   引分除く勝率: 7.5%
+WINRATE=0.0750
+CI_LOW=0.0460
+CRASH=0
+=== ARM=deckswap-tarountula-v2 vs イワパレス N=200 ===
+結果: 200勝 0敗 0分
+勝率: 100.0%  (95%信頼区間 98.1%〜100.0%)   引分除く勝率: 100.0%
+WINRATE=1.0000
+CI_LOW=0.9812
+CRASH=0
+=== ARM=deckswap-tarountula vs オーロンゲ族内 N=200 ===
+結果: 63勝 137敗 0分
+勝率: 31.5%  (95%信頼区間 25.5%〜38.2%)   引分除く勝率: 31.5%
+WINRATE=0.3150
+CI_LOW=0.2546
+CRASH=0
+=== ARM=deckswap-tarountula-pilotfix vs オーロンゲ族内 N=200 ===
+結果: 86勝 113敗 1分
+勝率: 43.0%  (95%信頼区間 36.3%〜49.9%)   引分除く勝率: 43.2%
+WINRATE=0.4300
+CI_LOW=0.3633
+CRASH=0
+=== ARM=deckswap-tarountula-v2 vs オーロンゲ族内 N=200 ===
+結果: 105勝 94敗 1分
+勝率: 52.5%  (95%信頼区間 45.6%〜59.3%)   引分除く勝率: 52.8%
+WINRATE=0.5250
+CI_LOW=0.4560
+CRASH=0
+=== ARM=starmie-aggro vs フーディン N=200 ===
+結果: 118勝 82敗 0分
+勝率: 59.0%  (95%信頼区間 52.1%〜65.6%)   引分除く勝率: 59.0%
+WINRATE=0.5900
+CI_LOW=0.5208
+CRASH=0
+=== ARM=starmie-aggro vs メガルカリオ N=200 ===
+結果: 74勝 126敗 0分
+勝率: 37.0%  (95%信頼区間 30.6%〜43.9%)   引分除く勝率: 37.0%
+WINRATE=0.3700
+CI_LOW=0.3061
+CRASH=0

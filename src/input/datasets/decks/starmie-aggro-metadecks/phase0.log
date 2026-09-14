@@ -1,0 +1,25 @@
+--- champion_lucario 11:10:45 ---
+PROBE_JSON={"label": "champion_lucario", "n": 50, "n_eff": 50, "no_call": 0, "wins": 27, "final_key_counts": {"FALLBACK": 50}, "correct_rate": null, "fallback_rate": 1.0, "wrong_key_rate": 0.0, "overlap_ge54_rate": 0.0, "mean_final_overlap": 37.16, "coverage_identity_ok": null}
+--- champion_archaludon 11:11:00 ---
+PROBE_JSON={"label": "champion_archaludon", "n": 50, "n_eff": 50, "no_call": 0, "wins": 15, "final_key_counts": {"FALLBACK": 49, "kangaskhan_crustle": 1}, "correct_rate": null, "fallback_rate": 0.98, "wrong_key_rate": 0.02, "overlap_ge54_rate": 0.0, "mean_final_overlap": 32.74, "coverage_identity_ok": null}
+--- champion_dragapult 11:11:17 ---
+PROBE_JSON={"label": "champion_dragapult", "n": 50, "n_eff": 50, "no_call": 0, "wins": 39, "final_key_counts": {"FALLBACK": 48, "alakazam": 1, "starmie_dusknoir": 1}, "correct_rate": null, "fallback_rate": 0.96, "wrong_key_rate": 0.04, "overlap_ge54_rate": 0.0, "mean_final_overlap": 25.38, "coverage_identity_ok": null}
+--- champion_abomasnow 11:11:32 ---
+PROBE_JSON={"label": "champion_abomasnow", "n": 50, "n_eff": 50, "no_call": 0, "wins": 21, "final_key_counts": {"FALLBACK": 19, "starmie_dusknoir": 31}, "correct_rate": null, "fallback_rate": 0.38, "wrong_key_rate": 0.62, "overlap_ge54_rate": 0.0, "mean_final_overlap": 20.98, "coverage_identity_ok": null}
+--- champion_ctrl_alakazam 11:11:51 ---
+PROBE_JSON={"label": "champion_ctrl_alakazam", "n": 50, "n_eff": 50, "no_call": 0, "wins": 48, "final_key_counts": {"alakazam": 50}, "correct_rate": 1.0, "fallback_rate": 0.0, "wrong_key_rate": 0.0, "overlap_ge54_rate": 1.0, "mean_final_overlap": 60.0, "coverage_identity_ok": true}
+--- champion_ctrl_lunasol 11:12:10 ---
+PROBE_JSON={"label": "champion_ctrl_lunasol", "n": 50, "n_eff": 50, "no_call": 0, "wins": 45, "final_key_counts": {"FALLBACK": 49, "grimmsnarl_munkidori": 1}, "correct_rate": null, "fallback_rate": 0.98, "wrong_key_rate": 0.02, "overlap_ge54_rate": 0.0, "mean_final_overlap": 32.98, "coverage_identity_ok": null}
+--- variant_lucario 11:13:08 ---
+PROBE_JSON={"label": "variant_lucario", "n": 50, "n_eff": 50, "no_call": 0, "wins": 20, "final_key_counts": {"meta_lucario": 50}, "correct_rate": 1.0, "fallback_rate": 0.0, "wrong_key_rate": 0.0, "overlap_ge54_rate": 1.0, "mean_final_overlap": 60.0, "coverage_identity_ok": true}
+--- variant_archaludon 11:13:34 ---
+PROBE_JSON={"label": "variant_archaludon", "n": 50, "n_eff": 50, "no_call": 0, "wins": 13, "final_key_counts": {"meta_archaludon_tomato": 50}, "correct_rate": 1.0, "fallback_rate": 0.0, "wrong_key_rate": 0.0, "overlap_ge54_rate": 1.0, "mean_final_overlap": 60.0, "coverage_identity_ok": true}
+--- variant_dragapult 11:14:02 ---
+PROBE_JSON={"label": "variant_dragapult", "n": 50, "n_eff": 50, "no_call": 0, "wins": 33, "final_key_counts": {"meta_dragapult": 50}, "correct_rate": 1.0, "fallback_rate": 0.0, "wrong_key_rate": 0.0, "overlap_ge54_rate": 1.0, "mean_final_overlap": 60.0, "coverage_identity_ok": true}
+--- variant_abomasnow 11:14:26 ---
+PROBE_JSON={"label": "variant_abomasnow", "n": 50, "n_eff": 50, "no_call": 0, "wins": 13, "final_key_counts": {"meta_abomasnow": 50}, "correct_rate": 1.0, "fallback_rate": 0.0, "wrong_key_rate": 0.0, "overlap_ge54_rate": 1.0, "mean_final_overlap": 60.0, "coverage_identity_ok": true}
+--- variant_ctrl_alakazam 11:14:41 ---
+PROBE_JSON={"label": "variant_ctrl_alakazam", "n": 50, "n_eff": 50, "no_call": 0, "wins": 46, "final_key_counts": {"alakazam": 50}, "correct_rate": 1.0, "fallback_rate": 0.0, "wrong_key_rate": 0.0, "overlap_ge54_rate": 1.0, "mean_final_overlap": 60.0, "coverage_identity_ok": true}
+--- variant_ctrl_lunasol 11:15:02 ---
+PROBE_JSON={"label": "variant_ctrl_lunasol", "n": 50, "n_eff": 50, "no_call": 0, "wins": 43, "final_key_counts": {"meta_lucario": 50}, "correct_rate": null, "fallback_rate": 0.0, "wrong_key_rate": 1.0, "overlap_ge54_rate": 1.0, "mean_final_overlap": 60.0, "coverage_identity_ok": null}
+=== PHASE0 DONE 11:16:23 ===

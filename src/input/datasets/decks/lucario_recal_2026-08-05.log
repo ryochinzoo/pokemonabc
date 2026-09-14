@@ -1,0 +1,21 @@
+=== ARM: starmie-aggro vs makthanithin-lucario ===
+我々: main.py   相手: /Users/yujiinoue/Documents/products/pokemonabc/verification/reference/makthanithin_lucario_agent.py + /Users/yujiinoue/Documents/products/pokemonabc/verification/decks/makthanithin_lucario_2026-08-05.csv   対戦数: 200   (56.1秒, 280.5 ms/戦)
+結果: 71勝 127敗 2分
+勝率: 35.5%  (95%信頼区間 29.2%〜42.3%)   引分除く勝率: 35.9%
+WINRATE=0.3550
+CI_LOW=0.2920
+CRASH=0
+=== ARM: deckswap-grimmsnarl vs makthanithin-lucario ===
+我々: main.py   相手: /Users/yujiinoue/Documents/products/pokemonabc/verification/reference/makthanithin_lucario_agent.py + /Users/yujiinoue/Documents/products/pokemonabc/verification/decks/makthanithin_lucario_2026-08-05.csv   対戦数: 200   (118.1秒, 590.6 ms/戦)
+結果: 31勝 168敗 1分
+勝率: 15.5%  (95%信頼区間 11.1%〜21.2%)   引分除く勝率: 15.6%
+WINRATE=0.1550
+CI_LOW=0.1114
+CRASH=0
+=== ARM: deckswap-grimmsnarl-abilityfix vs makthanithin-lucario ===
+我々: main.py   相手: /Users/yujiinoue/Documents/products/pokemonabc/verification/reference/makthanithin_lucario_agent.py + /Users/yujiinoue/Documents/products/pokemonabc/verification/decks/makthanithin_lucario_2026-08-05.csv   対戦数: 200   (132.6秒, 662.8 ms/戦)
+結果: 61勝 138敗 1分
+勝率: 30.5%  (95%信頼区間 24.5%〜37.2%)   引分除く勝率: 30.7%
+WINRATE=0.3050
+CI_LOW=0.2454
+CRASH=0

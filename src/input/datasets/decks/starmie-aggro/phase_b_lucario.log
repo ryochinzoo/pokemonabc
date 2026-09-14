@@ -1,0 +1,58 @@
+=== Phase B (meta_lucario) start: Fri Jul 24 13:19:55 JST 2026 ===
+--- 族外: official lucario agent N=300 ---
+我々: main.py + ../../../../../verification/decks/meta_lucario_2026-07-14.csv   相手: ../../../../../verification/reference/official_lucario_agent.py + ../../../../../verification/decks/official_lucario_2026-07-21.csv   対戦数: 300   (206.9秒, 689.6 ms/戦)
+結果: 136勝 164敗 0分
+勝率: 45.3%  (95%信頼区間 39.8%〜51.0%)   引分除く勝率: 45.3%
+WINRATE=0.4533
+CI_LOW=0.3979
+CRASH=0
+--- 族外: tomato archaludon agent N=300 ---
+我々: main.py + ../../../../../verification/decks/meta_lucario_2026-07-14.csv   相手: ../../../../../verification/reference/tomato_archaludon_agent.py + ../../../../../verification/decks/tomato_archaludon_2026-07-22.csv   対戦数: 300   (223.9秒, 746.4 ms/戦)
+結果: 55勝 245敗 0分
+勝率: 18.3%  (95%信頼区間 14.4%〜23.1%)   引分除く勝率: 18.3%
+WINRATE=0.1833
+CI_LOW=0.1436
+CRASH=0
+--- 族外: official dragapult agent N=300 ---
+我々: main.py + ../../../../../verification/decks/meta_lucario_2026-07-14.csv   相手: ../../../../../verification/reference/official_dragapult_agent.py + ../../../../../verification/decks/official_dragapult_2026-07-22.csv   対戦数: 300   (205.6秒, 685.3 ms/戦)
+結果: 154勝 145敗 1分
+勝率: 51.3%  (95%信頼区間 45.7%〜56.9%)   引分除く勝率: 51.5%
+WINRATE=0.5133
+CI_LOW=0.4570
+CRASH=0
+--- 族外: official abomasnow agent N=300 ---
+我々: main.py + ../../../../../verification/decks/meta_lucario_2026-07-14.csv   相手: ../../../../../verification/reference/official_abomasnow_agent.py + ../../../../../verification/decks/official_abomasnow_2026-07-21.csv   対戦数: 300   (205.9秒, 686.2 ms/戦)
+結果: 95勝 205敗 0分
+勝率: 31.7%  (95%信頼区間 26.7%〜37.1%)   引分除く勝率: 31.7%
+WINRATE=0.3167
+CI_LOW=0.2666
+CRASH=0
+--- 族内: 自パイロット×lucario deck N=300 ---
+我々: main.py + ../../../../../verification/decks/meta_lucario_2026-07-14.csv   相手: main.py + ../../../../../verification/decks/official_lucario_2026-07-21.csv   対戦数: 300   (478.5秒, 1595.2 ms/戦)
+結果: 179勝 121敗 0分
+勝率: 59.7%  (95%信頼区間 54.0%〜65.1%)   引分除く勝率: 59.7%
+WINRATE=0.5967
+CI_LOW=0.5403
+CRASH=0
+--- 族内: 自パイロット×archaludon deck N=300 ---
+我々: main.py + ../../../../../verification/decks/meta_lucario_2026-07-14.csv   相手: main.py + ../../../../../verification/decks/tomato_archaludon_2026-07-22.csv   対戦数: 300   (290.6秒, 968.5 ms/戦)
+結果: 187勝 113敗 0分
+勝率: 62.3%  (95%信頼区間 56.7%〜67.6%)   引分除く勝率: 62.3%
+WINRATE=0.6233
+CI_LOW=0.5673
+CRASH=0
+--- 族内: 自パイロット×dragapult deck N=300 ---
+我々: main.py + ../../../../../verification/decks/meta_lucario_2026-07-14.csv   相手: main.py + ../../../../../verification/decks/official_dragapult_2026-07-22.csv   対戦数: 300   (411.6秒, 1372.1 ms/戦)
+結果: 204勝 96敗 0分
+勝率: 68.0%  (95%信頼区間 62.5%〜73.0%)   引分除く勝率: 68.0%
+WINRATE=0.6800
+CI_LOW=0.6252
+CRASH=0
+--- 族内: 自パイロット×abomasnow deck N=300 ---
+--- 族内: 自パイロット×abomasnow deck N=300 (再走 Fri Jul 24 14:00:26 JST 2026) ---
+我々: main.py + ../../../../../verification/decks/meta_lucario_2026-07-14.csv   相手: main.py + ../../../../../verification/decks/official_abomasnow_2026-07-21.csv   対戦数: 300   (460.2秒, 1534.1 ms/戦)
+結果: 176勝 124敗 0分
+勝率: 58.7%  (95%信頼区間 53.0%〜64.1%)   引分除く勝率: 58.7%
+WINRATE=0.5867
+CI_LOW=0.5302
+CRASH=0

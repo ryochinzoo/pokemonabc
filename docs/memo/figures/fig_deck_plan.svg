@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" font-family="Helvetica,Arial" font-size="12">
+<style>
+  .s1{fill:#2a78d6} .s1s{stroke:#2a78d6} .s2{fill:#eb6834} .s2s{stroke:#eb6834}
+  .ink{fill:#0b0b0b} .ink2{fill:#52514e} .grid{stroke:#dcdcd8} .axis{stroke:#b8b8b2}
+  .surf{fill:#fcfcfb} .surfs{stroke:#fcfcfb}
+  @media (prefers-color-scheme: dark){
+    .s1{fill:#3987e5} .s1s{stroke:#3987e5} .s2{fill:#d95926} .s2s{stroke:#d95926}
+    .ink{fill:#ffffff} .ink2{fill:#c3c2b7} .grid{stroke:#33332f} .axis{stroke:#55554f}
+    .surf{fill:#1a1a19} .surfs{stroke:#1a1a19}
+  }
+</style>
+<rect width="960" height="540" class="surf"/>
+<text x="24" y="28" font-size="15" font-weight="bold" class="ink">The 60-card list and its plan: two knock-outs with one attacker</text>
+<text x="24" y="48" class="ink2">Mono-Water, two species, four Basics. Every removal from the parent list was forced by measurement, not by theory.</text>
+<text x="24" y="84" font-weight="bold" class="ink">Pokémon (8)</text>
+<text x="40" y="102" class="ink2">4 × Staryu</text>
+<text x="40" y="118" class="ink2">4 × Mega Starmie ex</text>
+<text x="24" y="142" font-weight="bold" class="ink">Energy (16)</text>
+<text x="40" y="160" class="ink2">12 × Basic Water Energy</text>
+<text x="40" y="176" class="ink2">4 × Ignition Energy</text>
+<text x="24" y="200" font-weight="bold" class="ink">Supporters (19)</text>
+<text x="40" y="218" class="ink2">4 × Hilda</text>
+<text x="40" y="234" class="ink2">4 × Lillie's Determination</text>
+<text x="40" y="250" class="ink2">4 × Wally's Compassion</text>
+<text x="40" y="266" class="ink2">3 × Boss's Orders</text>
+<text x="40" y="282" class="ink2">2 × Carmine</text>
+<text x="40" y="298" class="ink2">2 × Judge</text>
+<text x="24" y="322" font-weight="bold" class="ink">Items (14)</text>
+<text x="40" y="340" class="ink2">4 × Ultra Ball</text>
+<text x="40" y="356" class="ink2">4 × Buddy-Buddy Poffin</text>
+<text x="40" y="372" class="ink2">4 × Pokégear 3.0</text>
+<text x="40" y="388" class="ink2">2 × Night Stretcher</text>
+<text x="24" y="412" font-weight="bold" class="ink">Stadium / ACE SPEC (3)</text>
+<text x="40" y="430" class="ink2">2 × Surfing Beach</text>
+<text x="40" y="446" class="ink2">1 × Deluxe Bomb</text>
+<text x="400" y="80" font-weight="bold" class="ink">Which attack it actually uses (last 1,000 ladder games, 4,318 attacks)</text>
+<text x="400" y="102" class="ink2" font-size="11">Jetting Blow  (1 Water: 120 + 50 to a Benched Pokémon)</text>
+<rect x="400" y="108" width="214.2" height="16" rx="3" class="s1"/>
+<text x="620.2" y="121" class="ink" font-weight="bold">71.4%</text>
+<text x="400" y="148" class="ink2" font-size="11">Nebula Beam  (3 Energy: 210)</text>
+<rect x="400" y="154" width="55.5" height="16" rx="3" fill="#c9c9c4"/>
+<text x="461.5" y="167" class="ink" font-weight="bold">18.5%</text>
+<text x="400" y="194" class="ink2" font-size="11">Water Gun  (Staryu: 20)</text>
+<rect x="400" y="200" width="30.6" height="16" rx="3" fill="#c9c9c4"/>
+<text x="436.6" y="213" class="ink" font-weight="bold">10.2%</text>
+<rect x="390" y="246" width="546" height="239" rx="6" fill="none" class="axis" stroke-width="1.2"/>
+<text x="400" y="266" class="ink" font-size="11">The plan. Six prizes in two turns: 3 from a Mega ex, or 2 from an ex plus 1 from a Basic hit</text>
+<text x="400" y="281" class="ink2" font-size="11">by the 50-damage splash. Jetting Blow costs one Water, so Wally's Compassion's energy</text>
+<text x="400" y="296" class="ink2" font-size="11">return costs one attachment; Ignition Energy alone pays for Nebula Beam; Surfing Beach</text>
+<text x="400" y="311" class="ink2" font-size="11">is the only switch. It is a race, run every game.</text>
+<text x="400" y="326" class="ink2" font-size="11"></text>
+<text x="400" y="341" class="ink" font-size="11">Four Basics, on purpose. The list mulligans 60% of the time. Eight or ten Basics cut that</text>
+<text x="400" y="356" class="ink2" font-size="11">to 26% and did not help (34.5 → 33.0 → 31.2; screening, N = 300 per gauge, July list and pilot).</text>
+<text x="400" y="371" class="ink2" font-size="11"></text>
+<text x="400" y="386" class="ink" font-size="11">Rejected by measurement: the Dusknoir sacrifice engine (the list without it won 64.7%</text>
+<text x="400" y="401" class="ink2" font-size="11">head-to-head, N = 150); Cinderace energy acceleration, tried and dropped (0.12 uses per</text>
+<text x="400" y="416" class="ink2" font-size="11">game in our hands). Deluxe Bomb is the ACE SPEC; a Belt in its place measured −0.57pt</text>
+<text x="400" y="431" class="ink2" font-size="11">(95% CI −2.82 to +1.68).</text>
+<text x="400" y="446" class="ink2" font-size="11"></text>
+<text x="400" y="461" class="ink" font-size="11">Boss's Orders ×3. The August list ran two; a third copy measured −1.53pt with the old</text>
+<text x="400" y="476" class="ink2" font-size="11">pilot, which had no idea whom to drag out. Re-added with the value ordering in Fig. 1.</text>
+<text x="24" y="530" class="ink2" font-size="10">Sources: deck list as submitted; attack counts from Kaggle replays; measurements on the calibrated out-of-family composite (see Figs. 4–6).</text>
+</svg>

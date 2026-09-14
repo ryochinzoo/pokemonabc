@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" font-family="Helvetica,Arial" font-size="12">
+<style>
+  .s1{fill:#2a78d6} .s1s{stroke:#2a78d6} .s2{fill:#eb6834} .s2s{stroke:#eb6834}
+  .ink{fill:#0b0b0b} .ink2{fill:#52514e} .grid{stroke:#dcdcd8} .axis{stroke:#b8b8b2}
+  .surf{fill:#fcfcfb} .surfs{stroke:#fcfcfb}
+  @media (prefers-color-scheme: dark){
+    .s1{fill:#3987e5} .s1s{stroke:#3987e5} .s2{fill:#d95926} .s2s{stroke:#d95926}
+    .ink{fill:#ffffff} .ink2{fill:#c3c2b7} .grid{stroke:#33332f} .axis{stroke:#55554f}
+    .surf{fill:#1a1a19} .surfs{stroke:#1a1a19}
+  }
+</style>
+<rect width="960" height="520" class="surf"/>
+<text x="24" y="28" font-size="15" font-weight="bold" class="ink">From the human-orthodox list to the submitted one: twelve cards, each with a measurement or a reason</text>
+<text x="24" y="48" class="ink2">Parent = a July 14 human-style list with the Dusknoir engine. Twelve cards moved by Aug 11; on Aug 17 a Night Stretcher became the third Boss's Orders.</text>
+<text x="24" y="84" font-weight="bold" class="ink">Change</text>
+<text x="250" y="84" font-weight="bold" class="ink">Removed</text>
+<text x="560" y="84" font-weight="bold" class="ink">Added</text>
+<line x1="24" y1="92" x2="936" y2="92" class="axis"/>
+<text x="24" y="114" class="ink" font-weight="bold">Dusknoir engine</text>
+<text x="250" y="114" class="s2" font-size="11">−2 Duskull, −2 Dusclops, −2 Dusknoir</text>
+<text x="250" y="131" class="ink2" font-size="11">Measured out: the list without it won 64.7% head-to-head (N = 150).</text>
+<text x="250" y="146" class="ink2" font-size="11">Our forecast from the coaching canon, written before the run, was −5 to −10; the sign was wrong.</text>
+<line x1="24" y1="167" x2="936" y2="167" class="grid"/>
+<text x="24" y="179" class="ink" font-weight="bold">Poké Pad</text>
+<text x="250" y="179" class="s2" font-size="11">−4 Poké Pad</text>
+<text x="250" y="196" class="ink2" font-size="11">82% of the 105 top-band teams run it. Adding one back measured −1.58pt</text>
+<text x="250" y="211" class="ink2" font-size="11">(95% CI −3.45 to +0.29) with the pilot byte-identical.</text>
+<line x1="24" y1="232" x2="936" y2="232" class="grid"/>
+<text x="24" y="244" class="ink" font-weight="bold">Supporter trim</text>
+<text x="250" y="244" class="s2" font-size="11">−1 Carmine, −1 Judge</text>
+<text x="250" y="261" class="ink2" font-size="11">Part of the mono-Water rebuild; measured as a bundle, not per card.</text>
+<line x1="24" y1="282" x2="936" y2="282" class="grid"/>
+<text x="24" y="294" class="ink" font-weight="bold">Mono-Water core</text>
+<text x="560" y="294" class="s1" font-size="11">+3 Basic Water, +1 Mega Starmie ex, +1 Pokégear 3.0</text>
+<text x="250" y="311" class="ink2" font-size="11">Energy for the one-energy 120 + 50 plan, a fourth copy of the only attacker.</text>
+<line x1="24" y1="332" x2="936" y2="332" class="grid"/>
+<text x="24" y="344" class="ink" font-weight="bold">Recovery and switch</text>
+<text x="560" y="344" class="s1" font-size="11">+3 Night Stretcher (−1 on Aug 17), +2 Surfing Beach</text>
+<text x="250" y="361" class="ink2" font-size="11">Bring the attacker back; Surfing Beach is the deck's only switch.</text>
+<line x1="24" y1="382" x2="936" y2="382" class="grid"/>
+<text x="24" y="394" class="ink" font-weight="bold">Boss's Orders 0 → 2 → 3</text>
+<text x="560" y="394" class="s1" font-size="11">+2 (Aug 11), +1 (Aug 17)</text>
+<text x="250" y="411" class="ink2" font-size="11">The third copy measured −1.53pt (95% CI −2.76 to −0.30) with the old pilot.</text>
+<text x="250" y="426" class="ink2" font-size="11">Re-added with the targeting rules of Fig. 1; the bundle measured −3.29pt after the deadline.</text>
+<line x1="24" y1="447" x2="936" y2="447" class="grid"/>
+<text x="24" y="478" class="ink2" font-size="11">Net parent → final: −6 Dusknoir line, −4 Poké Pad, −1 Carmine, −1 Judge / +3 Water, +2 Night Stretcher, +1 Mega Starmie ex, +1 Pokégear 3.0, +2 Surfing Beach, +3 Boss's Orders.</text>
+<text x="24" y="494" class="ink2" font-size="10">Sources: deck.csv of the parent (Jul 14), aqua (Aug 11) and the submission (Aug 17); effect sizes on the calibrated out-of-family composite (Figs. 4–6), pilot byte-identical within each test.</text>
+<text x="24" y="510" class="ink2" font-size="10">Expert intuition is reliable only where the expert has had fast feedback from a regular environment (Kahneman &amp; Klein 2009); no one had such feedback about an AI pilot, so every orthodoxy was measured.</text>
+</svg>

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="946" height="222" font-family="Helvetica,Arial" font-size="12">
+<text x="190" y="24" font-size="15" font-weight="bold">Deck robustness matrix — same pilot (v2.1c) both sides, N=150/cell</text>
+<text x="190" y="42" font-size="11" fill="#555">Removing the 6-slot Dusknoir combo line improves every matchup (sign-consistent, weighted +15.7pt) — data.md 2026-07-20</text>
+<text x="236.0" y="52" text-anchor="middle" font-size="11">Alakazam</text>
+<text x="328.0" y="52" text-anchor="middle" font-size="11">Archaludon</text>
+<text x="420.0" y="52" text-anchor="middle" font-size="11">Grimmsnarl</text>
+<text x="512.0" y="52" text-anchor="middle" font-size="11">Lucario</text>
+<text x="604.0" y="52" text-anchor="middle" font-size="11">Kangaskhan</text>
+<text x="604.0" y="64" text-anchor="middle" font-size="11">+Crustle</text>
+<text x="696.0" y="52" text-anchor="middle" font-size="11">Garchomp</text>
+<text x="788.0" y="52" text-anchor="middle" font-size="11">TR Mewtwo</text>
+<text x="880.0" y="52" text-anchor="middle" font-size="11">Crustle wall</text>
+<text x="182" y="97.0" text-anchor="end">rank9 (Dusknoir line)</text>
+<rect x="190" y="70" width="89" height="43" fill="rgb(220,242,220)" stroke="#999"/>
+<text x="235.0" y="97.0" text-anchor="middle" font-weight="bold">60%</text>
+<rect x="282" y="70" width="89" height="43" fill="rgb(196,234,196)" stroke="#999"/>
+<text x="327.0" y="97.0" text-anchor="middle" font-weight="bold">67%</text>
+<rect x="374" y="70" width="89" height="43" fill="rgb(158,220,158)" stroke="#999"/>
+<text x="419.0" y="97.0" text-anchor="middle" font-weight="bold">78%</text>
+<rect x="466" y="70" width="89" height="43" fill="rgb(193,233,193)" stroke="#999"/>
+<text x="511.0" y="97.0" text-anchor="middle" font-weight="bold">68%</text>
+<rect x="558" y="70" width="89" height="43" fill="rgb(255,255,255)" stroke="#999"/>
+<text x="603.0" y="97.0" text-anchor="middle" font-weight="bold">50%</text>
+<rect x="650" y="70" width="89" height="43" fill="rgb(196,234,196)" stroke="#999"/>
+<text x="695.0" y="97.0" text-anchor="middle" font-weight="bold">67%</text>
+<rect x="742" y="70" width="89" height="43" fill="rgb(141,214,141)" stroke="#999"/>
+<text x="787.0" y="97.0" text-anchor="middle" font-weight="bold">83%</text>
+<rect x="834" y="70" width="89" height="43" fill="rgb(163,222,163)" stroke="#999"/>
+<text x="879.0" y="97.0" text-anchor="middle" font-weight="bold">77%</text>
+<text x="182" y="143.0" text-anchor="end">starmie-aggro (D21)</text>
+<rect x="190" y="116" width="89" height="43" fill="rgb(211,239,211)" stroke="#999"/>
+<text x="235.0" y="143.0" text-anchor="middle" font-weight="bold">63%</text>
+<rect x="282" y="116" width="89" height="43" fill="rgb(133,211,133)" stroke="#999"/>
+<text x="327.0" y="143.0" text-anchor="middle" font-weight="bold">85%</text>
+<rect x="374" y="116" width="89" height="43" fill="rgb(103,201,103)" stroke="#999"/>
+<text x="419.0" y="143.0" text-anchor="middle" font-weight="bold">94%</text>
+<rect x="466" y="116" width="89" height="43" fill="rgb(112,204,112)" stroke="#999"/>
+<text x="511.0" y="143.0" text-anchor="middle" font-weight="bold">91%</text>
+<rect x="558" y="116" width="89" height="43" fill="rgb(151,218,151)" stroke="#999"/>
+<text x="603.0" y="143.0" text-anchor="middle" font-weight="bold">80%</text>
+<rect x="650" y="116" width="89" height="43" fill="rgb(137,213,137)" stroke="#999"/>
+<text x="695.0" y="143.0" text-anchor="middle" font-weight="bold">84%</text>
+<rect x="742" y="116" width="89" height="43" fill="rgb(105,202,105)" stroke="#999"/>
+<text x="787.0" y="143.0" text-anchor="middle" font-weight="bold">93%</text>
+<rect x="834" y="116" width="89" height="43" fill="rgb(103,201,103)" stroke="#999"/>
+<text x="879.0" y="143.0" text-anchor="middle" font-weight="bold">94%</text>
+<text x="182" y="186" text-anchor="end" fill="#555">Δ</text>
+<text x="236.0" y="186" text-anchor="middle" fill="#1a7f1a">+3</text>
+<text x="328.0" y="186" text-anchor="middle" fill="#1a7f1a">+18</text>
+<text x="420.0" y="186" text-anchor="middle" fill="#1a7f1a">+16</text>
+<text x="512.0" y="186" text-anchor="middle" fill="#1a7f1a">+23</text>
+<text x="604.0" y="186" text-anchor="middle" fill="#1a7f1a">+30</text>
+<text x="696.0" y="186" text-anchor="middle" fill="#1a7f1a">+17</text>
+<text x="788.0" y="186" text-anchor="middle" fill="#1a7f1a">+10</text>
+<text x="880.0" y="186" text-anchor="middle" fill="#1a7f1a">+17</text>
+</svg>

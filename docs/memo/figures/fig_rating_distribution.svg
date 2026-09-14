@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="400" font-family="Helvetica,Arial" font-size="12">
+<style>
+  .s1{fill:#2a78d6} .s1s{stroke:#2a78d6} .s2{fill:#eb6834} .s2s{stroke:#eb6834}
+  .ink{fill:#0b0b0b} .ink2{fill:#52514e} .grid{stroke:#dcdcd8} .axis{stroke:#b8b8b2}
+  .surf{fill:#fcfcfb} .surfs{stroke:#fcfcfb}
+  @media (prefers-color-scheme: dark){
+    .s1{fill:#3987e5} .s1s{stroke:#3987e5} .s2{fill:#d95926} .s2s{stroke:#d95926}
+    .ink{fill:#ffffff} .ink2{fill:#c3c2b7} .grid{stroke:#33332f} .axis{stroke:#55554f}
+    .surf{fill:#1a1a19} .surfs{stroke:#1a1a19}
+  }
+</style>
+<rect width="760" height="400" class="surf"/>
+<text x="24" y="28" font-size="15" font-weight="bold" class="ink">Where 656.7 sits: the final ratings of all 6,807 teams</text>
+<text x="24" y="48" class="ink2">Public leaderboard snapshot of Sep 1, 50-point bins. Median 621.5; 90% of teams below 853.5. This submission: rank 2,898, top 42.6%.</text>
+<line x1="206.7" y1="90" x2="206.7" y2="320" class="grid"/><text x="206.7" y="338" text-anchor="middle" class="ink2">0</text>
+<line x1="280.0" y1="90" x2="280.0" y2="320" class="grid"/><text x="280.0" y="338" text-anchor="middle" class="ink2">200</text>
+<line x1="353.3" y1="90" x2="353.3" y2="320" class="grid"/><text x="353.3" y="338" text-anchor="middle" class="ink2">400</text>
+<line x1="426.7" y1="90" x2="426.7" y2="320" class="grid"/><text x="426.7" y="338" text-anchor="middle" class="ink2">600</text>
+<line x1="500.0" y1="90" x2="500.0" y2="320" class="grid"/><text x="500.0" y="338" text-anchor="middle" class="ink2">800</text>
+<line x1="573.3" y1="90" x2="573.3" y2="320" class="grid"/><text x="573.3" y="338" text-anchor="middle" class="ink2">1000</text>
+<line x1="646.7" y1="90" x2="646.7" y2="320" class="grid"/><text x="646.7" y="338" text-anchor="middle" class="ink2">1200</text>
+<line x1="720.0" y1="90" x2="720.0" y2="320" class="grid"/><text x="720.0" y="338" text-anchor="middle" class="ink2">1400</text>
+<rect x="79.3" y="319.7" width="16.3" height="0.3" fill="#c9c9c4"/>
+<rect x="97.7" y="319.7" width="16.3" height="0.3" fill="#c9c9c4"/>
+<rect x="116.0" y="319.5" width="16.3" height="0.5" fill="#c9c9c4"/>
+<rect x="134.3" y="319.7" width="16.3" height="0.3" fill="#c9c9c4"/>
+<rect x="152.7" y="318.4" width="16.3" height="1.6" fill="#c9c9c4"/>
+<rect x="171.0" y="318.4" width="16.3" height="1.6" fill="#c9c9c4"/>
+<rect x="189.3" y="316.2" width="16.3" height="3.8" fill="#c9c9c4"/>
+<rect x="207.7" y="314.0" width="16.3" height="6.0" fill="#c9c9c4"/>
+<rect x="226.0" y="304.0" width="16.3" height="16.0" fill="#c9c9c4"/>
+<rect x="244.3" y="299.7" width="16.3" height="20.3" fill="#c9c9c4"/>
+<rect x="262.7" y="290.2" width="16.3" height="29.8" fill="#c9c9c4"/>
+<rect x="281.0" y="268.6" width="16.3" height="51.4" fill="#c9c9c4"/>
+<rect x="299.3" y="271.3" width="16.3" height="48.7" fill="#c9c9c4"/>
+<rect x="317.7" y="266.4" width="16.3" height="53.6" fill="#c9c9c4"/>
+<rect x="336.0" y="249.4" width="16.3" height="70.6" fill="#c9c9c4"/>
+<rect x="354.3" y="221.2" width="16.3" height="98.8" fill="#c9c9c4"/>
+<rect x="372.7" y="202.8" width="16.3" height="117.2" fill="#c9c9c4"/>
+<rect x="391.0" y="176.9" width="16.3" height="143.1" fill="#c9c9c4"/>
+<rect x="409.3" y="140.3" width="16.3" height="179.7" fill="#c9c9c4"/>
+<rect x="427.7" y="132.2" width="16.3" height="187.8" fill="#c9c9c4"/>
+<rect x="446.0" y="100.3" width="16.3" height="219.7" fill="#c9c9c4"/>
+<rect x="464.3" y="144.1" width="16.3" height="175.9" fill="#c9c9c4"/>
+<rect x="482.7" y="215.0" width="16.3" height="105.0" fill="#c9c9c4"/>
+<rect x="501.0" y="199.3" width="16.3" height="120.7" fill="#c9c9c4"/>
+<rect x="519.3" y="253.2" width="16.3" height="66.8" fill="#c9c9c4"/>
+<rect x="537.7" y="264.8" width="16.3" height="55.2" fill="#c9c9c4"/>
+<rect x="556.0" y="286.7" width="16.3" height="33.3" fill="#c9c9c4"/>
+<rect x="574.3" y="300.8" width="16.3" height="19.2" fill="#c9c9c4"/>
+<rect x="592.7" y="314.9" width="16.3" height="5.1" fill="#c9c9c4"/>
+<rect x="611.0" y="316.2" width="16.3" height="3.8" fill="#c9c9c4"/>
+<rect x="629.3" y="316.8" width="16.3" height="3.2" fill="#c9c9c4"/>
+<rect x="647.7" y="318.9" width="16.3" height="1.1" fill="#c9c9c4"/>
+<rect x="666.0" y="318.9" width="16.3" height="1.1" fill="#c9c9c4"/>
+<rect x="702.7" y="319.7" width="16.3" height="0.3" fill="#c9c9c4"/>
+<line x1="434.6" y1="90" x2="434.6" y2="320" class="axis" stroke-width="1.5" stroke-dasharray="4,3"/>
+<text x="428.6" y="104" text-anchor="end" class="ink2" font-size="11">median 621.5</text>
+<line x1="447.5" y1="90" x2="447.5" y2="320" class="s1s" stroke-width="2.5"/>
+<text x="453.5" y="104" class="s1" font-weight="bold" font-size="11">this submission 656.7 (rank 2,898 of 6,807)</text>
+<line x1="519.6" y1="90" x2="519.6" y2="320" class="axis" stroke-width="1" stroke-dasharray="2,3"/>
+<text x="525.6" y="122" class="ink2" font-size="11">90th percentile 853.5</text>
+<text x="60" y="356" class="ink2" font-size="11">Kaggle rating at the end of the Simulation ladder</text>
+<text x="24" y="390" class="ink2" font-size="10">Source: kaggle competitions leaderboard --download, 2026-09-01T17:56 UTC; 6,807 teams; ties at 656.7 occupy ranks 2,897–2,899.</text>
+</svg>

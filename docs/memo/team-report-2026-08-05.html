@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026-08-05 チーム検討資料 — スターミーの現在地と、デッキを替える提案</title>
+<style>
+:root{
+  color-scheme: light;
+  --page:#f9f9f7; --surface:#fcfcfb;
+  --ink:#0b0b0b; --ink-2:#52514e; --ink-muted:#898781;
+  --grid:#e1e0d9; --baseline:#c3c2b7; --ring:rgba(11,11,11,.10);
+  --s1:#2a78d6; --s2:#eb6834;
+  --good:#0ca30c; --critical:#d03b3b; --warning:#fab219;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19;
+    --ink:#ffffff; --ink-2:#c3c2b7; --ink-muted:#898781;
+    --grid:#2c2c2a; --baseline:#383835; --ring:rgba(255,255,255,.10);
+    --s1:#3987e5; --s2:#d95926;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --page:#0d0d0d; --surface:#1a1a19;
+  --ink:#ffffff; --ink-2:#c3c2b7; --ink-muted:#898781;
+  --grid:#2c2c2a; --baseline:#383835; --ring:rgba(255,255,255,.10);
+  --s1:#3987e5; --s2:#d95926;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:1.5rem}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;
+  background:var(--page); color:var(--ink); line-height:1.8;
+  -webkit-font-smoothing:antialiased; font-feature-settings:"palt" 1;
+}
+.wrap{max-width:920px;margin:0 auto;padding:0 1.4rem 6rem}
+header{padding:3.5rem 0 2rem;border-bottom:1px solid var(--grid)}
+.eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;color:var(--ink-muted);text-transform:uppercase}
+h1{font-size:clamp(1.7rem,4.6vw,2.4rem);line-height:1.35;margin:.6rem 0 .8rem;letter-spacing:-.02em}
+.lede{color:var(--ink-2);font-size:1.02rem;max-width:66ch}
+.stamp{margin-top:1.2rem;font-family:var(--mono);font-size:.72rem;color:var(--ink-muted);line-height:1.8}
+nav.toc{margin-top:1.4rem;font-size:.85rem;line-height:2}
+nav.toc a{color:var(--s1);text-decoration:none;margin-right:1.1em;white-space:nowrap}
+nav.toc a:hover{text-decoration:underline}
+section{margin-top:3rem}
+h2{font-size:1.3rem;letter-spacing:-.01em;margin-bottom:.6rem;line-height:1.45}
+h2 .num{font-family:var(--mono);font-size:.78rem;color:var(--ink-muted);display:block;margin-bottom:.15rem}
+h3{font-size:.99rem;margin:1.7rem 0 .5rem}
+p{margin:.7rem 0;color:var(--ink-2)}
+p strong,li strong,td strong,th strong{color:var(--ink);font-weight:700}
+ul,ol{margin:.6rem 0 .6rem 1.2rem;color:var(--ink-2)}li{margin:.34rem 0}
+code{font-family:var(--mono);font-size:.85em;background:var(--surface);border:1px solid var(--ring);border-radius:5px;padding:.08em .38em;color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:.85rem;margin:1rem 0;display:block;overflow-x:auto}
+@media(min-width:640px){table{display:table}}
+th{text-align:left;font-size:.68rem;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);font-weight:400;padding:.5rem .7rem;border-bottom:1px solid var(--baseline);white-space:nowrap}
+td{padding:.55rem .7rem;border-bottom:1px solid var(--grid);color:var(--ink-2);vertical-align:top}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr:hover td{background:var(--surface)}
+.q{background:var(--surface);border:1px solid var(--ring);border-left:3px solid var(--s1);border-radius:0 10px 10px 0;padding:.9rem 1.15rem;margin:1.2rem 0;font-size:.92rem;color:var(--ink-2)}
+.q.warn{border-left-color:var(--s2)}
+.q .tag{font-family:var(--mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-muted);display:block;margin-bottom:.3rem}
+.tldr{background:var(--surface);border:2px solid var(--s1);border-radius:12px;padding:1.2rem 1.4rem;margin:1.6rem 0 0}
+.tldr .tag{font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--s1);display:block;margin-bottom:.5rem;font-weight:700}
+.tldr ol{margin:.4rem 0 .2rem 1.3rem}
+.tldr li{margin:.5rem 0;color:var(--ink-2)}
+.good{color:var(--good);font-weight:700}
+.bad{color:var(--critical);font-weight:700}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.8rem;margin:1.1rem 0}
+.kpi .card{background:var(--surface);border:1px solid var(--ring);border-radius:10px;padding:.85rem 1rem}
+.kpi .v{font-family:var(--mono);font-size:1.25rem;font-weight:700;color:var(--ink)}
+.kpi .l{font-size:.74rem;color:var(--ink-muted);margin-top:.2rem;line-height:1.5}
+footer{margin-top:4rem;padding-top:1.2rem;border-top:1px solid var(--grid);font-family:var(--mono);font-size:.72rem;color:var(--ink-muted);line-height:1.9}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Team Briefing — Pokémon TCG AI Battle Challenge</span>
+  <h1>スターミーの現在地と、デッキを替える提案</h1>
+  <p class="lede">優勝ライン(記事審査、$30k×8枠/約200チーム)から逆算して、いま何が分かっていて、何を試していて、どこをチームで決めたいかを共有する。数値は全て実測(正典は <code>docs/memo/data.md</code>)。</p>
+  <div class="stamp">2026-08-05 / 作成: cc(Fable 5) / 対象読者: りょーちん・ゆうじ / Markdown版: docs/memo/team-report-2026-08-05.md(内容同一)</div>
+
+  <div class="tldr">
+    <span class="tag">◆ 結局何が言いたいか(3行)</span>
+    <ol>
+      <li><strong>スターミーのままではSim順位はそこそこ守れるが、賞金が懸かる記事審査で戦えない</strong>(配点のデッキ構築20%+運営が名指しする「deckcrafting」に対し、スターミーは"語れる要素"が測定した全デッキ中最少)。</li>
+      <li>パイロットを一切変えずデッキだけ差し替える実験で<strong>「タマンチュラ系(ロケット団デッキ)」が有望</strong>と分かり、本番ラダーへ計測目的の提出をした。結果: <strong class="good">最大勢力フーディンに11勝1敗</strong>の強みと、<strong class="bad">メガルカリオに2勝11敗</strong>の弱点が実戦で確定(<strong>相手はどちらも他チームが提出した実物のエージェント</strong>。フーディン12チーム・メガルカリオ13チーム、全部別)。</li>
+      <li><strong>8/13-16の最終提出(直近2提出だけが最終順位になる)を「レート重視=スターミー維持」か「記事重視=タマンチュラ改良版」のどちらで組むか、チームで決めたい。</strong>りょーちんに聞きたいことは§8の4つ。</li>
+    </ol>
+  </div>
+
+  <nav class="toc">
+    <a href="#glossary">用語</a><a href="#s1">1 背景</a><a href="#s2">2 外部調査</a><a href="#s3">3 分析リスト</a><a href="#s4">4 わかったこと</a><a href="#s5">5 現状照合</a><a href="#s6">6 デッキ選定の経緯</a><a href="#s7">7 本番53戦の中身</a><a href="#s8">8 提案と問い</a><a href="#s9">9 実務メモ</a>
+  </nav>
+</header>
+
+<section id="glossary">
+  <h2><span class="num">§0</span>用語と登場人物(この資料を読むのに必要な分だけ)</h2>
+  <table>
+    <thead><tr><th>用語</th><th>意味</th></tr></thead>
+    <tbody>
+      <tr><td>ゲージ</td><td>公開されている他人のエージェントを「固定の練習相手」にしたもの。勝率測定に使う</td></tr>
+      <tr><td>較正済みゲージ</td><td>本番ラダーの実測勝率と一致することを確認済みの練習相手(=信用してよい測定器)</td></tr>
+      <tr><td>プローブ提出</td><td>順位目的ではなく<strong>計測目的</strong>の提出。予測を先に書き残してから出す</td></tr>
+      <tr><td>検死</td><td>提出後に全対戦ログを取得して分析すること</td></tr>
+      <tr><td>4面加重EV</td><td>主要4対面(フーディン/メガルカリオ/ブリジュラス/イワパレス)の勝率を、実際の遭遇率で重み付けした期待勝率</td></tr>
+      <tr><td>distinct</td><td>同じ相手との再戦を除いた「別チーム数」。少数の相手による水増しを見抜くために必ず併記する</td></tr>
+      <tr><td>SUMI</td><td>掲示板の他参加者。<strong>74,634戦ぶんの公開対戦データを全数集計</strong>した分析を投稿している人</td></tr>
+      <tr><td>Jake / Oshbocker</td><td>掲示板の他参加者。それぞれ8位と37位のチーム</td></tr>
+    </tbody>
+  </table>
+  <h3>デッキ名の対応(データファイル上は英語表記なので対応表)</h3>
+  <table>
+    <thead><tr><th>この資料での呼び方</th><th>データ上の表記</th><th>中身</th></tr></thead>
+    <tbody>
+      <tr><td>フーディン系</td><td><code>alakazam</code></td><td>ケーシィ→ユンゲラー→フーディン。手札枚数×20のダメカンばら撒き</td></tr>
+      <tr><td>オーロンゲ系</td><td><code>grimmsnarl</code></td><td>マリィのベロバー→ギモー→オーロンゲex+マシマシラ</td></tr>
+      <tr><td>イワパレス系</td><td><code>crustle</code></td><td>イシズマイ→イワパレス(壁特性)+イダイナキバ。山札切れ狙い</td></tr>
+      <tr><td>メガルカリオ系</td><td><code>lucario</code></td><td>リオル→メガルカリオex+ハリテヤマ等の格闘</td></tr>
+      <tr><td>ブリジュラス系</td><td><code>archaludon</code></td><td>ブリジュラスex。高耐久高打点</td></tr>
+      <tr><td>タマンチュラ系</td><td><code>tarountula</code></td><td>ロケット団デッキ(§6で60枚全部説明)</td></tr>
+      <tr><td>メガスターミー系</td><td><code>starmie</code></td><td>我々の現王者デッキ</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="s1">
+  <h2><span class="num">§1</span>背景 — スターミーの限界と、いまのメタ</h2>
+  <h3>スターミー(現王者、確定レート783/793.9)の測定された限界</h3>
+  <ul>
+    <li><strong>レート700を超えた瞬間に勝率52%→41%</strong>(帯別の実測)。負け筋はブリジュラス16.7%・ミラー0勝3敗・上位のメガルカリオ。</li>
+    <li><strong>「語れる要素」が測定した全デッキ中最少</strong> — 中身はこう(すべて実測): <strong>特性0個・スタジアム0枚・妨害/回収/ダメージ操作カード0枚</strong>(上位勢はクラッシュハンマー、マシマシラのダメカン移動、夜のタンカ等の「個性札」を毎試合回している)。1試合に使うカード<strong>12.9枚</strong>(上位勢15〜23)/ カードの種類<strong>11</strong>(同12〜16)/ 攻撃するポケモン<strong>2種</strong>(同3〜4)/ よく使うカード上位5枚が<strong>全部汎用のサーチ・ドロー</strong>。デッキが呼び出すゲーム機構の数を数えた指標で<strong>12本中最下位</strong>(40点、中央値68)。</li>
+    <li>なぜ問題か: 審査のDeck 20%は「構築の判断」を見る。<strong>判断が発生する機構が少ない=記事に書ける判断が少ない</strong>。運営も「deckcrafting」を名指しで評価軸に挙げている(§2)。スターミーは「エンジンの穴を突いた合理的なデッキ」だが、<strong>記事の主役としては構造的に弱い</strong>。</li>
+  </ul>
+  <h3>メタの分析(全対戦ログをレート付きで集計=この形のデータは我々しか持っていない)</h3>
+  <p>レート800-1099帯の顔ぶれ: <strong>フーディン29.2% / オーロンゲ19.3% / イワパレス13.5% / メガルカリオ13.2% / ブリジュラス10.7%</strong>。ここで重要な発見——<strong>このメタは「強さ」で並んでいない</strong>:</p>
+  <ul>
+    <li>使用率と勝率の相関はほぼゼロ(ρ=−0.02)。最多のフーディンは勝率ワースト3。</li>
+    <li><strong>オーロンゲは723チーム中505チーム(69.8%)が完全に同じ60枚</strong>。公開コードは0件(公開ノートブック291件を全部実行して確認)なのに788チームいる=<strong>公開リプレイからの模倣学習で量産</strong>。8位のJakeも「データが大量にあるから作りやすい」と証言。</li>
+    <li>→ <strong>メタは「コピーしやすさ」で決まっている</strong>。たった2種類の同一リストが全チームの35.6%。</li>
+  </ul>
+  <div class="q"><span class="tag">だから何をしたか</span>パイロット(main.py)を1バイトも変えず、deck.csvだけ差し替えて勝率を測る実験をした。<strong>デッキだけで勝率が最大60pt動いた</strong>(パイロット側を7ヶ月改良して得た最大値は+13.6pt)。<strong>デッキ選びのほうが4倍効く</strong>。記事審査もデッキ構築を要求している——デッキ転換はSimと記事の両方に効く、が転換の根拠。</div>
+</section>
+
+<section id="s2">
+  <h2><span class="num">§2</span>外部調査で得た情報(すべて一次情報を実物確認済み)</h2>
+  <h3>2.1 審査員が見るもの</h3>
+  <ul>
+    <li>配点: <strong>Model 70%(5項目あり、Sim順位はその中の1つ=全体の約14%)/ Deck 20% / Report 10%</strong>。記事は2,000語。審査員は<strong>ポケモン社3名:松尾研2名</strong>。</li>
+    <li>運営の明言: 「<strong>機械学習は必須ではない。ルールベース+構造化されたレポートで十分競争力がある</strong>」「思考プロセス・試行錯誤・教訓を共有してほしい」「deckcraftingが要る」。</li>
+    <li><strong>決勝8枠($30k×8、東京・対面)は記事の評価だけで選抜</strong>。決勝は3本勝負・前の試合のログ参照可・デッキとコードは予選と別でも良い。</li>
+    <li><strong>提出済みの記事289本は締切まで誰も読めない</strong>(スタッフ回答で確認)——差別化は「他人が持てない材料」でやるしかない。</li>
+  </ul>
+  <h3>2.2 コミュニティで議論されていること(→ 我々の作戦にどう効くか)</h3>
+  <ul>
+    <li><strong>Discord(公式サーバ。ゆうじのログインで初めて偵察できた)</strong>:
+      <ul>
+        <li>Jack pという参加者:「AIがルールを模倣するのに、単純なルール(例: ポケパッドがあれば必ず使う)は10試合分で真似できる。だが<strong>複雑なルール——『ロケット団のフリーザーを対フーディン戦で場に維持し続ける』ような立ち回り——は1000試合分の実例が要る</strong>」。これはまさに我々が本番で11勝1敗を出した仕組み(§7)のこと。<strong>複雑な対面テクニックはコピーされない=我々の防御壁</strong>。</li>
+        <li>「ML専門家は自分が遊ばないゲームを道具で最適化しているだけ」という指摘。一部チームは「ルールベースだと審査で不利かも」と<strong>勝手に忖度して避けている</strong>(運営の明言と矛盾。我々には追い風)。</li>
+      </ul>
+    </li>
+    <li>思考時間の分析(掲示板、73票): <strong>参加者の半分はルールベース。強化学習+探索は1位だけ</strong>。</li>
+    <li><strong>SUMIの全数集計(74,634戦)から分かること</strong>は3つ: ①メタの時系列(どのデッキがいつ増えたか) ②<strong>「流行っても強くならない」の実証</strong>——オーロンゲは使用率17%→51%に増える間に、ミラー戦を除いた勝率が50.3%へ収束(=コピーが増えるほど旨味が消える) ③ブリジュラスは「誰も使わない時は勝率65%、流行った瞬間に48%→31%」——<strong>見えている強デッキに乗り換えた時にはもう遅い</strong>。我々が「流行デッキに乗らず実測で選ぶ」方針なのはこれが根拠。なおSUMIのデータには<strong>レートが無い</strong>ので帯別分析はできない——そこは我々のデータだけができる(記事の差別化点)。</li>
+    <li>Oshbocker(37位)は「リプレイから模倣されるのを防ぐためダミー提出で本命を隠す」戦略を公言。</li>
+  </ul>
+  <h3>2.3 ゲームメタの構造</h3>
+  <ul>
+    <li>マッチング仕様が公式開示: 4分ごと・レートが近い相手・<strong>直近2提出だけが対象</strong>。</li>
+    <li>帯構造: レート600-800はメガルカリオ/ユキノオーの群れ、800-1000はフーディン/オーロンゲ中心。<strong>レートの落ち着き先は「一番苦手な相手が多い帯」で決まる</strong>(今回のプローブで実証)。</li>
+    <li>人間の大会とAIラダーは別ゲーム: AI最大勢力のフーディンは<strong>人間のシティリーグ入賞16デッキに0本</strong>。</li>
+  </ul>
+  <h3>2.4 その他(議論しがいのある話)</h3>
+  <ul>
+    <li><strong>練習相手の「嘘」が見つかった</strong>: 運営配布サンプル(メガルカリオ)相手の勝率は、本物の上位プレイヤー相手より<strong>45ptも甘い</strong>(§7)。りょーちんがローカルで測るときも同じ罠があるので§9の較正済みゲージを。</li>
+    <li>同じエージェントでもスコアは±150〜400ぶれる——<strong>単発のレートで判断しない</strong>。提出枠は毎日5回復・最終順位は凍結時の直近2提出だけ=<strong>枠は貴重品ではない</strong>。</li>
+  </ul>
+</section>
+
+<section id="s3">
+  <h2><span class="num">§3</span>何を分析したか(一覧)</h2>
+  <ol>
+    <li>公開ノートブック<strong>291件を全部実行</strong>(agent()を呼んで返ってくる60枚を分類)</li>
+    <li>レート付きの帯別メタ集計(4,263戦)+対面ごとの勝率表</li>
+    <li>「1試合で何をやっているか」の行動計数(上位勢との比較)</li>
+    <li>カード2,022枚が全部使えるかのエンジン判定+効果が実際に発動するかの検査</li>
+    <li><strong>デッキ入替実験</strong>(パイロット固定・deck.csvだけ差替、5デッキ×4練習相手)</li>
+    <li>パイロットの弱点特定と修理実験(オーロンゲ系デッキで+13〜20ptを実証)</li>
+    <li>イワパレスの敗因解剖(負け21戦全部が自分の山札切れ)/ 人間デッキ輸入テスト(ドンカラス、失敗して原因特定)</li>
+    <li><strong>プローブ提出→検死→全54試合の中身の採掘</strong>(本番ラダーでの実地検証)</li>
+    <li>人間シティリーグ入賞16デッキとAIメタの突き合わせ</li>
+    <li>外部調査: 掲示板全量・Discord・記事の可視性・マッチング仕様・リーダーボード</li>
+    <li>自分たちの測定器の総点検(6本の欠陥を発見、3本修理)+主要な根拠6件の再検証(1件崩れて訂正)</li>
+  </ol>
+</section>
+
+<section id="s4">
+  <h2><span class="num">§4</span>分析の結果わかったこと(要点5つ)</h2>
+  <ol>
+    <li><strong>メタは「コピーしやすさ」のシステム</strong>。標準化された実物リストに対して実測で選ぶのが最強の選定手段。</li>
+    <li><strong>デッキとパイロットの相性は、少数の「盲点」に集約される</strong>。3系統: ①特性で得た資源の配り先を考えない(修理で+13〜20pt) ②山札を削る特性を毎ターン押して自滅 ③ダメージがテキストにしか書いていない技を0点と評価。</li>
+    <li><strong>他人が使って強いデッキが、我々のパイロットで強いとは限らない</strong>(−23pt〜+42ptの両方向にズレた)。選定は必ず「我々のパイロットを載せた実測」で。</li>
+    <li><strong>セルフ対戦は当てにならないと分かり、測定を「外部の実物」相手に全面転換した(←重要な方法論の変化)</strong>: 自分のパイロット同士の対戦で測る勝率は、本物の相手より<strong>+8〜+62pt甘く出る</strong>と実測で判明。以来、勝率の判定は全部<strong>外部の実物エージェント</strong>(他チームの公開agentを固定の練習相手にしたもの=§9)か<strong>本番ラダー</strong>で行い、セルフ対戦は下書き確認用に格下げした。§7の「フーディンに11勝1敗」も本番の他チーム実物が相手。<strong>りょーちんのローカル測定にもそのまま効く話</strong>。</li>
+    <li><strong>その練習相手にも嘘がある</strong>(運営サンプルのメガルカリオ相手は、本物の上位プレイヤー相手より+45pt甘い)。本番実測と一致する練習相手に世代交代した。</li>
+  </ol>
+</section>
+
+<section id="s5">
+  <h2><span class="num">§5</span>現状と照らし合わせた結果</h2>
+  <div class="kpi">
+    <div class="card"><div class="v">64.8%</div><div class="l">タマンチュラ系 4面加重EV(較正済み)</div></div>
+    <div class="card"><div class="v">52.1%</div><div class="l">メガスターミー(王者)同EV</div></div>
+    <div class="card"><div class="v">51.8%</div><div class="l">オーロンゲ(修理版)同EV</div></div>
+    <div class="card"><div class="v">783 / ~670</div><div class="l">レートの落ち着き先: 王者(確定) / タマンチュラ(実測)</div></div>
+  </div>
+  <p>期待勝率はタマンチュラが圧倒的1位なのに、レートの落ち着き先は王者より低い——<strong>苦手対面(メガルカリオ)が多い帯に沈むから</strong>。</p>
+  <div class="q warn"><span class="tag">最終提出(8/13-16)の本当の問い</span>「どっちのレートが高いか」ではなく、<strong>「どのデッキを、我々の測定の積み重ねで守り抜く記事を書きたいか」</strong>。§8で相談したい。</div>
+</section>
+
+<section id="s6">
+  <h2><span class="num">§6</span>いま試していること — なぜタマンチュラ系を選んだか(正直な経緯)</h2>
+  <h3>6.1 選定の方法 — このデッキは「設計」ではなく「輸入+選抜」</h3>
+  <p><strong>我々が1枚ずつ考えて組んだデッキではない。</strong>本番ラダーのタマンチュラ系101チームのリストを全部抽出し、<strong>一番よく使われている形(17チームが完全一致)をそのまま輸入</strong>した。我々がやったのは、パイロット固定でデッキだけ差し替えて5デッキを実測し、一番強かったこれを選んだこと。枚数の根拠は「本番で一番再現されている形だから」という統計的なもので、<strong>カード1枚単位の設計判断はしていない</strong>。だから「なぜこのカード?」は全部議論の余地があり、変更候補は§7の実戦データからすでに出ている。</p>
+  <h3>6.2 デッキの中身(60枚。役割は効果テキスト+本番54試合の実測から)</h3>
+  <table>
+    <thead><tr><th>枚数</th><th>カード</th><th>役割(実測根拠つき)</th><th>議論点</th></tr></thead>
+    <tbody>
+      <tr><td class="num">4</td><td>タマンチュラ(たね、HP50)</td><td>ワナイダーへの進化元。たいあたり30(自傷10)</td><td class="bad">たねが薄く、たね1枚スタートからの全滅負けが4/53試合</td></tr>
+      <tr><td class="num">4</td><td><strong>ワナイダー</strong>(HP130、特性: 捨て札から基本エネを自分に付ける)</td><td><strong>主砲。技「ロケットラッシュ」=場のロケット団ポケモンの数×30ダメージ</strong></td><td><strong>展開数がそのまま火力</strong>。展開が遅いと火力も守りも死ぬ</td></tr>
+      <tr><td class="num">2</td><td><strong>ロケット団のフリーザー</strong>(HP120、特性: 常在)</td><td><strong>たねのロケット団ポケモンへの「ワザの効果」を全部無効化</strong>。フーディンの攻撃(ダメカンばら撒き・こんらん)を完封し、本番11勝1敗の主因</td><td>攻撃はほぼしない(水エネ要求)。<span class="bad">パイロットがここにエネを毎試合1.7枚も無駄貼り</span></td></tr>
+      <tr><td class="num">2</td><td>ロケット団のミュウツーex(HP280)</td><td>打点160。ただし<strong>倒されるとサイド2枚</strong>。実戦では<span class="bad">献上したサイドの33.7%がこいつ</span>(対メガルカリオ戦では45.9%)</td><td><strong>削る第一候補</strong>。「場にロケット団4体いないと攻撃不可」の条件をパイロットは見ていない</td></tr>
+      <tr><td class="num">2</td><td>ロケット団のヤミカラス(HP80)</td><td>0エネでサポーターをサーチ</td><td></td></tr>
+      <tr><td class="num">1</td><td>ロケット団のソーナンス</td><td><strong>技「ロケットミラー」=ベンチのロケット団1体のダメカンを全部相手バトル場に移す</strong>(反撃技)</td><td class="bad">54試合で3回しか使われていない(パイロットがこの技を0点と評価。修理2行で直る)</td></tr>
+      <tr><td class="num">4</td><td>ロケット団のトランシーバー(グッズ)</td><td>ロケット団サポーターをサーチ</td><td></td></tr>
+      <tr><td class="num">4</td><td>ロケット団のアテナ(サポート)</td><td>手札が5枚になるまで引く(全員ロケット団なら8枚)</td><td>ドローの機関</td></tr>
+      <tr><td class="num">3</td><td>ロケット団のサカキ(サポート)</td><td>自分の入替+<strong>相手のベンチを呼び出す</strong>(ボスの指令相当)</td><td>スターミーに無い「相手への干渉」</td></tr>
+      <tr><td class="num">2</td><td>ロケット団のランス(サポート)</td><td>先攻1ターン目から使える、ロケット団のたねを3枚まで展開</td><td><strong>展開速度の要。増量候補?</strong></td></tr>
+      <tr><td class="num">1+1</td><td>ロケット団のアポロ / ラムダ</td><td>補助サポート / トレーナーズをサーチ</td><td></td></tr>
+      <tr><td class="num">2</td><td>ロケット団の工場(スタジアム)</td><td>ロケット団サポーターを使ったターンに2枚引ける</td><td>スターミーに無いスタジアム枠</td></tr>
+      <tr><td class="num">3</td><td>むしとりセット(グッズ)</td><td>山札の上7枚から草ポケモン/草エネを2枚まで回収</td><td></td></tr>
+      <tr><td class="num">4+2+1</td><td>ポケパッド / エネルギー転送 / 夜のタンカ</td><td>サーチ・回収</td><td class="bad">ハイパーボールが0枚(ミラーで負けた相手は入れていた→§7)</td></tr>
+      <tr><td class="num">1+1</td><td>ヒーローマント(ACE SPEC、HP+100)/ ブレイブバングル(対exダメ+30)</td><td>どうぐ</td><td>マントの貼り先はパイロット任せ</td></tr>
+      <tr><td class="num">7+3+4</td><td>基本草 / 基本超 / ロケット団エネルギー(超悪2個ぶん・ロケット団専用)</td><td>ロケットラッシュは[草+無]、ソーナンス/ミュウツーは超系</td><td class="bad">超エネの74%が型の合わない先に貼られていた(パイロットの穴)</td></tr>
+    </tbody>
+  </table>
+  <h3>6.3 「工夫」はどこにあるか(真似した部分と、していない部分)</h3>
+  <ul>
+    <li><strong>真似(輸入)</strong>: 上の60枚そのもの。</li>
+    <li><strong>我々の固有部分</strong>: ①選び方(パイロット固定の差し替え実測・予測を先に書いてから測る手順・練習相手4種+本番プローブの検証) ②仕組みの特定(フリーザーの特性がなぜフーディンに刺さるか、ロケットラッシュの「展開=火力」構造、ミュウツーのサイド負債の定量)。</li>
+    <li>なので「なぜ〇〇を入れていないの?」への現時点の答えは<strong>「最頻出形に入っていなかったから」しかない</strong>。ここから先の1枚単位の設計を、実戦データを根拠に<strong>チームでやりたい</strong>(それがこの資料の目的)。</li>
+  </ul>
+</section>
+
+<section id="s7">
+  <h2><span class="num">§7</span>試した結果 — 本番ラダー53戦の中身(レートではなく内容)</h2>
+  <p>プローブ提出(2026-08-04)の全53戦をログで解剖した。<strong>相手は53チーム全部別で、すべて他チームが本番に提出した実物のエージェント</strong>(=ローカルのセルフ対戦ではない):</p>
+  <div class="kpi">
+    <div class="card"><div class="v good">11勝1敗</div><div class="l">vs フーディン(12チーム)。フリーザーの特性が完封——相手のダメカン534個のうち、守れるはずのポケモンに通ったのはフリーザー不在ターンの54個だけ</div></div>
+    <div class="card"><div class="v good">7勝2敗</div><div class="l">vs オーロンゲ+イワパレス系(9チーム)。練習相手が作れず「測れなかった32.8%」が初めて測れて、良かった</div></div>
+    <div class="card"><div class="v bad">2勝11敗</div><div class="l">vs メガルカリオ(13チーム)。敗因のほぼ全て。中身は展開速度の完敗(我々の攻撃 中央値2回 vs 相手6回)</div></div>
+    <div class="card"><div class="v">1勝1敗</div><div class="l">タマンチュラ同型。負けた相手は改良版(ハイパーボール+ミミッキュ入り)——改良レシピは相手の山札から読めた</div></div>
+  </div>
+  <ul>
+    <li>イワパレスの壁特性はex限定なので、非exのロケットラッシュが素通しで4勝0敗。</li>
+    <li>皮肉なことに<strong>旧王者系統(メガスターミー使い)には0勝2敗</strong>。ブリジュラスには0勝3敗(事前測定9%どおり構造的不利)。</li>
+    <li><strong>パイロットの穴も本番で実測</strong>: 主砲ロケットラッシュと反撃技ロケットミラーを評価器が0点と誤認(登録2行で直る)/ フリーザーへのエネ浪費1.7枚/試合 / ミュウツーの攻撃条件を見ずに前に出す。</li>
+  </ul>
+  <div class="q"><span class="tag">何が足りないと分析したか</span>①<strong>展開速度</strong>(ロケットラッシュ=場の数×30なので、展開の遅れは火力と守りを同時に殺す)→ たねの薄さとボール系グッズの不足 ②<strong>ミュウツーexのサイド負債の圧縮</strong>(献上サイドの1/3) ③パイロットの<strong>テキスト打点の登録(2行)とエネの型対応</strong> ④メガルカリオ対面はそれでも天井不明——「捨て対面として管理する」判断もあり得る。</div>
+</section>
+
+<section id="s8">
+  <h2><span class="num">§8</span>提案と、りょーちんに聞きたいこと</h2>
+  <p><strong>提案(タマンチュラv2)</strong>: §7の実戦根拠に基づき、①ミラーで負けた相手の改良要素(ハイパーボール/ミミッキュ)の検証 ②ミュウツー2→1か0 ③たね/ランス増量 ④パイロットの2行修理+エネの型対応——を<strong>1個ずつ</strong>較正済みの練習相手で測定(全て予測を先に登録)→効いたものだけ束ねてプローブ再提出→その実測で最終提出を設計。</p>
+  <div class="q"><span class="tag">聞きたいこと(4つ)</span>
+    <ol>
+      <li><strong>最終提出の哲学</strong>: 「レート最高(スターミー維持)」と「記事で守るデッキ(タマンチュラv2)」のどちらに張る? 1枠ずつ両にらみ案もあるが、最終2枠は「ベスト×2」が事故に強いというのが従来の合意。</li>
+      <li>§6.2の構成表を見て「<strong>なぜ〇〇を入れない/削らない?</strong>」——ポケカ側の直感での指摘が欲しい(例: ミミッキュの役割、ハイパーボールの手札コストとアテナの相性、ミュウツー全抜きのリスク)。</li>
+      <li>りょーちんがスターミー系agentで作った技法のうち、ロケット団系デッキに移植する価値がありそうなもの。</li>
+      <li>この資料の形式で足りない情報(次回から直す)。</li>
+    </ol>
+  </div>
+</section>
+
+<section id="s9">
+  <h2><span class="num">§9</span>実務メモ(忘れがちなこと)</h2>
+  <ul>
+    <li><strong>日程</strong>: Sim提出締切 8/17(チーム運用は8/13-16に凍結)/ 記事提出 9/14 / 決勝は後日・東京。</li>
+    <li><strong>今の直近2提出</strong>: プローブ(タマンチュラ)+proto2。凍結時にベスト×2で上書きする(枠は毎日5回復)。</li>
+    <li><strong>使える較正済みの練習相手</strong>(すべて検証専用・提出禁止): フーディン(ryota)/ <strong>メガルカリオ(makthanithin=本番実測と一致確認済み。運営サンプルのルカリオは+45pt甘いので勝率判定に使わない)</strong>/ ブリジュラス(tomato)/ イワパレス(soutasakurai)/ 運営サンプルのドラパルト・ユキノオー。</li>
+    <li><strong>KaggleのエピソードAPIは必ず <code>replay_analysis/kaggle_gate.py</code> 経由</strong>(連打すると家のIPごと丸1日ブロックされる事故が起きた。その再発防止の門番)。</li>
+    <li>規則: LLM使用は明示的にOK / 競技コードの個人間共有は禁止(公開はフォーラム経由)/ 他人のノートブックは検証用のみ・提出流用禁止 / タイトルの自称レートは裏取りするまで信用しない。</li>
+    <li>決勝に進めた場合は3本勝負・ログ参照可・デッキとコード変更可——今から少し意識だけしておく価値あり。</li>
+  </ul>
+</section>
+
+<footer>
+  正典: docs/memo/data.md(数値)/ decisions.md D61〜D65(決定)/ agents-2026-08-03/(一次資料8ファイル)<br>
+  本資料のMarkdown版: docs/memo/team-report-2026-08-05.md(内容同一・こちらが原本)
+</footer>
+
+</div>
+</body>
+</html>

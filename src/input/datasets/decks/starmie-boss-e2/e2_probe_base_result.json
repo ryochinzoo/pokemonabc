@@ -1,0 +1,597 @@
+{
+ "phase": "base",
+ "deck": "starmie-aggro",
+ "n": 10,
+ "games": [
+  {
+   "our_seat": 0,
+   "card_plays": 0,
+   "card_play_turns": [],
+   "dragged": [],
+   "value_events": 0,
+   "drag_attacked": 0,
+   "card_in_discard_final": 0,
+   "attack_events": [
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 57,
+     "target_id": 676,
+     "target_serial": 83,
+     "target_hp_before": 110,
+     "turn": 5,
+     "damage": 120,
+     "target_survived": false
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 57,
+     "target_id": 678,
+     "target_serial": 91,
+     "target_hp_before": 440,
+     "turn": 7,
+     "damage": 120,
+     "target_survived": true
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 22,
+     "target_id": 678,
+     "target_serial": 91,
+     "target_hp_before": 320,
+     "turn": 9,
+     "damage": 120,
+     "target_survived": true
+    },
+    {
+     "attack_id": 1488,
+     "attack_name": "Nebula Beam",
+     "attacker_serial": 22,
+     "target_id": 678,
+     "target_serial": 91,
+     "target_hp_before": 200,
+     "turn": 11,
+     "damage": 210,
+     "target_survived": false
+    }
+   ],
+   "record_errors": 0,
+   "winner": 1,
+   "turns": 12,
+   "winner_is_us": false,
+   "card_burned": 0
+  },
+  {
+   "our_seat": 1,
+   "card_plays": 2,
+   "card_play_turns": [
+    2,
+    10
+   ],
+   "dragged": [],
+   "value_events": 0,
+   "drag_attacked": 0,
+   "card_in_discard_final": 3,
+   "attack_events": [
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 117,
+     "target_id": 676,
+     "target_serial": 23,
+     "target_hp_before": 110,
+     "turn": 4,
+     "damage": 120,
+     "target_survived": false
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 117,
+     "target_id": 678,
+     "target_serial": 30,
+     "target_hp_before": 440,
+     "turn": 6,
+     "damage": 120,
+     "target_survived": true
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 82,
+     "target_id": 678,
+     "target_serial": 30,
+     "target_hp_before": 320,
+     "turn": 10,
+     "damage": 120,
+     "target_survived": true
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 82,
+     "target_id": 673,
+     "target_serial": 17,
+     "target_hp_before": 30,
+     "turn": 14,
+     "damage": 120,
+     "target_survived": false
+    }
+   ],
+   "record_errors": 0,
+   "winner": 1,
+   "turns": 14,
+   "winner_is_us": true,
+   "card_burned": 1
+  },
+  {
+   "our_seat": 0,
+   "card_plays": 0,
+   "card_play_turns": [],
+   "dragged": [],
+   "value_events": 0,
+   "drag_attacked": 0,
+   "card_in_discard_final": 1,
+   "attack_events": [
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 20,
+     "target_id": 673,
+     "target_serial": 77,
+     "target_hp_before": 80,
+     "turn": 3,
+     "damage": 120,
+     "target_survived": false
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 20,
+     "target_id": 676,
+     "target_serial": 83,
+     "target_hp_before": 110,
+     "turn": 5,
+     "damage": 120,
+     "target_survived": false
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 20,
+     "target_id": 678,
+     "target_serial": 88,
+     "target_hp_before": 170,
+     "turn": 7,
+     "damage": 120,
+     "target_survived": true
+    },
+    {
+     "attack_id": 1486,
+     "attack_name": "Water Gun",
+     "attacker_serial": 19,
+     "target_id": 678,
+     "target_serial": 88,
+     "target_hp_before": 50,
+     "turn": 9,
+     "damage": 20,
+     "target_survived": true
+    }
+   ],
+   "record_errors": 0,
+   "winner": 0,
+   "turns": 15,
+   "winner_is_us": true,
+   "card_burned": 1
+  },
+  {
+   "our_seat": 1,
+   "card_plays": 2,
+   "card_play_turns": [
+    8,
+    10
+   ],
+   "dragged": [],
+   "value_events": 0,
+   "drag_attacked": 0,
+   "card_in_discard_final": 2,
+   "attack_events": [
+    {
+     "attack_id": 1486,
+     "attack_name": "Water Gun",
+     "attacker_serial": 76,
+     "target_id": 673,
+     "target_serial": 16,
+     "target_hp_before": 80,
+     "turn": 2,
+     "damage": 20,
+     "target_survived": true
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 80,
+     "target_id": 673,
+     "target_serial": 16,
+     "target_hp_before": 60,
+     "turn": 4,
+     "damage": 120,
+     "target_survived": false
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 80,
+     "target_id": 676,
+     "target_serial": 24,
+     "target_hp_before": 110,
+     "turn": 6,
+     "damage": 120,
+     "target_survived": false
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 80,
+     "target_id": 678,
+     "target_serial": 29,
+     "target_hp_before": 340,
+     "turn": 8,
+     "damage": 120,
+     "target_survived": true
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 80,
+     "target_id": 678,
+     "target_serial": 29,
+     "target_hp_before": 320,
+     "turn": 10,
+     "damage": 120,
+     "target_survived": true
+    },
+    {
+     "attack_id": 1488,
+     "attack_name": "Nebula Beam",
+     "attacker_serial": 117,
+     "target_id": 678,
+     "target_serial": 29,
+     "target_hp_before": 200,
+     "turn": 12,
+     "damage": 210,
+     "target_survived": false
+    }
+   ],
+   "record_errors": 0,
+   "winner": 1,
+   "turns": 12,
+   "winner_is_us": true,
+   "card_burned": 0
+  },
+  {
+   "our_seat": 0,
+   "card_plays": 0,
+   "card_play_turns": [],
+   "dragged": [],
+   "value_events": 0,
+   "drag_attacked": 0,
+   "card_in_discard_final": 0,
+   "attack_events": [],
+   "record_errors": 0,
+   "winner": 1,
+   "turns": 2,
+   "winner_is_us": false,
+   "card_burned": 0
+  },
+  {
+   "our_seat": 1,
+   "card_plays": 2,
+   "card_play_turns": [
+    2,
+    6
+   ],
+   "dragged": [],
+   "value_events": 0,
+   "drag_attacked": 0,
+   "card_in_discard_final": 2,
+   "attack_events": [
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 81,
+     "target_id": 676,
+     "target_serial": 24,
+     "target_hp_before": 110,
+     "turn": 4,
+     "damage": 120,
+     "target_survived": false
+    },
+    {
+     "attack_id": 1488,
+     "attack_name": "Nebula Beam",
+     "attacker_serial": 117,
+     "target_id": 678,
+     "target_serial": 31,
+     "target_hp_before": 290,
+     "turn": 6,
+     "damage": 210,
+     "target_survived": true
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 81,
+     "target_id": 678,
+     "target_serial": 31,
+     "target_hp_before": 80,
+     "turn": 8,
+     "damage": 120,
+     "target_survived": false
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 81,
+     "target_id": 674,
+     "target_serial": 19,
+     "target_hp_before": 80,
+     "turn": 10,
+     "damage": 120,
+     "target_survived": false
+    }
+   ],
+   "record_errors": 0,
+   "winner": 1,
+   "turns": 10,
+   "winner_is_us": true,
+   "card_burned": 0
+  },
+  {
+   "our_seat": 0,
+   "card_plays": 1,
+   "card_play_turns": [
+    5
+   ],
+   "dragged": [],
+   "value_events": 0,
+   "drag_attacked": 0,
+   "card_in_discard_final": 1,
+   "attack_events": [
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 20,
+     "target_id": 677,
+     "target_serial": 86,
+     "target_hp_before": 80,
+     "turn": 3,
+     "damage": 120,
+     "target_survived": false
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 20,
+     "target_id": 676,
+     "target_serial": 84,
+     "target_hp_before": 110,
+     "turn": 5,
+     "damage": 120,
+     "target_survived": false
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 21,
+     "target_id": 678,
+     "target_serial": 88,
+     "target_hp_before": 290,
+     "turn": 7,
+     "damage": 120,
+     "target_survived": true
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 21,
+     "target_id": 678,
+     "target_serial": 88,
+     "target_hp_before": 170,
+     "turn": 9,
+     "damage": 120,
+     "target_survived": true
+    },
+    {
+     "attack_id": 1488,
+     "attack_name": "Nebula Beam",
+     "attacker_serial": 21,
+     "target_id": 678,
+     "target_serial": 88,
+     "target_hp_before": 50,
+     "turn": 11,
+     "damage": 210,
+     "target_survived": false
+    }
+   ],
+   "record_errors": 0,
+   "winner": 0,
+   "turns": 11,
+   "winner_is_us": true,
+   "card_burned": 0
+  },
+  {
+   "our_seat": 1,
+   "card_plays": 1,
+   "card_play_turns": [
+    4
+   ],
+   "dragged": [],
+   "value_events": 0,
+   "drag_attacked": 0,
+   "card_in_discard_final": 1,
+   "attack_events": [
+    {
+     "attack_id": 1486,
+     "attack_name": "Water Gun",
+     "attacker_serial": 78,
+     "target_id": 677,
+     "target_serial": 26,
+     "target_hp_before": 180,
+     "turn": 2,
+     "damage": 20,
+     "target_survived": true
+    },
+    {
+     "attack_id": 1488,
+     "attack_name": "Nebula Beam",
+     "attacker_serial": 117,
+     "target_id": 678,
+     "target_serial": 29,
+     "target_hp_before": 420,
+     "turn": 4,
+     "damage": 210,
+     "target_survived": true
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 117,
+     "target_id": 678,
+     "target_serial": 29,
+     "target_hp_before": 210,
+     "turn": 6,
+     "damage": 120,
+     "target_survived": true
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 117,
+     "target_id": 678,
+     "target_serial": 29,
+     "target_hp_before": 90,
+     "turn": 8,
+     "damage": 120,
+     "target_survived": false
+    },
+    {
+     "attack_id": 1488,
+     "attack_name": "Nebula Beam",
+     "attacker_serial": 81,
+     "target_id": 678,
+     "target_serial": 30,
+     "target_hp_before": 340,
+     "turn": 10,
+     "damage": 210,
+     "target_survived": true
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 81,
+     "target_id": 678,
+     "target_serial": 30,
+     "target_hp_before": 130,
+     "turn": 12,
+     "damage": 120,
+     "target_survived": true
+    }
+   ],
+   "record_errors": 0,
+   "winner": 1,
+   "turns": 12,
+   "winner_is_us": true,
+   "card_burned": 0
+  },
+  {
+   "our_seat": 0,
+   "card_plays": 0,
+   "card_play_turns": [],
+   "dragged": [],
+   "value_events": 0,
+   "drag_attacked": 0,
+   "card_in_discard_final": 1,
+   "attack_events": [
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 57,
+     "target_id": 675,
+     "target_serial": 80,
+     "target_hp_before": 110,
+     "turn": 3,
+     "damage": 120,
+     "target_survived": false
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 22,
+     "target_id": 678,
+     "target_serial": 90,
+     "target_hp_before": 440,
+     "turn": 5,
+     "damage": 120,
+     "target_survived": true
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 22,
+     "target_id": 678,
+     "target_serial": 90,
+     "target_hp_before": 200,
+     "turn": 7,
+     "damage": 120,
+     "target_survived": true
+    }
+   ],
+   "record_errors": 0,
+   "winner": 1,
+   "turns": 8,
+   "winner_is_us": false,
+   "card_burned": 1
+  },
+  {
+   "our_seat": 1,
+   "card_plays": 0,
+   "card_play_turns": [],
+   "dragged": [],
+   "value_events": 0,
+   "drag_attacked": 0,
+   "card_in_discard_final": 0,
+   "attack_events": [
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 117,
+     "target_id": 677,
+     "target_serial": 25,
+     "target_hp_before": 80,
+     "turn": 4,
+     "damage": 120,
+     "target_survived": false
+    },
+    {
+     "attack_id": 1487,
+     "attack_name": "Jetting Blow",
+     "attacker_serial": 117,
+     "target_id": 678,
+     "target_serial": 29,
+     "target_hp_before": 340,
+     "turn": 6,
+     "damage": 120,
+     "target_survived": true
+    }
+   ],
+   "record_errors": 0,
+   "winner": 0,
+   "turns": 9,
+   "winner_is_us": false,
+   "card_burned": 0
+  }
+ ]
+}

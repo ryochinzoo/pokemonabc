@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="450" font-family="Helvetica,Arial" font-size="12">
+<style>
+  .s1{fill:#2a78d6} .s1s{stroke:#2a78d6} .s2{fill:#eb6834} .s2s{stroke:#eb6834}
+  .ink{fill:#0b0b0b} .ink2{fill:#52514e} .grid{stroke:#dcdcd8} .axis{stroke:#b8b8b2}
+  .surf{fill:#fcfcfb} .surfs{stroke:#fcfcfb}
+  @media (prefers-color-scheme: dark){
+    .s1{fill:#3987e5} .s1s{stroke:#3987e5} .s2{fill:#d95926} .s2s{stroke:#d95926}
+    .ink{fill:#ffffff} .ink2{fill:#c3c2b7} .grid{stroke:#33332f} .axis{stroke:#55554f}
+    .surf{fill:#1a1a19} .surfs{stroke:#1a1a19}
+  }
+</style>
+<rect width="900" height="450" class="surf"/>
+<text x="24" y="28" font-size="15" font-weight="bold" class="ink">How the pilot chooses an action</text>
+<text x="24" y="48" class="ink2">A greedy evaluator and fourteen human-taught rules propose a move; a short engine lookahead may override it;</text>
+<text x="24" y="66" class="ink2">eight one-way gates block the overrides we had seen go wrong.</text>
+<rect x="24" y="96" width="150" height="96" rx="6" fill="none" class="axis" stroke-width="1.8"/>
+<text x="34" y="116" font-weight="bold" class="ink" font-size="12">Observation</text>
+<text x="34" y="134" class="ink2" font-size="11">board, hands, prizes,</text>
+<text x="34" y="148" class="ink2" font-size="11">legal options from</text>
+<text x="34" y="162" class="ink2" font-size="11">the official engine</text>
+<line x1="174" y1="144" x2="196" y2="144" class="axis" stroke-width="1.8"/>
+<path d="M 196 144 L 188 140 L 188 148 Z" class="axis" fill="#b8b8b2"/>
+<rect x="196" y="96" width="210" height="96" rx="6" fill="none" class="axis" stroke-width="1.8"/>
+<text x="206" y="116" font-weight="bold" class="ink" font-size="12">Greedy evaluator</text>
+<text x="206" y="134" class="ink2" font-size="11">evolve > ability > play ></text>
+<text x="206" y="148" class="ink2" font-size="11">attach > attack > end;</text>
+<text x="206" y="162" class="ink2" font-size="11">damage and prize value</text>
+<line x1="406" y1="144" x2="428" y2="144" class="axis" stroke-width="1.8"/>
+<path d="M 428 144 L 420 140 L 420 148 Z" class="axis" fill="#b8b8b2"/>
+<rect x="428" y="96" width="230" height="96" rx="6" fill="none" class="axis" stroke-width="1.8"/>
+<text x="438" y="116" font-weight="bold" class="ink" font-size="12">14 rules taught by a player</text>
+<text x="438" y="134" class="ink2" font-size="11">Boss's Orders: knock out now ></text>
+<text x="438" y="148" class="ink2" font-size="11">the piece that evolves > bind;</text>
+<text x="438" y="162" class="ink2" font-size="11">play order, hand resets, bench</text>
+<line x1="658" y1="144" x2="680" y2="144" class="axis" stroke-width="1.8"/>
+<path d="M 680 144 L 672 140 L 672 148 Z" class="axis" fill="#b8b8b2"/>
+<rect x="680" y="96" width="196" height="96" rx="6" fill="none" class="s1s" stroke-width="1.8"/>
+<text x="690" y="116" font-weight="bold" class="s1" font-size="12">Proposed move (v1)</text>
+<text x="690" y="134" class="ink2" font-size="11">always legal;</text>
+<text x="690" y="148" class="ink2" font-size="11">the fallback if anything</text>
+<text x="690" y="162" class="ink2" font-size="11">below fails</text>
+<line x1="778" y1="192" x2="778" y2="244" class="axis" stroke-width="1.8"/>
+<path d="M 778 244 L 774 236 L 782 236 Z" class="axis" fill="#b8b8b2"/>
+<rect x="640" y="244" width="236" height="96" rx="6" fill="none" class="axis" stroke-width="1.8"/>
+<text x="650" y="264" font-weight="bold" class="ink" font-size="12">Engine lookahead</text>
+<text x="650" y="282" class="ink2" font-size="11">2 sampled opponent hands,</text>
+<text x="650" y="296" class="ink2" font-size="11">rollouts to the turn after next,</text>
+<text x="650" y="310" class="ink2" font-size="11">at most 0.6 s per decision</text>
+<line x1="640" y1="292" x2="618" y2="292" class="axis" stroke-width="1.8"/>
+<path d="M 618 292 L 626 288 L 626 296 Z" class="axis" fill="#b8b8b2"/>
+<rect x="408" y="244" width="210" height="96" rx="6" fill="none" class="s2s" stroke-width="1.8"/>
+<text x="418" y="264" font-weight="bold" class="s2" font-size="12">Override?</text>
+<text x="418" y="282" class="ink2" font-size="11">only if the lookahead value</text>
+<text x="418" y="296" class="ink2" font-size="11">beats v1 by a margin (120)</text>
+<text x="418" y="310" class="ink2" font-size="11">— 250× smaller than a prize</text>
+<line x1="408" y1="292" x2="386" y2="292" class="axis" stroke-width="1.8"/>
+<path d="M 386 292 L 394 288 L 394 296 Z" class="axis" fill="#b8b8b2"/>
+<rect x="176" y="244" width="210" height="96" rx="6" fill="none" class="s2s" stroke-width="1.8"/>
+<text x="186" y="264" font-weight="bold" class="s2" font-size="12">8 one-way gates</text>
+<text x="186" y="282" class="ink2" font-size="11">never override into: retreat,</text>
+<text x="186" y="296" class="ink2" font-size="11">END, attack before free plays,</text>
+<text x="186" y="310" class="ink2" font-size="11">hand reset; keep v1's Boss</text>
+<line x1="176" y1="292" x2="154" y2="292" class="axis" stroke-width="1.8"/>
+<path d="M 154 292 L 162 288 L 162 296 Z" class="axis" fill="#b8b8b2"/>
+<rect x="24" y="244" width="130" height="96" rx="6" fill="none" class="s1s" stroke-width="1.8"/>
+<text x="34" y="264" font-weight="bold" class="s1" font-size="12">Action</text>
+<text x="34" y="282" class="ink2" font-size="11">checked against the</text>
+<text x="34" y="296" class="ink2" font-size="11">engine's option list</text>
+<text x="24" y="398" class="ink2" font-size="11">The gates protect the proposed move from the lookahead, not the reverse: the lookahead can still turn a non-Boss proposal into Boss's Orders.</text>
+<text x="24" y="414" class="ink2" font-size="11">That unguarded direction is where the misfires in Fig. 7 came from.</text>
+<text x="24" y="430" class="ink2" font-size="11">Rules and gates are derived from card text at run time; the ten opponent-deck lists used for hidden-hand sampling are not.</text>
+</svg>

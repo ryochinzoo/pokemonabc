@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="360" font-family="Helvetica,Arial" font-size="12">
+<text x="24" y="24" font-size="15" font-weight="bold">Calibration gap: the same matchup on three instruments</text>
+<text x="24" y="42" font-size="11" fill="#555">Same agent (July 21, 2026). In-family = we pilot the opponent deck. Error grows with the real opponent pilot's skill: +62 / +41 / +8pt.</text>
+<line x1="70" y1="290.0" x2="700" y2="290.0" stroke="#e5e5e5"/>
+<text x="64" y="294.0" text-anchor="end" fill="#777" font-size="10">0%</text>
+<line x1="70" y1="237.0" x2="700" y2="237.0" stroke="#e5e5e5"/>
+<text x="64" y="241.0" text-anchor="end" fill="#777" font-size="10">25%</text>
+<line x1="70" y1="184.0" x2="700" y2="184.0" stroke="#e5e5e5"/>
+<text x="64" y="188.0" text-anchor="end" fill="#777" font-size="10">50%</text>
+<line x1="70" y1="131.0" x2="700" y2="131.0" stroke="#e5e5e5"/>
+<text x="64" y="135.0" text-anchor="end" fill="#777" font-size="10">75%</text>
+<line x1="70" y1="78.0" x2="700" y2="78.0" stroke="#e5e5e5"/>
+<text x="64" y="82.0" text-anchor="end" fill="#777" font-size="10">100%</text>
+<rect x="100" y="116.16" width="44" height="173.84" fill="#bbbbbb" rx="3"/>
+<text x="122.0" y="110.16" text-anchor="middle" font-size="11" fill="#333">82</text>
+<rect x="152" y="245.48000000000002" width="44" height="44.51999999999998" fill="#2b6cb0" rx="3"/>
+<text x="174.0" y="239.48000000000002" text-anchor="middle" font-size="11" fill="#333">21</text>
+<rect x="204" y="247.6" width="44" height="42.400000000000006" fill="#1a1a1a" rx="3"/>
+<text x="226.0" y="241.6" text-anchor="middle" font-size="11" fill="#333">20</text>
+<line x1="226.0" y1="282.58" x2="226.0" y2="171.704" stroke="#666" stroke-width="1.5"/>
+<line x1="221.0" y1="282.58" x2="231.0" y2="282.58" stroke="#666" stroke-width="1.5"/>
+<line x1="221.0" y1="171.704" x2="231.0" y2="171.704" stroke="#666" stroke-width="1.5"/>
+<text x="226.0" y="165.704" text-anchor="middle" font-size="9" fill="#777">n=10</text>
+<text x="174.0" y="306" text-anchor="middle" font-size="10">Archaludon</text>
+<text x="174.0" y="317" text-anchor="middle" font-size="10">(steel pilot)</text>
+<rect x="320" y="109.16400000000002" width="44" height="180.83599999999998" fill="#bbbbbb" rx="3"/>
+<text x="342.0" y="103.16400000000002" text-anchor="middle" font-size="11" fill="#333">85</text>
+<rect x="372" y="196.72" width="44" height="93.28" fill="#2b6cb0" rx="3"/>
+<text x="394.0" y="190.72" text-anchor="middle" font-size="11" fill="#333">44</text>
+<rect x="424" y="184.0" width="44" height="106.0" fill="#1a1a1a" rx="3"/>
+<text x="446.0" y="178.0" text-anchor="middle" font-size="11" fill="#333">50</text>
+<line x1="446.0" y1="233.184" x2="446.0" y2="134.816" stroke="#666" stroke-width="1.5"/>
+<line x1="441.0" y1="233.184" x2="451.0" y2="233.184" stroke="#666" stroke-width="1.5"/>
+<line x1="441.0" y1="134.816" x2="451.0" y2="134.816" stroke="#666" stroke-width="1.5"/>
+<text x="446.0" y="128.816" text-anchor="middle" font-size="9" fill="#777">n=14</text>
+<text x="394.0" y="306" text-anchor="middle" font-size="10">Lucario</text>
+<text x="394.0" y="317" text-anchor="middle" font-size="10">(official agent)</text>
+<rect x="540" y="94.95999999999998" width="44" height="195.04000000000002" fill="#bbbbbb" rx="3"/>
+<text x="562.0" y="88.95999999999998" text-anchor="middle" font-size="11" fill="#333">92</text>
+<rect x="592" y="112.55599999999998" width="44" height="177.44400000000002" fill="#2b6cb0" rx="3"/>
+<text x="614.0" y="106.55599999999998" text-anchor="middle" font-size="11" fill="#333">84</text>
+<text x="666.0" y="268.8" text-anchor="middle" font-size="9" fill="#999">no ladder</text>
+<text x="666.0" y="279.8" text-anchor="middle" font-size="9" fill="#999">sample</text>
+<text x="614.0" y="306" text-anchor="middle" font-size="10">Starmie family</text>
+<text x="614.0" y="317" text-anchor="middle" font-size="10">(teammate)</text>
+<rect x="70" y="337" width="12" height="12" fill="#bbbbbb" rx="2"/>
+<text x="88" y="347" font-size="11" fill="#333">in-family gauge</text>
+<rect x="200" y="337" width="12" height="12" fill="#2b6cb0" rx="2"/>
+<text x="218" y="347" font-size="11" fill="#333">out-of-family gauge</text>
+<rect x="360" y="337" width="12" height="12" fill="#1a1a1a" rx="2"/>
+<text x="378" y="347" font-size="11" fill="#333">real ladder (95% CI)</text>
+</svg>

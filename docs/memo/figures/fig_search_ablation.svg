@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="336" font-family="Helvetica,Arial" font-size="12">
+<style>
+  .s1{fill:#2a78d6} .s1s{stroke:#2a78d6} .s2{fill:#eb6834} .s2s{stroke:#eb6834}
+  .ink{fill:#0b0b0b} .ink2{fill:#52514e} .grid{stroke:#dcdcd8} .axis{stroke:#b8b8b2}
+  .surf{fill:#fcfcfb} .surfs{stroke:#fcfcfb}
+  @media (prefers-color-scheme: dark){
+    .s1{fill:#3987e5} .s1s{stroke:#3987e5} .s2{fill:#d95926} .s2s{stroke:#d95926}
+    .ink{fill:#ffffff} .ink2{fill:#c3c2b7} .grid{stroke:#33332f} .axis{stroke:#55554f}
+    .surf{fill:#1a1a19} .surfs{stroke:#1a1a19}
+  }
+</style>
+<rect width="660" height="336" class="surf"/>
+<text x="24" y="30" font-size="15" font-weight="bold" class="ink">The search layer is worth +13.62pt on the calibrated instrument</text>
+<text x="24" y="50" font-size="11" class="ink2">Control experiment, N=3,200 per arm (6,400 games, CRASH=0). Metric: calibrated out-of-family composite (CEW-lite).</text>
+<line x1="250.0" y1="72" x2="250.0" y2="186" class="grid" stroke-width="1"/>
+<text x="250.0" y="202" text-anchor="middle" font-size="10" class="ink2">0%</text>
+<line x1="330.0" y1="72" x2="330.0" y2="186" class="grid" stroke-width="1"/>
+<text x="330.0" y="202" text-anchor="middle" font-size="10" class="ink2">10%</text>
+<line x1="410.0" y1="72" x2="410.0" y2="186" class="grid" stroke-width="1"/>
+<text x="410.0" y="202" text-anchor="middle" font-size="10" class="ink2">20%</text>
+<line x1="490.0" y1="72" x2="490.0" y2="186" class="grid" stroke-width="1"/>
+<text x="490.0" y="202" text-anchor="middle" font-size="10" class="ink2">30%</text>
+<line x1="570.0" y1="72" x2="570.0" y2="186" class="grid" stroke-width="1"/>
+<text x="570.0" y="202" text-anchor="middle" font-size="10" class="ink2">40%</text>
+<text x="238" y="94.0" text-anchor="end" class="ink">search + override layer ON</text>
+<path d="M250,78 H555.76 a4,4 0 0 1 4,4 V98 a4,4 0 0 1 -4,4 H250 Z" class="s1"/>
+<text x="567.76" y="94.0" class="ink" font-weight="bold">38.72%</text>
+<text x="238" y="148.0" text-anchor="end" class="ink">layer OFF</text>
+<path d="M250,132 H446.72 a4,4 0 0 1 4,4 V152 a4,4 0 0 1 -4,4 H250 Z" class="s2"/>
+<text x="458.72" y="148.0" class="ink" font-weight="bold">25.09%</text>
+<line x1="450.72" y1="250" x2="559.76" y2="250" class="axis" stroke-width="2"/>
+<line x1="559.76" y1="245" x2="559.76" y2="255" class="axis" stroke-width="2"/>
+<line x1="450.72" y1="245" x2="450.72" y2="255" class="axis" stroke-width="2"/>
+<text x="505.24" y="236" text-anchor="middle" font-size="13" font-weight="bold" class="ink">+13.62pt</text>
+<text x="505.24" y="272" text-anchor="middle" font-size="11" class="ink2">95% CI [+11.40, +15.84] &#183; 12.0&#963;</text>
+<text x="24" y="324" font-size="10" class="ink2">Until late July this component had never been ablated: its only evidence was one in-family run of N=200.</text>
+</svg>

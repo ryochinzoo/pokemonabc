@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>基盤の構成と昨夜の2提出 — 根本から理解する (2026-07-29)</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --card: #ffffff; --ink: #1a1a1a; --sub: #555;
+    --accent: #0b6e6e; --accent-soft: #e2f1f1; --warn-bg: #fff6e5; --warn-edge: #e0a800;
+    --danger-bg: #fdecec; --danger-edge: #c0392b; --ok-bg: #e9f7ec; --ok-edge: #2e8b57;
+    --line: #ddd; --code-bg: #f0f0ee; --purple: #6b4fa0; --purple-soft: #efe9f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181a; --card: #1f2225; --ink: #e8e6e3; --sub: #a5a5a0;
+      --accent: #4fc3c3; --accent-soft: #12383a; --warn-bg: #3a2f14; --warn-edge: #d4a017;
+      --danger-bg: #3a1f1d; --danger-edge: #e07060; --ok-bg: #1d3324; --ok-edge: #5cb87f;
+      --line: #3a3d40; --code-bg: #2a2d30; --purple: #b39ddb; --purple-soft: #2a2340;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font-family: "Hiragino Sans", "Noto Sans JP", -apple-system, sans-serif;
+         line-height: 1.75; font-size: 15.5px; }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 24px 20px 80px; }
+  h1 { font-size: 1.5em; border-bottom: 3px solid var(--accent); padding-bottom: 8px; line-height: 1.4; }
+  h2 { font-size: 1.25em; margin-top: 2.4em; color: var(--accent);
+       border-left: 5px solid var(--accent); padding-left: 10px; }
+  h3 { font-size: 1.05em; margin-top: 1.6em; }
+  .lead { color: var(--sub); font-size: 0.95em; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 16px 18px; margin: 14px 0; }
+  .key { background: var(--accent-soft); border-left: 5px solid var(--accent);
+         padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .warn { background: var(--warn-bg); border-left: 5px solid var(--warn-edge);
+          padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .ok { background: var(--ok-bg); border-left: 5px solid var(--ok-edge);
+        padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .danger { background: var(--danger-bg); border-left: 5px solid var(--danger-edge);
+            padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .purple { background: var(--purple-soft); border-left: 5px solid var(--purple);
+            padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.92em; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--accent-soft); font-weight: 600; }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.9em; }
+  pre { background: var(--code-bg); padding: 12px 14px; border-radius: 8px; overflow-x: auto;
+        font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.85em; line-height: 1.6; }
+  .scroll { overflow-x: auto; }
+  .big { font-size: 1.5em; font-weight: 700; color: var(--accent); }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 20px; font-size: 0.78em;
+         font-weight: 600; vertical-align: middle; }
+  .tag-same { background: var(--ok-bg); color: var(--ok-edge); border: 1px solid var(--ok-edge); }
+  .tag-diff { background: var(--warn-bg); color: var(--warn-edge); border: 1px solid var(--warn-edge); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+  .muted { color: var(--sub); font-size: 0.9em; }
+  ul, ol { padding-left: 1.4em; }
+  li { margin: 5px 0; }
+  .stat { display: flex; gap: 20px; flex-wrap: wrap; margin: 10px 0; }
+  .stat div { flex: 1; min-width: 150px; background: var(--card); border: 1px solid var(--line);
+              border-radius: 8px; padding: 10px 14px; }
+  .stat .n { font-size: 1.35em; font-weight: 700; color: var(--accent); display: block; }
+  .stat .l { font-size: 0.82em; color: var(--sub); }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 2.5em 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>基盤の構成と昨夜の2提出 — 根本から理解する</h1>
+<p class="lead">2026-07-29 作成 / 対象: 55058443・55060473 の中身と理由、システム全体の設計思想、いま何をやろうとしているか</p>
+
+<div class="key">
+<strong>先に結論だけ3行</strong>
+<ol style="margin:8px 0 0">
+<li>昨夜の2提出は <strong>まったく同じパイロット(main.py、バイト単位で同一)に、違うデッキを載せたもの</strong>です。</li>
+<li>理由は順位取りではなく<strong>計測</strong> — 「操縦者を固定してデッキだけ変える」ことでしか測れない量があるからです。</li>
+<li>いま我々がやっているのは「強いAIを作る」より前段の<strong>「強さを正しく測れる装置を作る」</strong>で、それが勝負どころです。</li>
+</ol>
+</div>
+
+<h2>1. 昨夜出した2つは何デッキか</h2>
+
+<div class="grid2">
+<div class="card">
+<h3 style="margin-top:0">① <code>starmie-aggro</code> <span class="tag tag-same">王者</span></h3>
+<p class="muted">ref 55058443 / 現在 <strong>793.9</strong>(チーム史上最高帯)</p>
+<p><strong>メガスターミーex 速攻デッキ。</strong>ポケモンはたった2種8枚だけで、残り52枚が全部「手札を回す道具」という極端な構成です。</p>
+<table>
+<tr><th>枠</th><th>中身</th></tr>
+<tr><td>ポケモン<br>8枚</td><td>4x Staryu(たね)<br>4x Mega Starmie ex(1進化)</td></tr>
+<tr><td>エネルギー<br>15枚</td><td>11x 基本水エネ<br>4x <strong>Ignition Energy</strong>(特殊)</td></tr>
+<tr><td>グッズ<br>15枚</td><td>4x Buddy-Buddy Poffin、4x Ultra Ball<br>4x Poké Pad、3x Pokégear 3.0</td></tr>
+<tr><td>サポート<br>21枚</td><td>4x Hilda、4x Lillie's Determination<br>4x Wally's Compassion、3x Carmine<br>3x Judge、3x Dawn</td></tr>
+<tr><td>道具 1枚</td><td>1x Deluxe Bomb(ACE SPEC)</td></tr>
+</table>
+<p class="muted">思想: 「Staryu を出す → すぐ Mega Starmie ex に進化 → エネを付けて殴る」だけに全リソースを注ぐ。妨害も耐久もほぼ捨てている。</p>
+</div>
+
+<div class="card">
+<h3 style="margin-top:0">② <code>dragapult-calib</code> <span class="tag tag-diff">計測用</span></h3>
+<p class="muted">ref 55060473 / 現在 <strong>430.5</strong></p>
+<p><strong>ドラパルトex デッキ。これは我々が設計したものではなく、大会ホストが公開しているサンプルデッキの60枚をそのまま使っています。</strong></p>
+<table>
+<tr><td>ポケモン<br>16枚</td><td>4x Dreepy、4x Drakloak、3x Dragapult ex(2進化ライン)<br>2x Budew、1x Fezandipiti ex、1x Latias ex、1x Meowth ex</td></tr>
+<tr><td>エネルギー<br>8枚</td><td>4x 基本炎、4x 基本超</td></tr>
+<tr><td>グッズ<br>20枚</td><td>4x Crushing Hammer(相手エネ破壊)、4x Ultra Ball<br>4x Buddy-Buddy Poffin、3x Poké Pad、2x Rare Candy<br>2x Night Stretcher、1x Unfair Stamp(ACE SPEC)</td></tr>
+<tr><td>サポート<br>13枚</td><td>4x Crispin、4x Lillie's Determination<br>3x Boss's Orders、2x Brock's Scouting</td></tr>
+<tr><td>その他</td><td>2x Team Rocket's Watchtower(スタジアム)<br>1x Lucky Helmet(道具)</td></tr>
+</table>
+<p class="muted">思想: 2進化まで育てて高火力+相手エネ破壊。<strong>①とは完全に別ジャンルのデッキ</strong>(速攻 vs 育成コントロール)。</p>
+</div>
+</div>
+
+<h2>2. ロジックは同じか、別か</h2>
+
+<div class="ok">
+<p style="margin:0"><strong>ロジック(パイロット=<code>main.py</code>)は完全に同一です。</strong>「同じくらい似ている」ではなく、<strong>SHA256ハッシュがビット単位で一致</strong>しています。</p>
+<pre style="margin:10px 0 0">両方の main.py: 50863cfa97d91f7d5e187a3111984d0a8e996577723c2657e332a43eada4cf35
+
+deck.csv だけが違う:
+  starmie-aggro   : d8ef04fa2c65ae9f98f180d2ba80c295c1b9501d63a1c95fb4c9d2e1c3eb2e40
+  dragapult-calib : 4868ecced4f58da29d0c3971a62e552b069fc9d6e6bc3d69c4a7cebcb2747710</pre>
+</div>
+
+<p>これはこの大会の基本構造から来ています。提出物は必ず <strong>デッキ(60枚) × パイロット(main.py)</strong> のペアです。そして我々のパイロットは特定デッキ専用に書かれた台本ではなく、<strong>渡された盤面を汎用的に評価して指し手を選ぶエンジン</strong>なので、別のデッキを載せてもそのまま動きます。</p>
+
+<div class="purple">
+<p style="margin:0"><strong>なぜ「わざと」同じロジックにしたのか</strong> — これが実験の核心です。<br>
+2つの変数(デッキ・パイロット)のうち<strong>パイロットを固定してデッキだけ動かす</strong>と、観測された差はデッキ由来だと言い切れます。逆に「デッキを固定してパイロットだけ動かす」と、差はパイロット由来。この2種類の対照実験を積み重ねることでしか、後述する「較正の法則」は測れません。</p>
+</div>
+
+<h2>3. なぜ出したのか — 順位ではなく計測が目的</h2>
+
+<p>両方とも提出メッセージに「<em>Purpose is measurement, not ranking</em>」と明記しています。目的はそれぞれ違います。</p>
+
+<h3>① 55058443(王者) — 「重みの前向き検証」</h3>
+<p>我々は勝率を測るとき、実ラダーで<strong>どの相手にどれくらい当たるか</strong>で重み付けした合成指標(CEW)を使っています。7/26にその重みを更新しました(Dragapult枠が 9.8% → 15.5% など)。</p>
+<div class="warn">
+<p style="margin:0">ただしその更新は<strong>過去データを見て後から直した</strong>もの(後ろ向き)。「新しい重みが本当に正しいか」は<strong>まだ一度も前向きに試していなかった</strong>。<br>
+→ そこで<strong>提出前に</strong>「新重みだとラダー成績はこうなるはず」という数値(H1 = 44.39%)を書いて封をしてから提出しました。今夜の検死でそれが当たっているかを見ます。</p>
+</div>
+
+<h3>② 55060473(dragapult-calib) — 「較正法則の3つ目のデッキ」</h3>
+<p>後述の「較正の法則」は、これまで<strong>2種類のデッキ</strong>でしか検証していませんでした。3種類目として、①とまったく毛色の違うデッキ(2進化コントロール)で同じ法則が成り立つかを見ます。法則が特定デッキの偶然でないことを示すためです。</p>
+
+<div class="card">
+<strong>提出枠を使うコストはほぼゼロ、という事実</strong>
+<p style="margin:8px 0 0">最終順位に効くのは<strong>凍結時点の直近2提出だけ</strong>で、それまでは何を出しても後から上書きできます。しかも1日5枠が毎日戻ってくる。だから「較正データを取るために出す」のは実質タダです。<span class="muted">(公式Sim最終提出は8/16。締切後も〜8/31頃までラダーは回り続けて収束後にLB確定)</span></p>
+</div>
+
+<hr>
+
+<h2>4. システムの基盤構成</h2>
+
+<p>全体は4層です。下の層ほど「土台」で、上の層は下を信頼して動きます。</p>
+
+<div class="scroll">
+<pre>┌─────────────────────────────────────────────────────────────┐
+│ 【第4層】 意思決定の規律                                      │
+│   playbook.md / decisions.md / claims-ledger.md              │
+│   事前登録・判定規則・T1〜T7監査トリガー・T7パネル審査          │
+│   「何を測る前に何を宣言しておくか」を縛る                      │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ 判定規則を供給
+┌──────────────────────────┴──────────────────────────────────┐
+│ 【第3層】 較正済み計器 (verification/)                        │
+│   CEW = 族外ゲージ4種を実ラダー遭遇率で加重した単一指標         │
+│   cew.py(合成) / cew_stats.py(CI) / bench.py(対戦) / parbench │
+│   ★ここが我々の最大の資産                                     │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ 勝率を測る
+┌──────────────────────────┴──────────────────────────────────┐
+│ 【第2層】 提出物 = デッキ × パイロット                         │
+│   decks/starmie-aggro/    ← 王者 (55058443)                  │
+│   decks/dragapult-calib/  ← 同じ main.py + 別デッキ (55060473)│
+│   decks/starmie-aggro-metadecks/ ← 今夜試す変種              │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ ctypes で叩く
+┌──────────────────────────┴──────────────────────────────────┐
+│ 【第1層】 ゲームエンジン (cg/libcg.dylib — 公式のC実装)        │
+│   大会と同じ本物のエンジン。先読み探索にもこれを使う(公式許可)   │
+└─────────────────────────────────────────────────────────────┘</pre>
+</div>
+
+<h3>第2層: パイロット(main.py)の中身</h3>
+<p>約3,900行。3段構えです。</p>
+<table>
+<tr><th>段</th><th>役割</th><th>実測された価値</th></tr>
+<tr><td><strong>①貪欲層(v1)</strong></td><td>盤面を手書きの評価関数で採点し、いちばん点の高い手を選ぶ。ダメージ・エネ・サイド枚数などを重み付け</td><td>土台(単体評価なし)</td></tr>
+<tr><td><strong>②探索・上書き層</strong></td><td>本物のエンジンを使って先読み(決定化 ×2 → ロールアウト)。貪欲層の選択と食い違い、その差が閾値を超えたら上書きする</td><td class="ok" style="border:0"><strong>+13.62pt</strong><br>CI[+11.40,+15.84]、12.0σ<br>(各腕3,200戦の対照実験)</td></tr>
+<tr><td><strong>③安全網</strong></td><td>例外・不正手・時間超過を絶対に外に出さない。<code>agent()</code>は必ず合法な選択を返す</td><td>実ラダー<strong>CRASH=0</strong></td></tr>
+</table>
+
+<div class="danger">
+<strong>②の中にある既知の欠陥(今夜これを直す)</strong>
+<p style="margin:8px 0 0">先読みするには「相手の見えない山札」を仮定する必要があります。そのために <code>_META_DECKS</code> という<strong>相手デッキ辞書</strong>を持っていて、見えたカードから「相手はこの型だろう」と当てて60枚を復元します。<br>
+ところが辞書の中身は <strong>2026-07-14 時点のラダー実測5デッキ</strong>のままで、<strong>今いちばん当たる Lucario / Archaludon / Dragapult / Abomasnow が1つも入っていません</strong>。つまり計器で重み100%を占める4対面すべてで、先読みは相手の山を<strong>「ほぼ草エネルギーの束」と誤って仮定して</strong>計算しています。</p>
+</div>
+
+<h3>第3層: 較正済み計器(ここが我々の独自性)</h3>
+<div class="key">
+<p style="margin:0 0 8px"><strong>出発点になった発見(2026-07-21)</strong>: 自己対戦で相手デッキを<em>自分のパイロットで</em>動かして測ると、勝率が<strong>+8〜+62pt も過大に出る</strong>。しかもそのズレはランダムではなく<strong>「本物の操縦者と自分の腕の差」に比例</strong>していた。</p>
+<p style="margin:0">→ だから相手側は<strong>本物の他人のAI</strong>に操縦させる(=族外ゲージ)。使っているのは公式サンプルAgent 3種+公開notebook 1種で、<strong>公式Lucarioは実ラダーの相手と60枚中60枚一致</strong>していました(=ラダーそのものをローカルに再現できた)。</p>
+</div>
+<div class="stat">
+<div><span class="n">45.1%</span><span class="l">Lucario(公式サンプル)</span></div>
+<div><span class="n">33.8%</span><span class="l">Archaludon(tomato系)</span></div>
+<div><span class="n">15.5%</span><span class="l">Dragapult(公式)</span></div>
+<div><span class="n">5.6%</span><span class="l">Abomasnow(公式)</span></div>
+</div>
+<p class="muted">この4つの勝率を上の重みで合成した1つの数字が <strong>CEW</strong>。基準線 43.13%、採用閾値 +2.0pt。測定は Neyman配分 N=3,200(1562/1040/426/172)。<br>
+限界も開示しています: 実ラダー遭遇の<strong>33.3%しかカバーできていない</strong>(遭遇1位のAlakazam 20%にはゲージが無い)。</p>
+
+<h3>第4層: 規律(なぜ必要か)</h3>
+<p>我々は10件以上の改良案を試して、<strong>採用できたのは2件だけ</strong>です。棄却が多いのは能力の問題ではなく、<strong>先に「これを超えなければ捨てる」と数字で宣言してから測っている</strong>からです。この規律がないと、出た結果を見てから基準を動かしてしまう(=自分を騙す)。</p>
+<table>
+<tr><th>仕組み</th><th>中身</th></tr>
+<tr><td>事前登録</td><td>測る前に N・閾値・kill条件・予測を文書に書いて凍結する</td></tr>
+<tr><td>T1〜T7トリガー</td><td>監査を「気が向いたら」でなく機械的に発火させる。T1=提出ごとのラダー予測検証、T3=遭遇分布が動いたら重み再計算(義務)、T7=設計レビュー</td></tr>
+<tr><td>T7パネル</td><td>4つの視点(統計/ドメイン/実装/前提)のサブエージェントに独立に叩かせ、別モデルで検証してから編集長が裁定。<strong>昨夜も24件の指摘が出て6件が必須修正になりました</strong></td></tr>
+<tr><td>主張台帳</td><td>レポートに書く数値は全てここを経由。「確証/弱確証/探索的/撤回」のラベル必須</td></tr>
+</table>
+
+<hr>
+
+<h2>5. いまの方針 — なぜ「記事を先に書く」のか</h2>
+
+<div class="key">
+<p style="margin:0"><strong>Strategy部門の配点: Model 70% + Deck 20% + Report 10%。</strong>そして Model 70% の内訳は5項目(説明/独自性/安定性/頑健性/<strong>Sim成績</strong>)。<br>
+つまり<strong>ラダー順位は総配点の約14%しかなく、残り86%は「書かれたもの」でしか審査されない</strong>。公式も「LB中下位でも高得点可能」と明言しています。</p>
+</div>
+
+<p>そこで7/28に方針を「<strong>逆算</strong>」に切り替えました。記事を先に全文書き切って、<strong>どこで論証が詰まるかを計器として使う</strong>。8月下旬に書き始めると、そこで見つかった穴を埋める測定窓(8/8で実験終了)が既に閉じているからです。</p>
+
+<div class="ok">
+<strong>実際にやってみた結果(これが今回いちばんの収穫)</strong>
+<p style="margin:8px 0 0">全文1,970語を書き切ってギャップが8件出ました。そして<strong>新規実験を要する穴は1件もありませんでした</strong>。<br>
+最大の穴は「<em>で、結局強くなったのか?</em>への答えが弱い」。しかしこれは証拠不足ではなく<strong>構成の失敗</strong>でした — 我々の最大の測定値 +13.62pt が「探索層の話」として脇に置かれていて、「エージェントの正味の強さ」として提示されていなかった。<strong>再配置だけで解決</strong>しました。</p>
+</div>
+
+<h2>6. 今日これから何をするか</h2>
+
+<table>
+<tr><th>時刻(JST)</th><th>作業</th><th>状態</th></tr>
+<tr><td>いま〜24:00</td><td>図版作成(G6)・writeup推敲・レビュー</td><td>作業可能</td></tr>
+<tr><td><strong>約24:11</strong></td><td><strong>55058443 検死</strong> — T1(較正法則 n=4)+ <strong>T3(新重みの審判)</strong></td><td>装置準備済み</td></tr>
+<tr><td>直後</td><td>辞書修理 Phase 0(機構が実在するか N=50×12セル)→ Phase 1(頭対頭6,400戦)</td><td>凍結済み・待機</td></tr>
+<tr><td>約25:47</td><td>55060473 検死(較正法則 n=5)</td><td>装置準備済み</td></tr>
+</table>
+
+<div class="warn">
+<p style="margin:0"><strong>今夜の分岐は事前に固定してあります</strong>(結果を見てから決めない):<br>
+T3が<strong>非発火</strong>なら → 新重みは前向きに正しかった。辞書修理をそのまま実行。<br>
+T3が<strong>発火</strong>したら → 7/26の再較正が過剰適合だった疑い。<strong>辞書修理のPhase 1は保留</strong>し、重みを引き直してから。穴Dの凍結文書は触らない。</p>
+</div>
+
+<h3>検死までにレビューしてもらえると価値が高い箇所</h3>
+<ol>
+<li><strong>writeup全文ドラフト</strong>(<code>docs/memo/writeup-v1-fulldraft.md</code>) — これが本丸(配点86%)。特に「読んでいて納得できないところ」「専門的すぎて伝わらないところ」。審査員5人中3人はポケモン社の方なので、<strong>ドメインの話がちゃんと面白いか</strong>が重要です。</li>
+<li><strong>この文書の理解に穴がないか</strong> — 説明が足りない箇所があれば、それはwriteupでも足りていない可能性が高いです。</li>
+<li><strong>デッキ構成そのもの</strong>(上の①) — ポケモン8枚は人間の感覚では異常です。ここに違和感があるなら、その違和感自体がwriteup §4 の素材になります。</li>
+</ol>
+
+<div class="card">
+<strong>逆に、レビュー不要なもの</strong>
+<p style="margin:8px 0 0">統計設計・N・閾値の類は既にT7パネルが叩いています(昨夜は24指摘・必須6件)。ここに時間を使うより、上の3点を見ていただく方が効きます。</p>
+</div>
+
+<hr>
+<p class="muted">関連文書: <code>docs/memo/writeup-v1-fulldraft.md</code>(記事全文+ギャップ表) / <code>docs/memo/decisions.md</code> D56(昨夜の決定) / <code>docs/memo/plan-2026-07-29-metadecks-repair.md</code>(辞書修理・凍結済み) / <code>docs/memo/plan-2026-07-27-holeD-prereg.md</code>(穴D・凍結済み) / <code>replay_analysis/episode_arrival.py</code>(到着レート実測)</p>
+
+</div>
+</body>
+</html>

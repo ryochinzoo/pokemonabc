@@ -1,0 +1,413 @@
+<title>りょーちん向けハンドブック — yujiブランチの地図と道具とプロンプト集</title>
+<style>
+  :root {
+    --paper: #f6f7f4; --card: #ffffff; --ink: #1d2520; --ink-soft: #4d5a52;
+    --ink-mute: #7d8a82; --line: #dbe2dc;
+    --leaf: #2c7a4b; --leaf-soft: #e4f1e9;
+    --sea: #20648f;  --sea-soft: #e2edf5;
+    --amber: #a3630b; --amber-soft: #f7edda;
+    --red: #b3452e; --red-soft: #f9e7e2;
+    --mono: "SF Mono", "Menlo", "Consolas", monospace;
+    --sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic Medium", sans-serif;
+    --serif: "Hiragino Mincho ProN", "Yu Mincho", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --paper:#131a16; --card:#1b241f; --ink:#e7ede9; --ink-soft:#adbbb2;
+      --ink-mute:#77857c; --line:#2d3a32; --leaf:#6fbf92; --leaf-soft:#1c2f26;
+      --sea:#6aaad4; --sea-soft:#1a2c3a; --amber:#d9a24a; --amber-soft:#332a17;
+      --red:#e08a74; --red-soft:#3a221c; }
+  }
+  :root[data-theme="dark"] { --paper:#131a16; --card:#1b241f; --ink:#e7ede9; --ink-soft:#adbbb2;
+    --ink-mute:#77857c; --line:#2d3a32; --leaf:#6fbf92; --leaf-soft:#1c2f26;
+    --sea:#6aaad4; --sea-soft:#1a2c3a; --amber:#d9a24a; --amber-soft:#332a17;
+    --red:#e08a74; --red-soft:#3a221c; }
+  :root[data-theme="light"] { --paper:#f6f7f4; --card:#ffffff; --ink:#1d2520; --ink-soft:#4d5a52;
+    --ink-mute:#7d8a82; --line:#dbe2dc; --leaf:#2c7a4b; --leaf-soft:#e4f1e9;
+    --sea:#20648f; --sea-soft:#e2edf5; --amber:#a3630b; --amber-soft:#f7edda;
+    --red:#b3452e; --red-soft:#f9e7e2; }
+  * { box-sizing: border-box; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans);
+    line-height: 1.85; margin: 0; font-size: 15.5px; }
+  main { max-width: 46em; margin: 0 auto; padding: 24px 20px 96px; }
+  header.hero { padding: 48px 0 12px; border-bottom: 3px solid var(--leaf); margin-bottom: 8px; }
+  .eyebrow { font-size: 12px; letter-spacing: .16em; color: var(--leaf); font-weight: 700; }
+  h1 { font-family: var(--serif); font-size: 30px; line-height: 1.45; margin: 8px 0 10px; text-wrap: balance; }
+  .lede { color: var(--ink-soft); font-size: 14.5px; }
+  h2 { font-family: var(--serif); font-size: 23px; margin: 0 0 6px; }
+  h3 { font-size: 16.5px; margin: 26px 0 8px; }
+  section { margin-top: 52px; }
+  .chapter { font-size: 12px; letter-spacing: .14em; color: var(--sea); font-weight: 700; margin-bottom: 4px; }
+  p { margin: 10px 0; }
+  .toc { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 16px 22px; margin-top: 24px; font-size: 14px; }
+  .toc ol { margin: 6px 0 0; padding-left: 1.4em; } .toc li { margin: 3px 0; }
+  .toc a { color: var(--sea); text-decoration: none; }
+  .toc a:hover, .toc a:focus { text-decoration: underline; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; background: var(--card); }
+  .tablewrap { overflow-x: auto; margin: 14px 0; border: 1px solid var(--line); border-radius: 6px; }
+  th, td { padding: 8px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  th { font-size: 12px; letter-spacing: .04em; color: var(--ink-soft); background: var(--paper); }
+  tr:last-child td { border-bottom: none; }
+  code { font-family: var(--mono); font-size: 12.5px; background: var(--sea-soft); border-radius: 3px; padding: 1px 5px; }
+  pre { background: #14201a; color: #dcede2; font-family: var(--mono); font-size: 12.5px;
+    line-height: 1.7; border-radius: 6px; padding: 14px 16px; overflow-x: auto; margin: 10px 0; }
+  :root[data-theme="light"] pre { background: #14201a; }
+  .recipe { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 14px 18px; margin: 14px 0; }
+  .recipe .rname { font-weight: 700; font-size: 15px; }
+  .recipe .rwhen { font-size: 12.5px; color: var(--ink-mute); margin-bottom: 6px; }
+  .box { border: 1px solid var(--line); border-left: 4px solid var(--sea); background: var(--card);
+    border-radius: 4px; padding: 12px 16px; margin: 16px 0; font-size: 14.5px; }
+  .box.leaf { border-left-color: var(--leaf); } .box.amber { border-left-color: var(--amber); }
+  .box.red { border-left-color: var(--red); }
+  .box b.tag { display: block; font-size: 12px; letter-spacing: .06em; margin-bottom: 3px; color: var(--sea); }
+  .box.leaf b.tag { color: var(--leaf); } .box.amber b.tag { color: var(--amber); } .box.red b.tag { color: var(--red); }
+  .prompt { border: 1px solid var(--line); border-radius: 8px; margin: 22px 0; background: var(--card); overflow: hidden; }
+  .prompt .phead { padding: 10px 16px; background: var(--leaf-soft); font-weight: 700; font-size: 14.5px; color: var(--leaf); }
+  .prompt .pbody { padding: 4px 16px 14px; }
+  .prompt .pnote { font-size: 13px; color: var(--ink-soft); margin: 8px 0; }
+  .num { font-family: var(--mono); font-size: 12.5px; }
+  .good { color: var(--leaf); font-weight: 700; } .bad { color: var(--red); font-weight: 700; }
+  .even { color: var(--amber); font-weight: 700; }
+  dl.map dt { font-weight: 700; font-family: var(--mono); font-size: 13px; margin-top: 12px; }
+  dl.map dd { margin: 1px 0 0 0; color: var(--ink-soft); font-size: 14px; }
+  a { color: var(--sea); }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">TEAM POKEMONABC ─ 2026-07-22 MTG資料</div>
+  <h1>りょーちん向けハンドブック<br>yujiブランチの地図・道具の使い方・Codexプロンプト集</h1>
+  <p class="lede">対象ブランチ: <code>yuji/verify-infra</code>(最新までpush済み)。このページは「読んで分かる」用。コードを書く作業は全部Codexに投げられるよう、コピペ用プロンプトを最後に用意した。カードの読みと構築はりょーちんの領分、測定装置はこちらの領分 ─ 合流させるのが今日のMTGの目的。</p>
+</header>
+
+<nav class="toc">
+  <b>目次</b>
+  <ol>
+    <li><a href="#s1">30秒サマリ ─ こっちのブランチで何が起きたか</a></li>
+    <li><a href="#s2">一番大事な発見5つ(カード知識と掛け算してほしい)</a></li>
+    <li><a href="#s3">リポジトリの地図 ─ どこに何があるか</a></li>
+    <li><a href="#s4">レシピ集 ─ 「〇〇したい時はこう打つ」</a></li>
+    <li><a href="#s5">りょーちんのagentを読んだ上での提言</a></li>
+    <li><a href="#s6">Codexにそのまま貼るプロンプト集</a></li>
+    <li><a href="#s7">プロンプトのコツ(3つだけ)</a></li>
+    <li><a href="#s8">MTGで決めたいこと・今後の日程</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<section id="s1">
+  <div class="chapter">1</div>
+  <h2>30秒サマリ ─ こっちのブランチで何が起きたか</h2>
+  <ul>
+    <li>ライブ2枠は <b>54858780</b>(EXP8版、742点・上昇中)と <b>54832323</b>(v2.2版、~785点)。どちらもスターミー一本槍デッキ。</li>
+    <li><b>最大の事件は「測り方」の発見</b>。相手デッキを自分のAIに操縦させて測る従来のやり方(族内測定)は、勝率を最大+62ポイント過大評価していた。いまは<b>本物のラダー相手のプログラム</b>を練習台にして測っている(詳細は次章)。</li>
+    <li>その新しい計器で「提出前に成績を予言→60戦後に答え合わせ」をやったら<b>誤差2ポイントで的中</b>。計器は信用できる。</li>
+    <li>デッキ選び直しの総当たり戦(約4,000戦)もやった。結論: 現デッキが王座防衛。ただし理由が面白い(§2の④)。</li>
+    <li>意思決定は全部 <code>docs/memo/decisions.md</code> に通し番号付きで記録している(現在D35まで)。数字の生データは <code>docs/memo/data.md</code>。</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<section id="s2">
+  <div class="chapter">2</div>
+  <h2>一番大事な発見5つ(カード知識と掛け算してほしい)</h2>
+  <h3>① ラダーの相手の正体は「公開コードのコピー」だった</h3>
+  <p>実対戦ログから相手の60枚を抽出して照合した結果: ルカリオ=<b>主催者の公開サンプルと60枚完全一致</b>(コピーされた回数997回)。ブリジュラス=公開ノート「TOMATOMATO」のリストと完全一致。ドラパルトも主催者サンプル。つまり<b>敵の中身がgithubに置いてあるようなもの</b>で、これを手元に連れてきて練習相手にしている(<code>verification/reference/</code>)。</p>
+  <h3>② 族内測定の罠(このプロジェクト最大の教訓)</h3>
+  <p>「相手のデッキを自分のAIに持たせて測る」と、相手が本来の専用ロジックで動かないので勝率が甘く出る。実測でのズレ: ブリジュラス相手<b>+62pt</b>、ルカリオ相手+41pt、りょーちんのagent相手+8pt。<b>ズレの大きさは相手パイロットとの実力差に比例する</b>。だから採否の判定は必ず「本物の敵」(族外ゲージ)で測る。</p>
+  <h3>③ 人間の定石はAIパイロットに移植できない(実測3連発)</h3>
+  <div class="tablewrap"><table>
+    <tr><th>人間の定石</th><th>実測結果</th></tr>
+    <tr><td>ヨノワールのダメカン砲コンボ(人間メタの定番)</td><td>AIは一度も決められず死に荷物。<b>抜いたら直接対決64.7%勝ち</b></td></tr>
+    <tr><td>エースバーンのエネ加速(勝ち組リスト6/6が採用)</td><td>うちのAIでは発動0.12回/試合の死に札</td></tr>
+    <tr><td>「マリガン率60%は異常、たねを増やせ」</td><td>増やすほど単調に悪化。<b>調べたらエンジンはマリガンのペナルティを実装していない</b></td></tr>
+  </table></div>
+  <p>りょーちんのカード知識は最強の武器だけど、「人間の対戦で正しい」と「このエンジンでこのAIで正しい」は別物 ─ というのがうちの一番の学び。<b>知識で仮説を出す→計器で数値にする</b>、の分業が理想。</p>
+  <h3>④ デッキとパイロットは切り離せない(昨日の王座防衛戦)</h3>
+  <p>ガルーラ型とフーディン型は、較正済み計器のスコアでは現デッキを+14〜16点も上回った。ところが<b>ランダムに手を選ぶだけのAI相手の勝率が84〜90%に落ちる</b>(まともな構成なら96%以上出る)。つまりうちのパイロットはその2つのデッキだと自滅する。デッキ単体の強さは存在せず、<b>「マシン×ドライバー」のセット</b>でしか評価できない。りょーちんの専用ロジック×りょーちんのリストにも同じことが言える ─ だから他人の物差しではなく、<b>本物の敵ゲージで自分のセットを測るのが唯一フェアな比較</b>になる。</p>
+  <h3>⑤ いまの帯のメタ(直近60戦の実測)</h3>
+  <div class="tablewrap"><table>
+    <tr><th>相手</th><th>遭遇率</th><th>うちの勝率</th><th>メモ</th></tr>
+    <tr><td>メガルカリオex(闘)</td><td class="num">18.3%</td><td class="num even">45.5%</td><td>最多。高速。立ち上がり勝負</td></tr>
+    <tr><td>フーディン(超)</td><td class="num">15.0%</td><td class="num good">66.7%</td><td>手札×20ダメカン型</td></tr>
+    <tr><td><b>壁(イワパレス系)</b></td><td class="num"><b>15.0%</b></td><td class="num good">77.8%</td><td><b>先週3%→今週15%に急増</b>。ミル勝ち狙いも実在</td></tr>
+    <tr><td>ブリジュラスex(鋼)</td><td class="num">13.3%</td><td class="num bad">25.0%</td><td>最大の失点源。サイド交換3:2の非対称で構造的不利</td></tr>
+    <tr><td>ドラパルトex</td><td class="num">8.3%</td><td class="num good">100%</td><td>5戦全勝</td></tr>
+    <tr><td>スターミー同型</td><td class="num">6.7%</td><td class="num even">50%</td><td>速度勝負</td></tr>
+    <tr><td>その他(ミュウツー・オーロンゲ等)</td><td class="num">~23%</td><td class="num good">7〜8割</td><td>オーロンゲのみ1勝2敗</td></tr>
+  </table></div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s3">
+  <div class="chapter">3</div>
+  <h2>リポジトリの地図 ─ どこに何があるか</h2>
+  <dl class="map">
+    <dt>src/input/datasets/decks/&lt;デッキ名&gt;/</dt>
+    <dd>デッキ実験の単位。<code>main.py</code>(パイロット)+<code>deck.csv</code>(60枚)+<code>cg/</code>(エンジン)。<b>starmie-aggro/</b> がいまのライブ版。エンジンのバイナリ(libcg.dylib等)はgitに入れてないので、無ければKaggleのsample_submissionからコピー。</dd>
+    <dt>verification/</dt>
+    <dd>測定道具箱(下のレシピ集で使う全部が入っている)。<code>bench.py</code>=勝率測定、<code>cew.py</code>=総合点計算機、<code>donk_meter.py</code>=序盤事故率、<code>selfplay.py</code>=対戦ハーネス本体。</dd>
+    <dt>verification/reference/</dt>
+    <dd><b>本物の敵たち</b>。official_lucario / tomato_archaludon / official_dragapult / official_abomasnow / steel の5体。すべて公開コードの取り込みで、<b>検証専用・提出物に混ぜるのは厳禁</b>(Strategy部門は独自性を審査されるため)。</dd>
+    <dt>verification/decks/</dt>
+    <dd>ゲージ用・実験用のデッキリスト置き場(実ラダーから抽出した本物のリスト多数)。</dd>
+    <dt>replay_analysis/</dt>
+    <dd>Kaggleの実対戦ログ(リプレイ)を落として解剖する道具。<code>t1_verdict.py</code>=対面別成績の集計、<code>mechanism_autopsy.py</code>=負け方の中身(どのワザを何回撃ったか等)、<code>trace_replay.py</code>=1試合を人間が読める形で再生。</dd>
+    <dt>docs/memo/</dt>
+    <dd>頭脳の外部記憶。<code>playbook.md</code>=チームの行動規範(測定の作法)、<code>decisions.md</code>=意思決定ログD1〜D35(「なぜそうしたか」が全部ここ)、<code>data.md</code>=実測データ全部、<code>claims-ledger.md</code>=レポートに書く主張の証拠グレード台帳、<code>figures/</code>=レポート用の図。</dd>
+    <dt>.claude/skills/submission-check/scripts/check.py</dt>
+    <dd>提出前の最終検査(60枚・同名4枚・import違反・tar構造・20戦スモーク)。</dd>
+  </dl>
+</section>
+
+<!-- ============================================================ -->
+<section id="s4">
+  <div class="chapter">4</div>
+  <h2>レシピ集 ─ 「〇〇したい時はこう打つ」</h2>
+  <div class="box amber">
+    <b class="tag">最初に1回だけ: 道具箱を自分のブランチに持ってくる</b>
+    りょーちんのブランチのまま、こっちの測定道具だけ取り込むには(自分のコードには一切触れない):
+    <pre>git fetch origin
+git checkout origin/yuji/verify-infra -- verification/ replay_analysis/ docs/memo/</pre>
+    これで <code>verification/</code> 一式が手元に入る。戻したければ <code>git checkout HEAD -- verification/</code> で消せる。
+  </div>
+  <div class="box red">
+    <b class="tag">2つだけ約束</b>
+    ① ベンチ実行中は他のベンチを並行で走らせない(CPUの取り合いで時間制限系のAIの数字が壊れる。過去に実害あり)。② <code>verification/reference/</code> のコードを提出物(tar.gz)に入れない。
+  </div>
+
+  <div class="recipe">
+    <div class="rname">R1. 自分のagentの健全性を測る(まずこれ)</div>
+    <div class="rwhen">所要 ~3分 / デタラメAI相手の勝率。まともな構成なら96%以上出る。低いなら「自滅バグ」がいる</div>
+    <pre>cd src/input/datasets/decks/mega-starmie-ex-deck
+python3 ../../../../../verification/bench.py 300</pre>
+  </div>
+  <div class="recipe">
+    <div class="rname">R2. 本物の敵と戦わせる(勝率の真値はこれで測る)</div>
+    <div class="rwhen">所要 各~5-8分 / 相手を替えるには --opponent と --opponent-deck を差し替え</div>
+    <pre>cd src/input/datasets/decks/mega-starmie-ex-deck
+V=../../../../../verification
+
+# 本物のルカリオ(遭遇率1位)
+python3 $V/bench.py 300 --opponent $V/reference/official_lucario_agent.py \
+  --opponent-deck $V/decks/official_lucario_2026-07-21.csv
+
+# 本物のブリジュラス(ラダー実物と同系譜)
+python3 $V/bench.py 300 --opponent $V/reference/tomato_archaludon_agent.py \
+  --opponent-deck $V/decks/tomato_archaludon_2026-07-22.csv
+
+# ドラパルト / ユキノオー
+python3 $V/bench.py 300 --opponent $V/reference/official_dragapult_agent.py \
+  --opponent-deck $V/decks/official_dragapult_2026-07-22.csv
+python3 $V/bench.py 300 --opponent $V/reference/official_abomasnow_agent.py \
+  --opponent-deck $V/decks/official_abomasnow_2026-07-21.csv</pre>
+  </div>
+  <div class="recipe">
+    <div class="rname">R3. 総合点(CEW)を出す</div>
+    <div class="rwhen">R2で出た4つの勝率%を渡すだけ。ラダー遭遇率で重み付けした「環境の縮図に対する勝率」が出る</div>
+    <pre>cd ../../../../..   # リポジトリのルートへ
+python3 verification/cew.py --lucario 48.9 --archaludon 22.0 \
+  --dragapult 80.3 --abomasnow 32.3
+# → CEW = 41.50% のように出る。参考: いまのライブ版が41.5</pre>
+  </div>
+  <div class="recipe">
+    <div class="rname">R4. 序盤事故率(瞬殺されやすさ)を測る</div>
+    <div class="rwhen">5ターン以内に負ける率。デッキのたね枚数をいじった時などに</div>
+    <pre>cd src/input/datasets/decks/mega-starmie-ex-deck
+python3 ../../../../../verification/donk_meter.py 400 deck.csv \
+  main.py ../../../../../verification/decks/lunasol_v0.csv</pre>
+  </div>
+  <div class="recipe">
+    <div class="rname">R5. 提出前の最終チェック</div>
+    <div class="rwhen">提出枠は1日5回しかない。1枠をパッケージミスで溶かさないための検査</div>
+    <pre>cd ../../../../..   # リポジトリのルートへ
+python3 .claude/skills/submission-check/scripts/check.py \
+  --submission src/input/datasets/decks/mega-starmie-ex-deck</pre>
+  </div>
+  <div class="recipe">
+    <div class="rname">R6. 自分の実ラダー対戦を解剖する</div>
+    <div class="rwhen">提出から数時間で60戦たまる(約13戦/時)。何に負けてるかはここでしか分からない</div>
+    <p style="font-size:13.5px; margin:6px 0">手順の全文は <code>replay_analysis/t1_verdict.py</code> の冒頭コメントに書いてある。ざっくり: KaggleにログインしたブラウザでエピソードID一覧を取る → <code>replay.json</code> をcurlで落とす(認証不要・公開) → スクリプトで相手アーキタイプ別に集計。ここはCodexに丸投げでOK(プロンプトP4参照)。</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s5">
+  <div class="chapter">5</div>
+  <h2>りょーちんのagentを読んだ上での提言</h2>
+  <p>まず前提: <code>main.py</code> 3,383行、BoardState / MasterEvaluator / ActionFactory / SelectionResolver / DamageCounterEngine ときれいに層が分かれていて、ムンキドリのダメカン移動をシリアル番号でロックする専用ロジックまである。<b>構造はうちのより整理されてるくらいで、方向性は全く正しい</b>。その上で、実測ベースの提言が3つ。</p>
+
+  <h3>提言1(最優先・Codexで30分): 「没収負け」の穴を2つ塞ぐ</h3>
+  <p>このコンペは<b>プログラムが例外で落ちる or ルール違反の答えを返すと、その場で没収負け</b>。いまの <code>agent()</code> には確率は低いが致命傷になる穴が2つある:</p>
+  <ul>
+    <li><b>全体を守るtry/exceptが無い</b>。3,383行のどこか1行が想定外の盤面で例外を出したら即没収。実際うちも提出済みコードにセグフォ級の穴を後から見つけて修正した経験がある。</li>
+    <li><b><code>return []</code> になる経路が複数ある</b>(actionsが空の時など)。エンジンが「最低1つ選べ」(minCount=1)と言っている局面で空リストを返すと違法手=没収。長い対戦では必ずいつか踏む。</li>
+  </ul>
+  <p>→ 直し方は「agent()を安全な外装で包む」だけで、既存ロジックは一切変えない。<b>プロンプトP1をCodexに貼れば終わる</b>。</p>
+
+  <h3>提言2: 自分の「本当の位置」を本物の敵で測る</h3>
+  <p>りょーちんのセット(専用ロジック×自リスト)の較正済みスコアは<b>まだ誰も測っていない</b>。参考値としてあるのは「りょーちんのリストを<b>うちの</b>パイロットに持たせた場合=27.6」だけで、これは専用ロジックの価値をゼロカウントした不当に低い数字。ムンキドリ運用などはうちのAIには真似できないので、<b>本人のagentで測れば確実にもっと上に出る</b>。R1→R2→R3の順に流せば40分で自分の現在地とマッチアップ別の弱点が数字になる(プロンプトP2で自動化できる)。そこからの改善議論なら、カード知識×計器で本当に噛み合う。</p>
+
+  <h3>提言3(ディスカッションしたいアイデア): 壁の急増とRisky Ruins</h3>
+  <p>壁デッキ(イワパレス系)が3%→15%に急増している。りょーちんのデッキにはRisky Ruins 4とBoss's Orders 3が入っていて、ここはこちらより対応力の設計思想がある部分のはず。<b>「対壁・対ブリジュラスにカード知識で何ができるか」の仮説をりょーちんが出し、こっちの較正ゲージで数値化する</b> ─ という分業を今日のMTGで試したい。1仮説あたり測定コストは30分程度。</p>
+
+  <div class="box amber">
+    <b class="tag">1つだけ注意(測定の作法)</b>
+    改善を測る時は「何を測って、何点以上なら採用か」を<b>測る前に</b>決めて書き残す(事前登録)。あとN=200程度の300戦未満で2〜3ポイント差を信じない(誤差幅の方が大きい)。うちは10回の実験で9回「効果なし」を正しく見抜けたが、それはこの作法のおかげ。逆にこれを守れば、失敗した実験すらレポートの得点素材になる。
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s6">
+  <div class="chapter">6</div>
+  <h2>Codexにそのまま貼るプロンプト集</h2>
+  <p>全部コピペで動くように、背景・制約・受け入れ基準まで含めてある。<b>1個ずつ</b>投げるのがコツ(まとめて投げると雑になる)。</p>
+
+  <div class="prompt">
+    <div class="phead">P1. agent()を「絶対に落ちない・違法手を返さない」ようにする(最優先)</div>
+    <div class="pbody">
+<pre>あなたはPythonのシニアエンジニアです。ポケモンカードの対戦AIコンペのエージェントを
+堅牢化してください。対象は src/input/datasets/decks/mega-starmie-ex-deck/main.py です。
+
+## 背景(コンペの契約)
+エンジンは agent(obs) を呼び、以下の契約に違反すると即座に没収負けになります:
+- obs.select が None のとき: 60枚のデッキ(カードIDのリスト)を返す
+- それ以外: 整数インデックスのリストを返す。条件は
+  (a) obs.select.minCount <= len(結果) <= obs.select.maxCount
+  (b) 各インデックスは 0 以上 len(obs.select.option) 未満
+  (c) 重複なし
+- どんな入力でも例外を外に漏らしてはいけない(例外=没収)
+
+## 現状の問題
+1. agent() の中身を守る包括的な try/except がなく、内部ロジックの例外がそのまま漏れる
+2. 「actionsが空」等の経路で return [] するが、minCount>=1 の局面では [] は契約違反
+
+## やること
+1. 既存の agent() を _agent_impl() にリネームする(中身は1文字も変えない)
+2. 新しい agent() を作る:
+   - _agent_impl() を try/except で呼ぶ
+   - 返り値を契約(a)(b)(c)で検証し、違反していれば安全なフォールバックに差し替える
+   - 例外時・検証失敗時のフォールバック: minCount が k なら list(range(k))
+     (k=0 なら [])。obs.select が None なら DECK を返す
+   - obs が dict の場合の変換は既存どおり維持する
+3. フォールバックが発動したら print で1行ログを出す(デバッグ用、標準出力でよい)
+
+## やらないこと
+- _agent_impl 内部のロジック変更・リファクタリング・整形は一切しない
+- 新しいライブラリの追加はしない(標準ライブラリのみ)
+
+## 受け入れ基準(必ず自分で実行して確認)
+- python3 -c "import main" がエラーなく通る
+- リポジトリのルートで次を実行して20戦のスモークが全部PASSする:
+  python3 .claude/skills/submission-check/scripts/check.py \
+    --submission src/input/datasets/decks/mega-starmie-ex-deck
+- 「obs.selectのminCount=1でactionsが空になる」ケースを模したユニットテストを1本書き、
+  返り値が長さ1の合法リストになることを確認する</pre>
+    </div>
+  </div>
+
+  <div class="prompt">
+    <div class="phead">P2. 自分のagentを「本物の敵4体」で測ってCEWを出すスクリプト</div>
+    <div class="pbody">
+<pre>ポケモンカードAIの勝率測定用シェルスクリプトを書いてください。
+
+## 前提
+- リポジトリに verification/ ディレクトリがある(git checkout origin/yuji/verify-infra -- verification/ で取得済み)
+- 私のエージェントは src/input/datasets/decks/mega-starmie-ex-deck/ にある
+- 測定は必ず直列で実行する(並列にするとAIの時間予算が壊れて数字が無効になる)
+
+## やること
+measure_my_agent.sh を作る。内容:
+1. 自分のデッキディレクトリに cd して、以下を順に実行し、結果を results.txt に追記:
+   - vs ランダム: python3 ../../../../../verification/bench.py 300
+   - vs 本物ルカリオ: bench.py 300 --opponent ../../../../../verification/reference/official_lucario_agent.py --opponent-deck ../../../../../verification/decks/official_lucario_2026-07-21.csv
+   - vs 本物ブリジュラス: 同様に reference/tomato_archaludon_agent.py と decks/tomato_archaludon_2026-07-22.csv
+   - vs ドラパルト: reference/official_dragapult_agent.py と decks/official_dragapult_2026-07-22.csv
+   - vs ユキノオー: reference/official_abomasnow_agent.py と decks/official_abomasnow_2026-07-21.csv
+2. 各出力の WINRATE= 行をパースして、最後にリポジトリのルートで
+   python3 verification/cew.py --lucario <値> --archaludon <値> --dragapult <値> --abomasnow <値>
+   を実行し、その出力も results.txt に追記する(値は%表記なので100倍に注意)
+3. 完了時に results.txt の要約(5つの勝率とCEW)を表形式でechoする
+
+## 受け入れ基準
+- まず各ベンチをN=20に差し替えたドライランで全行が動くことを確認してから、N=300の本番用に戻す
+- 所要約40分。途中で1つ失敗しても残りは続行し、失敗をresults.txtに記録する</pre>
+    </div>
+    <div class="pnote">結果の読み方: vs ランダムが96%未満なら先に自滅バグ探し(P1後でも起きるならロジック内)。CEWは現行うちのライブ版が41.5。マッチアップ別の弱い所が次の改善対象。</div>
+  </div>
+
+  <div class="prompt">
+    <div class="phead">P3. 提出前チェックを通す(提出する日に毎回)</div>
+    <div class="pbody">
+<pre>次のコマンドを実行して、FAILがあればすべて修正してください。
+修正は最小限にし、ロジックの変更はしないこと。修正後に再実行してall PASSを確認すること。
+
+python3 .claude/skills/submission-check/scripts/check.py \
+  --submission src/input/datasets/decks/mega-starmie-ex-deck
+
+補足: このチェックは deck.csvが60枚か / 同名カード合計4枚以下か(エンジンは
+チェックしてくれない年があるので自衛) / 標準ライブラリ以外をimportしていないか /
+tar.gzの構造 / 20戦スモークで落ちないか を見ています。</pre>
+    </div>
+  </div>
+
+  <div class="prompt">
+    <div class="phead">P4. 自分の実ラダー対戦を対面別に集計する</div>
+    <div class="pbody">
+<pre>replay_analysis/t1_verdict.py の冒頭docstringに、Kaggleの対戦リプレイを取得して
+対面別勝率を集計する手順が書いてあります。これを読んで、私の提出
+(submissionId = <ここに自分の提出IDを入れる>)用に同じ集計を実行できるよう
+セットアップしてください。
+
+注意:
+- エピソード一覧の取得だけはKaggleログインが必要なので、ブラウザのコンソールで実行する
+  fetchスニペットを私に提示してください(実行は私がやる)
+- replay.json自体は認証不要の公開URLなので、curlの並列ダウンロードスクリプトにする
+- 1戦目はKaggleの自己対戦バリデーションなので集計から除外する</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s7">
+  <div class="chapter">7</div>
+  <h2>プロンプトのコツ(3つだけ)</h2>
+  <p>上のプロンプトが長いのには理由がある。AIへの依頼は<b>「目的・制約・確認方法」の3点セット</b>にすると精度が桁で変わる:</p>
+  <ol>
+    <li><b>目的と背景を先に書く</b>(「なぜ」を知らないAIは平気で本末転倒なことをする)。特に「やらないこと」を明記すると暴走が止まる。</li>
+    <li><b>受け入れ基準=実行して確認できるコマンド</b>を必ず入れる。「動くようにして」ではなく「このコマンドがPASSするようにして」。</li>
+    <li><b>エラーが出たら全文貼る</b>。要約せず、ターミナルの出力をそのまま。</li>
+  </ol>
+  <p>この型さえ守れば、P1〜P4みたいなプロンプトは自分でいくらでも量産できる。</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="s8">
+  <div class="chapter">8</div>
+  <h2>MTGで決めたいこと・今後の日程</h2>
+  <div class="tablewrap"><table>
+    <tr><th>期日</th><th>イベント</th></tr>
+    <tr><td class="num">7/26</td><td>ゆうじ側のAI改造は完全終了(以降は測定と執筆のみ)</td></tr>
+    <tr><td class="num">8/3</td><td>最終デッキ・チーム統合の判断材料を締める</td></tr>
+    <tr><td class="num"><b>8/13朝</b></td><td><b>最終2枠を確定提出して凍結</b>(最終順位=最後の2提出、というルールのため)</td></tr>
+    <tr><td class="num">9/12</td><td>Strategyレポート(2,000語)提出。締切は9/14朝</td></tr>
+  </table></div>
+  <h3>MTGのアジェンダ案</h3>
+  <ol>
+    <li><b>提出の作法の確認</b>: 提出前に check.py を通す+チャットで一言宣言(「最終順位=最後の2提出」なので、未検証版がベスト版を押し出す事故だけは防ぎたい。過去2回起きた)。</li>
+    <li><b>P1(没収の穴ふさぎ)を今週中にやるか</b>: 30分で終わり、リターンが一番確実な作業。</li>
+    <li><b>P2(現在地の測定)の結果をいつ共有するか</b>: これが揃うと最終2枠の議論が「感想」ではなく「数字」でできる。</li>
+    <li><b>壁・ブリジュラス対策の仮説出し</b>: りょーちんのカード知識からの仮説を1〜2個もらう → こっちで数値化。</li>
+    <li>レポート(賞金の本丸)の役割分担ざっくり。</li>
+  </ol>
+  <div class="box leaf">
+    <b class="tag">スタンス</b>
+    りょーちんのブランチ・コードにこちらから手は入れない。このページの内容は全部「使いたければどうぞ」の提供であって、強制ではない。ただP1(没収の穴)だけは、どのデッキ・どの路線で行くにしても確実に得なので強めに推す。
+  </div>
+</section>
+
+<footer style="margin-top:64px; padding-top:14px; border-top:1px solid var(--line); font-size:12px; color:var(--ink-mute)">
+  2026-07-22 / 出典は docs/memo/decisions.md(D27, D31, D33, D34, D35)と data.md の実測値。
+  このファイルは docs/memo/guide-for-ryochin-2026-07-22.html としてブランチにも入っている。
+</footer>
+</main>

@@ -1,12 +1,33 @@
-# Pythonの一時キャッシュはすべて無視
+.DS_Store
 __pycache__/
 *.pyc
+# エンジンバイナリ（Kaggle sample_submissionからコピーして使う）
+*.dylib
+*.so
+*.dll
+
+# セッション生成物・ビルド成果物(コミットしない)
+.agy-explains/
+submission*.tar.gz
+project_overview.html
+
+# 検死用リプレイJSON本体(1提出あたり約150MB)。公開エンドポイントから再取得でき、
+# meta.txt + autopsy_*.py があれば検死は完全に再現できるので追跡しない。
+# ※eps54943911/ は既に追跡済みのため対象外(履歴から消しても軽くならないので放置)。
+replay_analysis/eps*/ep*.json
+
+# 公開ノートブックの取得アーカイブ(検証専用・提出禁止。8/2締切でプール凍結のため退避)
+verification/reference/_inbox/
+replay_analysis/ladder_scout/
+
+# トレース(デッキディレクトリは提出用に tar されるので混入させない — handover 2026-08-08 §4.2)
+src/input/datasets/decks/*/trace*.jsonl
+
+# ラダー悉皆調査の種(leaderboard から再生成できる。rival_decks.jsonl 本体は追跡する)
+replay_analysis/lake/targets.json
+
+# --- origin/main(りょーちん側)の無視規則を統合(2026-09-15 マージ時)。エンジンバイナリ(*.so/*.dylib/*.dll)は上の規則どおり追跡しない ---
 .env
-
-# 必要に応じて、巨大なバイナリファイルもGit管理から外したい場合は追加
-# *.so
-# *.dylib
-
 src/input/datasets/decks/underground-arena/
 .Python
 [Bb]in

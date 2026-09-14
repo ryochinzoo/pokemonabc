@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="450" font-family="Helvetica,Arial" font-size="12">
+<style>
+  .s1{fill:#2a78d6} .s1s{stroke:#2a78d6} .s2{fill:#eb6834} .s2s{stroke:#eb6834}
+  .ink{fill:#0b0b0b} .ink2{fill:#52514e} .grid{stroke:#dcdcd8} .axis{stroke:#b8b8b2}
+  .surf{fill:#fcfcfb} .surfs{stroke:#fcfcfb}
+  @media (prefers-color-scheme: dark){
+    .s1{fill:#3987e5} .s1s{stroke:#3987e5} .s2{fill:#d95926} .s2s{stroke:#d95926}
+    .ink{fill:#ffffff} .ink2{fill:#c3c2b7} .grid{stroke:#33332f} .axis{stroke:#55554f}
+    .surf{fill:#1a1a19} .surfs{stroke:#1a1a19}
+  }
+</style>
+<rect width="780" height="450" class="surf"/>
+<text x="24" y="28" font-size="15" font-weight="bold" class="ink">Two independent pilots, one horizon problem, two different blind spots</text>
+<text x="24" y="48" class="ink2">Where each development line placed its look-ahead, and where each one failed. Same team, no shared code.</text>
+<line x1="230.0" y1="100" x2="230.0" y2="360" class="axis"/>
+<line x1="230" y1="100.0" x2="730" y2="100.0" class="axis"/>
+<line x1="480.0" y1="100" x2="480.0" y2="360" class="axis"/>
+<line x1="230" y1="230.0" x2="730" y2="230.0" class="axis"/>
+<line x1="730.0" y1="100" x2="730.0" y2="360" class="axis"/>
+<line x1="230" y1="360.0" x2="730" y2="360.0" class="axis"/>
+<text x="355.0" y="382" text-anchor="middle" class="ink" font-weight="bold">within this turn</text>
+<text x="605.0" y="382" text-anchor="middle" class="ink" font-weight="bold">next turn and beyond</text>
+<text x="480.0" y="400" text-anchor="middle" class="ink2">time horizon of the look-ahead</text>
+<text x="218" y="165.0" text-anchor="end" class="ink" font-weight="bold">exact enumeration</text>
+<text x="218" y="180.0" text-anchor="end" class="ink2" font-size="11">(hypergeometric odds)</text>
+<text x="218" y="295.0" text-anchor="end" class="ink" font-weight="bold">sampled worlds</text>
+<text x="218" y="310.0" text-anchor="end" class="ink2" font-size="11">(determinized rollouts)</text>
+<text x="218" y="86" text-anchor="end" class="ink2">handling of hidden information</text>
+<rect x="240.0" y="110.0" width="230.0" height="110.0" rx="6" fill="none" class="s2s" stroke-width="2.5"/>
+<text x="250.0" y="132.0" font-weight="bold" class="s2">Ryohei Hara's line</text>
+<text x="250.0" y="152.0" class="ink2" font-size="11">reachability of this turn's attacks via</text>
+<text x="250.0" y="167.0" class="ink2" font-size="11">attach / retreat / Boss routes; exact</text>
+<text x="250.0" y="182.0" class="ink2" font-size="11">hit odds for search cards (comb).</text>
+<text x="250.0" y="197.0" class="ink2" font-size="11">Blind spot: nothing beyond the turn.</text>
+<rect x="490.0" y="240.0" width="230.0" height="110.0" rx="6" fill="none" class="s1s" stroke-width="2.5"/>
+<text x="500.0" y="262.0" font-weight="bold" class="s1">our line (search + override)</text>
+<text x="500.0" y="282.0" class="ink2" font-size="11">engine-rule rollouts to root+2 turns</text>
+<text x="500.0" y="297.0" class="ink2" font-size="11">over sampled opponent hands.</text>
+<text x="500.0" y="312.0" class="ink2" font-size="11">Blind spots: override margin 120 vs</text>
+<text x="500.0" y="327.0" class="ink2" font-size="11">prize term ±10,000; compound same-</text>
+<text x="500.0" y="342.0" class="ink2" font-size="11">turn plays outside the horizon.</text>
+<text x="605.0" y="165.0" text-anchor="middle" class="ink2" font-size="11">(neither line)</text>
+<text x="355.0" y="295.0" text-anchor="middle" class="ink2" font-size="11">(neither line)</text>
+<text x="24" y="428" class="ink2" font-size="10"> (exploratory). Ryohei Hara's line ran no win-rate measurement;</text>
+<text x="24" y="442" class="ink2" font-size="10">the claim is only that the two lines converged on mono-Water independently and failed in different cells.</text>
+</svg>

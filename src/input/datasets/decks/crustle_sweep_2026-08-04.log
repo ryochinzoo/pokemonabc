@@ -1,0 +1,28 @@
+=== ARM: starmie-aggro ===
+我々: main.py   相手: /Users/yujiinoue/Documents/products/pokemonabc/verification/reference/soutasakurai_crustle_agent.py + /Users/yujiinoue/Documents/products/pokemonabc/verification/decks/soutasakurai_crustle_2026-08-04.csv   対戦数: 200   (110.7秒, 553.7 ms/戦)
+結果: 155勝 45敗 0分
+勝率: 77.5%  (95%信頼区間 71.2%〜82.7%)   引分除く勝率: 77.5%
+WINRATE=0.7750
+CI_LOW=0.7123
+CRASH=0
+=== ARM: deckswap-tarountula-sweep ===
+我々: main.py   相手: /Users/yujiinoue/Documents/products/pokemonabc/verification/reference/soutasakurai_crustle_agent.py + /Users/yujiinoue/Documents/products/pokemonabc/verification/decks/soutasakurai_crustle_2026-08-04.csv   対戦数: 200   (232.9秒, 1164.6 ms/戦)
+結果: 189勝 11敗 0分
+勝率: 94.5%  (95%信頼区間 90.4%〜96.9%)   引分除く勝率: 94.5%
+WINRATE=0.9450
+CI_LOW=0.9042
+CRASH=0
+=== ARM: deckswap-grimmsnarl ===
+我々: main.py   相手: /Users/yujiinoue/Documents/products/pokemonabc/verification/reference/soutasakurai_crustle_agent.py + /Users/yujiinoue/Documents/products/pokemonabc/verification/decks/soutasakurai_crustle_2026-08-04.csv   対戦数: 200   (170.9秒, 854.6 ms/戦)
+結果: 152勝 48敗 0分
+勝率: 76.0%  (95%信頼区間 69.6%〜81.4%)   引分除く勝率: 76.0%
+WINRATE=0.7600
+CI_LOW=0.6963
+CRASH=0
+=== ARM: deckswap-grimmsnarl-abilityfix ===
+我々: main.py   相手: /Users/yujiinoue/Documents/products/pokemonabc/verification/reference/soutasakurai_crustle_agent.py + /Users/yujiinoue/Documents/products/pokemonabc/verification/decks/soutasakurai_crustle_2026-08-04.csv   対戦数: 200   (179.6秒, 898.2 ms/戦)
+結果: 163勝 36敗 1分
+勝率: 81.5%  (95%信頼区間 75.5%〜86.3%)   引分除く勝率: 81.9%
+WINRATE=0.8150
+CI_LOW=0.7554
+CRASH=0

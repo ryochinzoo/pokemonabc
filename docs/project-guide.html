@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pokémon TCG AI Battle Challenge - プロジェクトガイド</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --card-bg: rgba(22, 28, 45, 0.6);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-color: #f3f4f6;
+      --text-muted: #9ca3af;
+      --primary: #3b82f6; /* エレクトリックブルー */
+      --primary-glow: rgba(59, 130, 246, 0.3);
+      --secondary: #ec4899; /* エレクトリックピンク */
+      --secondary-glow: rgba(236, 72, 153, 0.3);
+      --accent: #eab308; /* エレクトリックイエロー（ピカチュウ） */
+      --accent-glow: rgba(234, 179, 8, 0.3);
+      --success: #10b981;
+      --transition-speed: 0.3s;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', 'Noto Sans JP', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.15) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+
+    /* ヘッダー */
+    header {
+      text-align: center;
+      padding: 5rem 2rem 3rem;
+      position: relative;
+    }
+
+    .logo-container {
+      display: inline-block;
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+
+    .logo-glow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+      opacity: 0.4;
+      filter: blur(20px);
+      animation: pulse 3s infinite alternate;
+    }
+
+    .logo-icon {
+      font-size: 4rem;
+      position: relative;
+      z-index: 1;
+      filter: drop-shadow(0 0 15px var(--accent));
+      animation: float 4s ease-in-out infinite;
+    }
+
+    h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      background: linear-gradient(135deg, #ffffff 30%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .subtitle {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      max-width: 700px;
+      margin: 0 auto 2rem;
+      font-weight: 300;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 1rem;
+      border-radius: 9999px;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 0.875rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
+    }
+
+    /* メインレイアウト */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem 5rem;
+    }
+
+    /* イントロダクションセクション */
+    .intro-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: center;
+      margin-bottom: 5rem;
+    }
+
+    @media (max-width: 768px) {
+      .intro-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+      h1 {
+        font-size: 2.25rem;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 2.5rem;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      transition: transform var(--transition-speed), border-color var(--transition-speed), box-shadow var(--transition-speed);
+    }
+
+    .card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+    }
+
+    .intro-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .intro-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(to bottom, var(--primary), var(--secondary));
+    }
+
+    .intro-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .intro-title span {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .intro-text p {
+      margin-bottom: 1.25rem;
+      font-size: 1.05rem;
+      color: #d1d5db;
+    }
+
+    .concept-box {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      padding: 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      margin-top: 1.5rem;
+    }
+
+    .concept-title {
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .formula {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      text-align: center;
+      margin: 1.5rem 0;
+      padding: 1rem;
+      background: rgba(59, 130, 246, 0.05);
+      border-radius: 10px;
+      border-left: 4px solid var(--primary);
+      letter-spacing: 0.05em;
+    }
+
+    .formula span.deck {
+      color: var(--secondary);
+      text-shadow: 0 0 10px var(--secondary-glow);
+    }
+
+    .formula span.pilot {
+      color: var(--primary);
+      text-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    /* インタラクティブ・ディレクトリ・ブラウザ */
+    .section-title {
+      font-size: 2rem;
+      font-weight: 800;
+      margin: 5rem 0 2rem;
+      text-align: center;
+      letter-spacing: -0.02em;
+    }
+
+    .section-title span {
+      background: linear-gradient(135deg, var(--accent) 0%, #fff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      position: relative;
+    }
+
+    .section-title span::after {
+      content: '';
+      display: block;
+      width: 50px;
+      height: 4px;
+      background: var(--accent);
+      margin: 0.5rem auto 0;
+      border-radius: 2px;
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    .explorer-container {
+      display: grid;
+      grid-template-columns: 350px 1fr;
+      gap: 2rem;
+      min-height: 500px;
+    }
+
+    @media (max-width: 900px) {
+      .explorer-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .explorer-sidebar {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 1.5rem;
+      backdrop-filter: blur(12px);
+    }
+
+    .explorer-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #9ca3af;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tree-node {
+      margin-bottom: 0.5rem;
+    }
+
+    .tree-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all var(--transition-speed);
+      border: 1px solid transparent;
+      user-select: none;
+    }
+
+    .tree-item:hover {
+      background: rgba(255, 255, 255, 0.03);
+      color: #fff;
+    }
+
+    .tree-item.active {
+      background: rgba(59, 130, 246, 0.1);
+      border-color: rgba(59, 130, 246, 0.2);
+      color: #fff;
+      font-weight: 600;
+      box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.05);
+    }
+
+    .tree-icon {
+      margin-right: 0.75rem;
+      font-size: 1.2rem;
+      display: inline-block;
+      width: 20px;
+      text-align: center;
+    }
+
+    .tree-indent {
+      width: 20px;
+      display: inline-block;
+    }
+
+    .explorer-content {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .details-panel {
+      flex: 1;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 2.5rem;
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 2rem;
+      min-height: 400px;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .details-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .details-path {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.9rem;
+      color: var(--primary);
+      margin-bottom: 1.5rem;
+      background: rgba(59, 130, 246, 0.08);
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      display: inline-block;
+      border: 1px solid rgba(59, 130, 246, 0.15);
+    }
+
+    .details-desc {
+      font-size: 1.1rem;
+      color: #d1d5db;
+      margin-bottom: 2rem;
+      line-height: 1.7;
+    }
+
+    .details-section {
+      margin-top: 2rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 1.5rem;
+    }
+
+    .details-section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .file-list {
+      list-style: none;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: start;
+      gap: 1rem;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 10px;
+      margin-bottom: 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.02);
+    }
+
+    .file-name {
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: 600;
+      color: var(--text-color);
+      white-space: nowrap;
+    }
+
+    .file-desc {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    /* 開発ワークフロー */
+    .flow-container {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    @media (max-width: 900px) {
+      .flow-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .flow-step {
+      background: rgba(22, 28, 45, 0.4);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .flow-num {
+      position: absolute;
+      top: -15px;
+      left: 20px;
+      width: 35px;
+      height: 35px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: #fff;
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+    }
+
+    .flow-step-title {
+      font-weight: 700;
+      color: #fff;
+      margin: 0.75rem 0;
+      font-size: 1.1rem;
+    }
+
+    .flow-step-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* エージェント契約コード */
+    .code-header {
+      background: rgba(30, 41, 59, 0.8);
+      padding: 0.75rem 1.5rem;
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .code-body {
+      background: #0f172a;
+      padding: 1.5rem;
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+      overflow-x: auto;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.95rem;
+      color: #e2e8f0;
+      border: 1px solid var(--card-border);
+      border-top: none;
+    }
+
+    .keyword { color: #f43f5e; }
+    .function { color: #38bdf8; }
+    .comment { color: #64748b; }
+    .string { color: #eab308; }
+    .number { color: #f97316; }
+
+    /* アニメーションキーフレーム */
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0px); }
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.9); }
+      100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.1); }
+    }
+
+    /* クイックルール */
+    .rules-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .rules-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .rule-item {
+      display: flex;
+      gap: 1rem;
+      background: rgba(255, 255, 255, 0.01);
+      padding: 1.25rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .rule-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .rule-content h4 {
+      color: #fff;
+      font-size: 1.05rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .rule-content p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-container">
+      <div class="logo-glow"></div>
+      <div class="logo-icon">⚡</div>
+    </div>
+    <p><span class="badge">Kaggle Competition Workspace</span></p>
+    <h1>Pokémon TCG AI Challenge</h1>
+    <p class="subtitle">
+      ポケモンカードゲームのシミュレーション対戦AIを構築し、最強のエージェントを目指すプロジェクト
+    </p>
+  </header>
+
+  <main>
+    <!-- プロジェクトの概要 -->
+    <section class="intro-grid">
+      <div class="card intro-card">
+        <h3 class="intro-title"><span>そもそも何をするプロジェクト？</span></h3>
+        <div class="intro-text">
+          <p>
+            Kaggleで開催されている<strong>「Pokémon TCG AI Battle Challenge」</strong>というAIコンペティションのためのチーム開発用リポジトリです。
+          </p>
+          <p>
+            目的は、ゲームエンジンが提供する盤面状況を分析し、最も勝利確率の高い行動（技を使う、ベンチに出す、手札を増やすなど）を自動で選択し続ける<strong>最強の「AIエージェント」を開発すること</strong>です。
+          </p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="intro-title"><span>エージェントの仕組み</span></h3>
+        <div class="intro-text">
+          <p>
+            このコンペティションにおける「エージェント」は、以下の2つの要素の掛け算で定義されます。
+          </p>
+          <div class="formula">
+            Agent = <span class="deck">Deck (60枚のカード)</span> × <span class="pilot">Pilot (プレイングAI)</span>
+          </div>
+          <div class="concept-box">
+            <div class="concept-title">🃏 デッキ (Deck)</div>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+              どのカードを60枚入れるかの構築情報。強いカードの組み合わせを見つける戦略的アプローチです。
+            </p>
+            <div class="concept-title">🧠 パイロット (Pilot)</div>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0;">
+              配られた手札や盤面情報を見て、どう動くかの意思決定ロジック。`main.py` に記述します。
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- インタラクティブ・ディレクトリ・ブラウザ -->
+    <section>
+      <h2 class="section-title"><span>ディレクトリとファイルの役割</span></h2>
+      
+      <div class="explorer-container">
+        <!-- サイドバー (ツリー) -->
+        <div class="explorer-sidebar">
+          <div class="explorer-title">
+            <span>リポジトリ構造</span>
+            <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">項目を選択してください</span>
+          </div>
+          
+          <div class="tree-node">
+            <div class="tree-item active" onclick="showDetails('src')">
+              <span class="tree-icon">📂</span>
+              <span>src /</span>
+            </div>
+            <div class="tree-item" onclick="showDetails('src-decks')" style="padding-left: 2rem;">
+              <span class="tree-icon">📂</span>
+              <span>input/.../decks/</span>
+            </div>
+            <div class="tree-item" onclick="showDetails('verification')" style="padding-top: 0.25rem; padding-bottom: 0.25rem;">
+              <span class="tree-icon">📂</span>
+              <span>verification /</span>
+            </div>
+            <div class="tree-item" onclick="showDetails('replay_analysis')" style="padding-top: 0.25rem; padding-bottom: 0.25rem;">
+              <span class="tree-icon">📂</span>
+              <span>replay_analysis /</span>
+            </div>
+            <div class="tree-item" onclick="showDetails('docs')" style="padding-top: 0.25rem; padding-bottom: 0.25rem;">
+              <span class="tree-icon">📂</span>
+              <span>docs /</span>
+            </div>
+            <div class="tree-item" onclick="showDetails('claude-md')" style="padding-top: 0.25rem; padding-bottom: 0.25rem;">
+              <span class="tree-icon">📄</span>
+              <span>CLAUDE.md</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- コンテンツ領域 -->
+        <div class="explorer-content">
+          <div id="details-panel" class="details-panel">
+            <!-- 初期表示: src -->
+            <div class="details-title">📂 src</div>
+            <div class="details-path">/src</div>
+            <div class="details-desc">
+              AIエージェントのソースコードを配置する、本プロジェクトで最も重要な開発の中心ディレクトリです。
+            </div>
+            <div class="details-section">
+              <div class="details-section-title">📂 主なサブフォルダ</div>
+              <ul class="file-list">
+                <li class="file-item">
+                  <div class="file-name">input/datasets/decks/</div>
+                  <div class="file-desc">ここにはデッキ実験ごとのフォルダ（例: `mega-starmie-ex-deck` や `v2-search`）を作成し、そこにエージェントのプログラムを配置します。</div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 開発ワークフロー -->
+    <section>
+      <h2 class="section-title"><span>開発の基本ワークフロー</span></h2>
+      <div class="flow-container">
+        <div class="flow-step">
+          <div class="flow-num">1</div>
+          <div class="flow-step-title">デッキとロジックの実装</div>
+          <div class="flow-step-desc">
+            `src/input/datasets/decks/` 内に新しい実験フォルダを作成。`deck.csv` でカードを組み、`main.py` にプレイングのルール（ヒューリスティック）を記述します。
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">2</div>
+          <div class="flow-step-title">ローカル検証＆ベンチ</div>
+          <div class="flow-step-desc">
+            `verification/` に移動し、`bench.py` や `selfplay.py` を実行。ランダムAIや歴代の強敵AI（gauge）と対戦させ、勝率とエラー（クラッシュ）がないかチェックします。
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">3</div>
+          <div class="flow-step-title">リプレイの分析</div>
+          <div class="flow-step-desc">
+            Kaggle上で動いている他のプレイヤー of 対戦ログ（リプレイ）を `replay_analysis/` を使って取得・分析。敵がどんなデッキを使っているかを暴きます。
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">4</div>
+          <div class="flow-step-title">評価と改善の記録</div>
+          <div class="flow-step-desc">
+            実験結果やアイデア、対戦環境のメタデータを `docs/memo/` に記録。勝率の推移や意思決定を整理し、次のサイクルへと繋げます。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- エージェント契約コード -->
+    <section>
+      <h2 class="section-title"><span>プレイングAI (main.py) の基本形</span></h2>
+      <div class="card" style="padding: 1.5rem;">
+        <p style="margin-bottom: 1rem; color: #d1d5db;">
+          AIプログラムである `main.py` は、ゲームエンジンと通信するための以下の構造（関数）を守る必要があります。
+        </p>
+        <div class="code-header">
+          <span>main.py</span>
+          <span>Python 3.x</span>
+        </div>
+        <div class="code-body">
+          <span class="keyword">def</span> <span class="function">agent</span>(obs_dict: <span class="function">dict</span>) -&gt; <span class="function">list</span>[<span class="function">int</span>]:<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># 1. ゲーム準備段階: デッキを返す</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> obs_dict.get(<span class="string">'select'</span>) <span class="keyword">is</span> <span class="keyword">None</span>:<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># デッキの60枚のカードIDリストを返す</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> [<span class="number">101</span>, <span class="number">101</span>, <span class="number">101</span>, <span class="number">101</span>, <span class="number">102</span>, ...] <br>
+          <br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># 2. プレイング段階: 提示された選択肢から選ぶ</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;options = obs_dict[<span class="string">'select'</span>][<span class="string">'option'</span>]<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;min_count = obs_dict[<span class="string">'select'</span>][<span class="string">'minCount'</span>]<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;max_count = obs_dict[<span class="string">'select'</span>][<span class="string">'maxCount'</span>]<br>
+          <br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># 盤面（options）を評価して、選ぶアクションのインデックスを決定</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;selected_indices = [<span class="number">0</span>] <span class="comment"># 例として最初の選択肢を選択</span><br>
+          <br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> selected_indices
+        </div>
+        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--accent);">
+          ⚠️ 注意: AIがゲーム中に一度でも例外（クラッシュ）を起こしたり、無効なアクションを選択したりすると、即座に敗北（反則負け）となってしまいます！
+        </p>
+      </div>
+    </section>
+
+    <!-- チームで合意している開発ルール -->
+    <section>
+      <h2 class="section-title"><span>チーム開発ルール</span></h2>
+      <div class="rules-grid">
+        <div class="rule-item">
+          <div class="rule-icon" style="color: var(--secondary);">📊</div>
+          <div class="rule-content">
+            <h4>提出前のローカルベンチマーク義務化</h4>
+            <p>Kaggleにアップロードする前に、必ず `verification/` の評価テストを通してください。ランダムAIや基準AI（Gauges）と十分な数対戦し、勝率を測定するとともに、クラッシュ率が「0%」であることを確認します。</p>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-icon" style="color: var(--accent);">⌛</div>
+          <div class="rule-content">
+            <h4>提出枠（バジェット）の節約</h4>
+            <p>Kaggleへの提出は1日5回までに制限されています。さらに最終的な評価は「最新の2件」で行われるため、常に最もパフォーマンスの高い安定した2つのバージョンを残すように制御します。</p>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-icon" style="color: var(--primary);">🛡️</div>
+          <div class="rule-content">
+            <h4>標準ライブラリの制限</h4>
+            <p>Kaggleのサブミット環境に依存関係がないため、エージェントの実装 (`main.py`) は「Python標準ライブラリのみ」で行う必要があります。外部ライブラリを追加してはいけません。</p>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-icon" style="color: var(--success);">🃏</div>
+          <div class="rule-content">
+            <h4>デッキの枚数制限ルールは自主チェック</h4>
+            <p>ゲームエンジンは「同名カードを4枚までしか入れてはいけない」というルールを自動で弾きません（6枚入れても動いてしまいます）。そのため、デッキを作成した際は自分たちで確認する必要があります。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const data = {
+      'src': {
+        title: '📂 src',
+        path: '/src',
+        desc: 'AIエージェントのプログラムおよびデッキデータを配置する、本プロジェクトで最も重要な開発の中心ディレクトリです。',
+        sections: [
+          {
+            title: '📂 主なサブフォルダ',
+            files: [
+              { name: 'input/datasets/decks/', desc: 'ここにはデッキ実験ごとのフォルダ（例: `mega-starmie-ex-deck` や `v2-search`）を作成し、そこにエージェントのプログラムを配置します。' }
+            ]
+          }
+        ]
+      },
+      'src-decks': {
+        title: '📂 input/datasets/decks/',
+        path: '/src/input/datasets/decks/&lt;deck-name&gt;/',
+        desc: 'デッキごとの開発スペースです。実験を繰り返すために、バージョンやデッキタイプごとに別のディレクトリを作ります。',
+        sections: [
+          {
+            title: '📄 必須ファイル構成',
+            files: [
+              { name: 'main.py', desc: 'プレイングAIの頭脳。盤面データを受け取って行動を決定する python プログラムです。' },
+              { name: 'deck.csv', desc: 'デッキを構成する60枚のカードIDが書かれたリストです。' },
+              { name: 'cg/', desc: 'C言語で記述されたゲームエンジン本体と、Pythonからそれを呼び出すためのAPI定義が入っています。' }
+            ]
+          }
+        ]
+      },
+      'verification': {
+        title: '📂 verification',
+        path: '/verification',
+        desc: '作成したエージェントが正常に動くか、どれくらい強いかを検証するためのローカル評価キットです。',
+        sections: [
+          {
+            title: '⚙️ 評価用スクリプト群',
+            files: [
+              { name: 'bench.py', desc: '基準となるエージェント（ランダムAIや既存のベースラインAI）と連続で対戦させ、勝率を測定します。' },
+              { name: 'selfplay.py', desc: '同じエージェント同士で対戦させ、不整合やクラッシュがないか動作をテストします。' },
+              { name: 'donk_meter.py', desc: '1ターンキル（先行Donk）される確率や勝率を測定するための特殊なメーターです。' },
+              { name: 'gauges/', desc: '実力の測定基準（物差し）となる過去のエージェント達が保存されています。' },
+              { name: 'README.md', desc: '検証テストをパスするための条件やベンチマークコマンドの使い方が載っています。提出前は必読です。' }
+            ]
+          }
+        ]
+      },
+      'replay_analysis': {
+        title: '📂 replay_analysis',
+        path: '/replay_analysis',
+        desc: 'Kaggleの対戦データ（エピソードリプレイ）をインターネットから取得し、他チームがどのような戦略・デッキを使っているかを分析する偵察ツールです。',
+        sections: [
+          {
+            title: '🔍 分析ツール群',
+            files: [
+              { name: 'extract_decks.py', desc: '公開されているリプレイデータから、相手が使用したデッキ構築（60枚）を割り出して復元します。' },
+              { name: 'classify_replays.py', desc: '対戦データの行動分類や勝敗パターンの分析を行います。' },
+              { name: 'trace_replay.py', desc: 'リプレイに含まれる対戦中の行動のタイムラインを追跡し、ログとして視覚化します。' }
+            ]
+          }
+        ]
+      },
+      'docs': {
+        title: '📂 docs',
+        path: '/docs',
+        desc: 'チームの意思決定や測定データを記録するドキュメントスペースです。戦略部門の提出レポートを作成するための資料となります。',
+        sections: [
+          {
+            title: '📄 ドキュメント一覧',
+            files: [
+              { name: 'memo/decisions.md', desc: 'これまでに下された開発上の決断やアイデア、課題などを時系列で記録する決定ログです。' },
+              { name: 'memo/data.md', desc: '各種ベンチマークテストの測定データ、勝率結果などをまとめたデータログです。' },
+              { name: 'memo/handover-*.md', desc: 'チーム開発の引き継ぎ資料です。過去の開発経緯や今後の指針が書かれています。' }
+            ]
+          }
+        ]
+      },
+      'claude-md': {
+        title: '📄 CLAUDE.md',
+        path: '/CLAUDE.md',
+        desc: 'AIアシスタント（Claude）がこのリポジトリで作業する際の共通ルールやディレクトリマップ、よく使うコマンドなどを定義したガイドファイルです。',
+        sections: [
+          {
+            title: '📝 主な内容',
+            files: [
+              { name: 'What this is', desc: 'プロジェクト全体の定義と使用エンジン情報。' },
+              { name: 'Layout', desc: '主要ディレクトリとその意味。' },
+              { name: 'The agent contract', desc: 'AIエージェントのプログラムが守るべき関数の入力と出力の定義。' },
+              { name: 'Team rules', desc: '勝率の基準値や、Kaggle提出時のバジェット管理、デッキ枚数チェックの誓約事項。' }
+            ]
+          }
+        ]
+      }
+    };
+
+    function showDetails(key) {
+      // アクティブなツリー項目の切り替え
+      document.querySelectorAll('.tree-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      event.currentTarget.classList.add('active');
+
+      const info = data[key];
+      const panel = document.getElementById('details-panel');
+      
+      // フェードアウト効果
+      panel.style.opacity = 0;
+      panel.style.transform = 'translateY(10px)';
+
+      setTimeout(() => {
+        let sectionsHtml = '';
+        if (info.sections) {
+          info.sections.forEach(sec => {
+            let filesHtml = '';
+            sec.files.forEach(f => {
+              filesHtml += `
+                <li class="file-item">
+                  <div class="file-name">${f.name}</div>
+                  <div class="file-desc">${f.desc}</div>
+                </li>
+              `;
+            });
+            sectionsHtml += `
+              <div class="details-section">
+                <div class="details-section-title">${sec.title}</div>
+                <ul class="file-list">
+                  ${filesHtml}
+                </ul>
+              </div>
+            `;
+          });
+        }
+
+        panel.innerHTML = `
+          <div class="details-title">${info.title}</div>
+          <div class="details-path">${info.path}</div>
+          <div class="details-desc">${info.desc}</div>
+          ${sectionsHtml}
+        `;
+
+        // フェードイン効果
+        panel.style.opacity = 1;
+        panel.style.transform = 'translateY(0)';
+      }, 200);
+    }
+  </script>
+</body>
+</html>

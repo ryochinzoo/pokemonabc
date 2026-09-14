@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="574" font-family="Helvetica,Arial" font-size="12">
+<style>
+  .s1{fill:#2a78d6} .s1s{stroke:#2a78d6} .s2{fill:#eb6834} .s2s{stroke:#eb6834}
+  .ink{fill:#0b0b0b} .ink2{fill:#52514e} .grid{stroke:#dcdcd8} .axis{stroke:#b8b8b2}
+  .surf{fill:#fcfcfb} .surfs{stroke:#fcfcfb}
+  @media (prefers-color-scheme: dark){
+    .s1{fill:#3987e5} .s1s{stroke:#3987e5} .s2{fill:#d95926} .s2s{stroke:#d95926}
+    .ink{fill:#ffffff} .ink2{fill:#c3c2b7} .grid{stroke:#33332f} .axis{stroke:#55554f}
+    .surf{fill:#1a1a19} .surfs{stroke:#1a1a19}
+  }
+</style>
+<rect width="900" height="574" class="surf"/>
+<text x="24" y="28" font-size="15" font-weight="bold" class="ink">The final agent over its last 1,000 ladder games</text>
+<text x="24" y="48" class="ink2">1,000 games, 24,429 main-phase decisions, 809 Boss's Orders played. Behaviour above the line; effect sizes, measured after the deadline, below it.</text>
+<text x="24" y="84" font-weight="bold" class="ink">Gates that hold by construction (the gate blocks this path; a non-zero count would mean a bug)</text>
+<line x1="24" y1="92" x2="876" y2="92" class="axis"/>
+<text x="24" y="114" class="ink">Lookahead replaced a productive move with END</text>
+<text x="520" y="114" class="ink" font-weight="bold" font-size="11">0 / 24,429</text>
+<text x="520" y="127" class="ink2" font-size="10">earlier build without the gate: 9 / 1,479</text>
+<rect x="816" y="101" width="56" height="18" rx="4" fill="none" class="axis" stroke-width="1.5"/>
+<text x="844" y="114" text-anchor="middle" class="ink2" font-weight="bold" font-size="11">held</text>
+<text x="24" y="144" class="ink">Lookahead attacked before free plays (evolve, attach, play)</text>
+<text x="520" y="144" class="ink" font-weight="bold" font-size="11">0 / 24,429</text>
+<text x="520" y="157" class="ink2" font-size="10">v1 bytes: 11 / 554</text>
+<rect x="816" y="131" width="56" height="18" rx="4" fill="none" class="axis" stroke-width="1.5"/>
+<text x="844" y="144" text-anchor="middle" class="ink2" font-weight="bold" font-size="11">held</text>
+<text x="24" y="174" class="ink">Boss's Orders target = the rule's own first choice</text>
+<text x="520" y="174" class="ink" font-weight="bold" font-size="11">809 / 809</text>
+<text x="520" y="187" class="ink2" font-size="10">targets are never searched</text>
+<rect x="816" y="161" width="56" height="18" rx="4" fill="none" class="axis" stroke-width="1.5"/>
+<text x="844" y="174" text-anchor="middle" class="ink2" font-weight="bold" font-size="11">held</text>
+<text x="24" y="210" font-weight="bold" class="ink">Predictions that were really tested (frozen before submission)</text>
+<line x1="24" y1="218" x2="876" y2="218" class="axis"/>
+<text x="24" y="240" class="ink">Crashes or stderr in production (predicted 0)</text>
+<text x="520" y="240" class="ink" font-weight="bold" font-size="11">0 / 1,000</text>
+<text x="520" y="253" class="ink2" font-size="10">0 stderr, worst per-game p99 602 ms</text>
+<rect x="816" y="227" width="56" height="18" rx="4" class="s1"/>
+<text x="844" y="240" text-anchor="middle" fill="#fff" font-weight="bold" font-size="11">PASS</text>
+<text x="24" y="270" class="ink">Boss's Orders misfires (predicted 0)</text>
+<text x="520" y="270" class="ink" font-weight="bold" font-size="11">49 / 809 by the rule; 30 / 809 counting energy</text>
+<text x="520" y="283" class="ink2" font-size="10">every one a lookahead override</text>
+<rect x="816" y="257" width="56" height="18" rx="4" class="s2"/>
+<text x="844" y="270" text-anchor="middle" fill="#fff" font-weight="bold" font-size="11">FAIL</text>
+<text x="24" y="306" font-weight="bold" class="ink">Found afterwards by outside review</text>
+<line x1="24" y1="314" x2="876" y2="314" class="axis"/>
+<text x="24" y="336" class="ink">The 'can I knock it out' test ignored attached energy</text>
+<text x="520" y="336" class="ink" font-weight="bold" font-size="11">243 / 809 targets change status</text>
+<text x="520" y="349" class="ink2" font-size="10">709 / 809 still the best target</text>
+<rect x="816" y="323" width="56" height="18" rx="4" fill="none" class="axis" stroke-width="1.5"/>
+<text x="844" y="336" text-anchor="middle" class="ink2" font-weight="bold" font-size="11">noted</text>
+<text x="24" y="366" class="ink">One rule and one gate were wired to a selection type the engine issued 0 times</text>
+<text x="520" y="366" class="ink" font-weight="bold" font-size="11">0 / 1,000 games</text>
+<text x="520" y="379" class="ink2" font-size="10">attack-split rule and bench-rider lock never ran</text>
+<rect x="816" y="353" width="56" height="18" rx="4" fill="none" class="axis" stroke-width="1.5"/>
+<text x="844" y="366" text-anchor="middle" class="ink2" font-weight="bold" font-size="11">noted</text>
+<text x="24" y="402" font-weight="bold" class="ink">Measured after the deadline on the calibrated instrument (6,400 games per comparison, pre-registered)</text>
+<line x1="24" y1="410" x2="876" y2="410" class="axis"/>
+<text x="24" y="432" class="ink">vs the list our discipline would have submitted (same pilot lineage, Boss's Orders ×2)</text>
+<text x="520" y="432" class="ink" font-weight="bold" font-size="11">−3.29pt  [−5.19, −1.39]</text>
+<text x="520" y="445" class="ink2" font-size="10">negative in all five matchups; worst vs Mega Lucario −7.62</text>
+<rect x="816" y="419" width="56" height="18" rx="4" class="s2"/>
+<text x="844" y="432" text-anchor="middle" fill="#fff" font-weight="bold" font-size="11">worse</text>
+<text x="24" y="462" class="ink">the last night's rules alone (same deck, pilot swapped)</text>
+<text x="520" y="462" class="ink" font-weight="bold" font-size="11">−2.78pt  [−3.97, −1.59]</text>
+<text x="520" y="475" class="ink2" font-size="10">Grimmsnarl −4.65, Lucario −4.88</text>
+<rect x="816" y="449" width="56" height="18" rx="4" class="s2"/>
+<text x="844" y="462" text-anchor="middle" fill="#fff" font-weight="bold" font-size="11">worse</text>
+<text x="24" y="492" class="ink">the energy-aware fix for the blind spot above</text>
+<text x="520" y="492" class="ink" font-weight="bold" font-size="11">−2.42pt  [−5.85, +1.01]</text>
+<text x="520" y="505" class="ink2" font-size="10">correct diagnosis, no detectable improvement</text>
+<rect x="816" y="479" width="56" height="18" rx="4" fill="none" class="axis" stroke-width="1.5"/>
+<text x="844" y="492" text-anchor="middle" class="ink2" font-weight="bold" font-size="11">n.s.</text>
+<text x="24" y="548" class="ink2" font-size="10">Sources: Kaggle replays of submission 55558557 (option list at step N, answer at step N+1), re-scored with the submitted code's own helpers;</text>
+<text x="24" y="562" class="ink2" font-size="10">post-deadline rows: the calibrated out-of-family composite of Figs. 4–6, 8 blocks × 5 opponents, batch-means 95% CI.</text>
+</svg>

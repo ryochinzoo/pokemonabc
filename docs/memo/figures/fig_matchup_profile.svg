@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="430" font-family="Helvetica,Arial" font-size="12">
+<style>
+  .s1{fill:#2a78d6} .s1s{stroke:#2a78d6} .s2{fill:#eb6834} .s2s{stroke:#eb6834}
+  .ink{fill:#0b0b0b} .ink2{fill:#52514e} .grid{stroke:#dcdcd8} .axis{stroke:#b8b8b2}
+  .surf{fill:#fcfcfb} .surfs{stroke:#fcfcfb}
+  @media (prefers-color-scheme: dark){
+    .s1{fill:#3987e5} .s1s{stroke:#3987e5} .s2{fill:#d95926} .s2s{stroke:#d95926}
+    .ink{fill:#ffffff} .ink2{fill:#c3c2b7} .grid{stroke:#33332f} .axis{stroke:#55554f}
+    .surf{fill:#1a1a19} .surfs{stroke:#1a1a19}
+  }
+</style>
+<rect width="760" height="430" class="surf"/>
+<text x="24" y="28" font-size="15" font-weight="bold" class="ink">Where the final agent wins, and where it still loses</text>
+<text x="24" y="48" class="ink2">Win rate by opponent archetype over the last 1,000 ladder games (matchups with n ≥ 55). Overall 51.2%.</text>
+<text x="24" y="66" class="ink2">It earns its rating against walls and Dragapult and loses to its two most frequent opponents.</text>
+<line x1="230.0" y1="88" x2="230.0" y2="330" class="grid"/><text x="230.0" y="348" text-anchor="middle" class="ink2">0%</text>
+<line x1="347.5" y1="88" x2="347.5" y2="330" class="grid"/><text x="347.5" y="348" text-anchor="middle" class="ink2">25%</text>
+<line x1="465.0" y1="88" x2="465.0" y2="330" class="grid"/><text x="465.0" y="348" text-anchor="middle" class="ink2">50%</text>
+<line x1="582.5" y1="88" x2="582.5" y2="330" class="grid"/><text x="582.5" y="348" text-anchor="middle" class="ink2">75%</text>
+<line x1="700.0" y1="88" x2="700.0" y2="330" class="grid"/><text x="700.0" y="348" text-anchor="middle" class="ink2">100%</text>
+<line x1="465.0" y1="88" x2="465.0" y2="330" class="axis" stroke-width="1.5" stroke-dasharray="4,3"/>
+<text x="218" y="117.0" text-anchor="end" class="ink">Wall decks (Crustle)</text>
+<rect x="230" y="102.0" width="401.6" height="21.4" rx="3" class="s1"/>
+<text x="637.6" y="117.0" class="ink" font-weight="bold">85%</text>
+<text x="679.6" y="117.0" class="ink2" font-size="11">94–16, n = 110</text>
+<text x="218" y="150.42857142857144" text-anchor="end" class="ink">Dragapult ex</text>
+<rect x="230" y="135.42857142857144" width="322.8" height="21.4" rx="3" class="s1"/>
+<text x="558.8" y="150.42857142857144" class="ink" font-weight="bold">69%</text>
+<text x="600.8" y="150.42857142857144" class="ink2" font-size="11">68–31, n = 99</text>
+<text x="218" y="183.85714285714286" text-anchor="end" class="ink">Alakazam</text>
+<rect x="230" y="168.85714285714286" width="266.9" height="21.4" rx="3" class="s1"/>
+<text x="502.9" y="183.85714285714286" class="ink" font-weight="bold">57%</text>
+<text x="544.9" y="183.85714285714286" class="ink2" font-size="11">113–86, n = 199</text>
+<text x="218" y="217.28571428571428" text-anchor="end" class="ink">Mega Starmie ex (mirror)</text>
+<rect x="230" y="202.28571428571428" width="213.6" height="21.4" rx="3" class="s2"/>
+<text x="449.6" y="217.28571428571428" class="ink" font-weight="bold">45%</text>
+<text x="491.6" y="217.28571428571428" class="ink2" font-size="11">25–30, n = 55</text>
+<text x="218" y="250.71428571428572" text-anchor="end" class="ink">Marnie's Grimmsnarl ex</text>
+<rect x="230" y="235.71428571428572" width="186.7" height="21.4" rx="3" class="s2"/>
+<text x="422.7" y="250.71428571428572" class="ink" font-weight="bold">40%</text>
+<text x="464.7" y="250.71428571428572" class="ink2" font-size="11">29–44, n = 73</text>
+<text x="218" y="284.14285714285717" text-anchor="end" class="ink">Mega Lucario ex</text>
+<rect x="230" y="269.14285714285717" width="169.7" height="21.4" rx="3" class="s2"/>
+<text x="405.7" y="284.14285714285717" class="ink" font-weight="bold">36%</text>
+<text x="447.7" y="284.14285714285717" class="ink2" font-size="11">78–138, n = 216</text>
+<text x="218" y="317.57142857142856" text-anchor="end" class="ink">Archaludon ex</text>
+<rect x="230" y="302.57142857142856" width="126.2" height="21.4" rx="3" class="s2"/>
+<text x="362.2" y="317.57142857142856" class="ink" font-weight="bold">27%</text>
+<text x="404.2" y="317.57142857142856" class="ink2" font-size="11">29–79, n = 108</text>
+<text x="24" y="404" class="ink2" font-size="10">Omitted (n &lt; 55): Abomasnow 7–11, Garchomp 8–7, Team Rocket's Mewtwo 7–3, Mega Kangaskhan 4–0. Archetype from the opponent's 60-card list.</text>
+<text x="24" y="420" class="ink2" font-size="10">Source: Kaggle replays of submission 55558557, Aug 22–31 (the API returns the latest 1,000 episodes).</text>
+</svg>

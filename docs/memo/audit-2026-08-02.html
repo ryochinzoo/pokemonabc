@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026-08-02 調査記録 — 何が覆り、何を直したか</title>
+<style>
+:root{
+  color-scheme: light;
+  --page:#f9f9f7; --surface:#fcfcfb;
+  --ink:#0b0b0b; --ink-2:#52514e; --ink-muted:#898781;
+  --grid:#e1e0d9; --baseline:#c3c2b7; --ring:rgba(11,11,11,.10);
+  --s1:#2a78d6; --s2:#eb6834;
+  --good:#0ca30c; --critical:#d03b3b; --warning:#fab219;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19;
+    --ink:#ffffff; --ink-2:#c3c2b7; --ink-muted:#898781;
+    --grid:#2c2c2a; --baseline:#383835; --ring:rgba(255,255,255,.10);
+    --s1:#3987e5; --s2:#d95926;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --page:#0d0d0d; --surface:#1a1a19;
+  --ink:#ffffff; --ink-2:#c3c2b7; --ink-muted:#898781;
+  --grid:#2c2c2a; --baseline:#383835; --ring:rgba(255,255,255,.10);
+  --s1:#3987e5; --s2:#d95926;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:1.5rem}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;
+  background:var(--page); color:var(--ink); line-height:1.8;
+  -webkit-font-smoothing:antialiased; font-feature-settings:"palt" 1;
+}
+.wrap{max-width:900px;margin:0 auto;padding:0 1.4rem 6rem}
+header{padding:3.5rem 0 2rem;border-bottom:1px solid var(--grid)}
+.eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;color:var(--ink-muted);text-transform:uppercase}
+h1{font-size:clamp(1.7rem,4.6vw,2.5rem);line-height:1.3;margin:.6rem 0 .8rem;letter-spacing:-.02em}
+.lede{color:var(--ink-2);font-size:1.02rem;max-width:64ch}
+.stamp{margin-top:1.2rem;font-family:var(--mono);font-size:.72rem;color:var(--ink-muted);line-height:1.8}
+section{margin-top:3rem}
+h2{font-size:1.3rem;letter-spacing:-.01em;margin-bottom:.6rem;line-height:1.45}
+h2 .num{font-family:var(--mono);font-size:.78rem;color:var(--ink-muted);display:block;margin-bottom:.15rem}
+h3{font-size:.99rem;margin:1.7rem 0 .5rem}
+p{margin:.7rem 0;color:var(--ink-2)}
+p strong,li strong,td strong,th strong{color:var(--ink);font-weight:700}
+ul{margin:.6rem 0 .6rem 1.2rem;color:var(--ink-2)}li{margin:.3rem 0}
+code{font-family:var(--mono);font-size:.85em;background:var(--surface);border:1px solid var(--ring);border-radius:5px;padding:.08em .38em;color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:.85rem;margin:1rem 0;display:block;overflow-x:auto}
+@media(min-width:640px){table{display:table}}
+th{text-align:left;font-size:.68rem;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);font-weight:400;padding:.5rem .7rem;border-bottom:1px solid var(--baseline);white-space:nowrap}
+td{padding:.55rem .7rem;border-bottom:1px solid var(--grid);color:var(--ink-2);vertical-align:top}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr:hover td{background:var(--surface)}
+.q{background:var(--surface);border:1px solid var(--ring);border-left:3px solid var(--s1);border-radius:0 10px 10px 0;padding:.9rem 1.15rem;margin:1.2rem 0;font-size:.92rem;color:var(--ink-2)}
+.q .src{display:block;font-family:var(--mono);font-size:.68rem;color:var(--ink-muted);margin-top:.45rem}
+.box{border:1px solid var(--ring);border-radius:10px;padding:1rem 1.2rem;margin:1.2rem 0;background:var(--surface)}
+.box .h{font-size:.69rem;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-muted);margin-bottom:.4rem}
+.box.warn{border-color:var(--warning)}.box.warn .h{color:var(--warning)}
+.box.crit{border-color:var(--critical)}.box.crit .h{color:var(--critical)}
+.box.ok{border-color:var(--good)}.box.ok .h{color:var(--good)}
+.box p:first-of-type{margin-top:0}.box p:last-child{margin-bottom:0}
+.pill{display:inline-block;font-family:var(--mono);font-size:.67rem;padding:.08rem .48rem;border-radius:99px;border:1px solid;white-space:nowrap}
+.pill.dead{color:var(--critical);border-color:var(--critical)}
+.pill.live{color:var(--good);border-color:var(--good)}
+.pill.warn{color:var(--warning);border-color:var(--warning)}
+.mark{font-family:var(--mono);font-weight:700}
+.mark.ok{color:var(--good)}.mark.ng{color:var(--critical)}
+figure{background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:1.2rem 1.3rem 1rem;margin:1.4rem 0}
+figcaption{font-size:.96rem;font-weight:700;margin-bottom:.2rem;line-height:1.5;color:var(--ink)}
+.sub{font-size:.78rem;color:var(--ink-2);margin-bottom:1rem;line-height:1.6}
+.legend{display:flex;gap:1.1rem;font-size:.76rem;color:var(--ink-2);margin-bottom:.9rem;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:.35rem;vertical-align:-1px}
+.db{display:grid;grid-template-columns:minmax(84px,auto) 1fr;gap:.6rem;align-items:center;margin:.55rem 0}
+.dbl{font-size:.78rem;color:var(--ink);text-align:right;font-weight:700}
+.dbt{position:relative;height:24px}
+.dbline{position:absolute;top:50%;height:2px;background:var(--baseline);transform:translateY(-50%)}
+.dot{position:absolute;top:50%;width:11px;height:11px;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 2px var(--surface)}
+.dot.a{background:var(--s1)}.dot.b{background:var(--s2)}
+.dnum{position:absolute;top:50%;transform:translate(-50%,-50%);font-size:.68rem;font-variant-numeric:tabular-nums;color:var(--ink-muted);white-space:nowrap}
+.axis{margin-left:calc(84px + .6rem);border-top:1px solid var(--baseline);position:relative;height:20px;margin-top:.5rem}
+.tick{position:absolute;top:3px;transform:translateX(-50%);font-size:.67rem;color:var(--ink-muted);font-variant-numeric:tabular-nums}
+footer{margin-top:4rem;padding-top:1.4rem;border-top:1px solid var(--grid);font-size:.75rem;color:var(--ink-muted);font-family:var(--mono);line-height:1.9}
+nav.toc{background:var(--surface);border:1px solid var(--ring);border-radius:10px;padding:1rem 1.2rem;margin:1.8rem 0}
+nav.toc a{display:inline-block;color:var(--s1);text-decoration:none;font-size:.83rem;margin-right:1.1rem;padding:.15rem 0}
+nav.toc a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">pokemonabc / 監査記録</div>
+  <h1>2026-08-02 調査記録<br>— 何が覆り、何を直したか</h1>
+  <p class="lede">
+    「discussion と code のタブは何をする場所か」という質問から始まった1日で、
+    <strong>レポートの主砲2本が既出であること</strong>、<strong>計器が2つとも壊れていたこと</strong>、
+    そして<strong>エージェントに安い穴が7つあること</strong>が判明した。
+    確定した事実・訂正した誤り・決めたことを、この1枚に固定する。
+  </p>
+  <div class="stamp">
+    作成 2026-08-02 ／ 記録先: decisions.md <strong>D61 / D62</strong>、data.md 同日節、
+    prior-art-audit-2026-08-02.md、external-ingestion-audit-2026-08-02.md、claims-ledger.md 同日追記<br>
+    手法: 公開ノートブック <strong>291件を全件取得</strong>し5系統で全文精読 ＋ 掲示板の直接読解 ＋ 層S の計器監査
+  </div>
+</header>
+
+<nav class="toc">
+  <a href="#s1">1. 覆ったもの</a>
+  <a href="#s2">2. 計器の故障</a>
+  <a href="#s3">3. 私の誤りと訂正</a>
+  <a href="#s4">4. 無事だったもの</a>
+  <a href="#s5">5. 相手の実像</a>
+  <a href="#s6">6. 決めたこと</a>
+  <a href="#s7">7. 残った宿題</a>
+</nav>
+
+<!-- ============ 1 ============ -->
+<section id="s1">
+<h2><span class="num">01</span>覆ったもの — レポートの主砲2本は既出だった</h2>
+
+<table>
+<thead><tr><th>主張</th><th>判定</th><th>先行者と根拠</th></tr></thead>
+<tbody>
+<tr><td><strong>#1 較正の法則</strong></td><td><span class="pill dead">既出</span></td>
+    <td>citerne §5.4。<strong>60枚中57枚が同一のデッキで操縦者だけ変え、各300戦</strong> — 我々と同一設計。「弱い自分のエージェントで較正した評価器は、強い相手に自信満々に間違える」</td></tr>
+<tr><td>総論「デッキとパイロットは分離不能」</td><td><span class="pill dead">既出</span></td>
+    <td>citerne Part 7。我々の §7 の結び文とほぼ同一の文が公開済み</td></tr>
+<tr><td><strong>#8 Cinderaceのエネ加速は死に札</strong></td><td><span class="pill dead">公開反証</span></td>
+    <td>masamikobayashi が実City League2位デッキを移植し、<strong>1ターン目 Turbo Flare を中核エンジン</strong>として <strong>74.4%(N=1,000)</strong></td></tr>
+<tr><td>帯の非定常性</td><td><span class="pill dead">既出</span></td>
+    <td>myso1987 が <strong>1,474チームを7帯に層化</strong>して公開(我々は N=180)</td></tr>
+<tr><td>CEWの骨格(対面勝率×遭遇率)</td><td><span class="pill dead">既出</span></td>
+    <td>busyaprime が <code>exp_vs_field</code> として実装公開</td></tr>
+<tr><td><strong>#3 前向き検証</strong></td><td><span class="pill live">無傷</span></td>
+    <td><strong>291件中0件</strong>。しかも citerne の未解決質問リスト<strong>第1問</strong></td></tr>
+<tr><td><strong>#26 探索層の対照実験</strong></td><td><span class="pill live">無傷</span></td>
+    <td>CI付き効果量はこの競技で唯一。citerne の未解決質問<strong>第4問</strong>への回答</td></tr>
+<tr><td><strong>#4 ドスクライン除去</strong></td><td><span class="pill live">無主地</span></td>
+    <td>282件に全文grep → <strong>言及4件・検証0件</strong>。カード単位の除去実験自体が 0/291</td></tr>
+<tr><td><strong>#9 たね増量は単調悪化</strong></td><td><span class="pill live">攻撃力が上がった</span></td>
+    <td>gowrishankarp(21票)が「たね4枚は約60%ブリックで事実上プレイ不能、10〜11枚必要、<strong>通念~12枚と一致</strong>」を公開。<strong>全員が紙の超幾何分布で議論しており、エンジンを叩いた人が一人もいない</strong></td></tr>
+</tbody>
+</table>
+
+<div class="box ok">
+  <div class="h">結論 — 差し替えではなく重心の移動</div>
+  <p>citerne は末尾に「<strong>未解決の公開質問</strong>」を掲げている。</p>
+  <div class="q" style="margin:.7rem 0">
+    <strong>質問1</strong>: …I could never build a local gate that predicted the ladder. <strong>Do you just submit and watch?</strong><br>
+    <strong>質問4</strong>: Did anyone get search to pay off…?
+    <span class="src">citerne / no-breakthrough-in-2-months-what-did-i-miss</span>
+  </div>
+  <p>
+    <strong>質問1 = 我々の #3(前向き検証 n=4)。質問4 = 我々の #26(+13.62pt、CI付き)。</strong>
+    主張を「族内は甘い」(既出)から
+    <strong>「甘さを測って定数化し、その定数で未来の勝率を封をして4回当てた」</strong>へ移せばよい。
+    <strong>既出であることが、逆に証拠の価値を上げる位置取りになる。</strong>
+  </p>
+</div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section id="s2">
+<h2><span class="num">02</span>計器の故障 — 自作ゲージ2つと、CEWの重み</h2>
+
+<h3>自作ゲージは2つとも、実在する相手と半分も一致していなかった</h3>
+<table>
+<thead><tr><th>ゲージ</th><th>実ラダーとの加重一致</th><th>実ラダー遭遇</th><th>影響</th></tr></thead>
+<tbody>
+<tr><td><code>alakazam_v0.csv</code></td><td class="num"><strong>24.7 / 60</strong></td><td class="num">52戦</td><td>計器は「96%勝つ」と表示。実ラダーは <strong>51.7%</strong></td></tr>
+<tr><td><code>grimmsnarl_v0.csv</code></td><td class="num"><strong>27.4 / 60</strong></td><td class="num">22戦</td><td>同型。D61の処置対象を拡張</td></tr>
+</tbody>
+</table>
+<p>
+  <strong>ただしデッキ抽出は我々が正しかった。</strong> <code>meta_alakazam_2026-07-14.csv</code> は
+  最頻出の実物と <strong>60/60 完全一致</strong>、加重 55.5/60 で公開版(50.8 / 51.6)より実ラダーに近い。
+  誤りは「<strong>正しいデッキを持ちながら、ゲージがそれを使っていなかった</strong>」という接続の欠落。
+</p>
+<p>
+  三段分解(N=300/腕): 自作P×自作D <strong>96.0%</strong> → 自作P×実物D <strong>89.0%</strong> →
+  本物P×実物D <strong>57.3%</strong> → 実ラダー <strong>51.7%</strong>。
+  <strong>デッキ差 7.0pt / 操縦者差 31.7pt</strong>(操縦者が4.5倍効く)。
+  新ゲージと実ラダーの差は 5.6pt で実ラダーCI内 = <strong>較正できている</strong>。
+</p>
+
+<h3>CEWの重みは、外部データに棄却された</h3>
+
+<figure>
+  <figcaption>我々の重み vs 700-799帯(我々の帯)の実分布</figcaption>
+  <div class="sub">
+    外部データは myso1987(2026-08-01、<strong>n=290</strong>)。我々の重みは3提出プール(N=180、被覆71戦)。
+    同じ4対面に再正規化して比較。<strong>χ²(df=2) = 37.68</strong>(臨界値 5.99)で<strong>有意に非整合</strong>。
+  </div>
+  <div class="legend">
+    <span><i style="background:var(--s1)"></i>我々の重み</span>
+    <span><i style="background:var(--s2)"></i>外部の実分布</span>
+  </div>
+  <div id="db">
+    <div class="db"><div class="dbl">Archaludon</div><div class="dbt" data-a="33.8" data-b="59.7"></div></div>
+    <div class="db"><div class="dbl">Lucario</div><div class="dbt" data-a="45.1" data-b="34.3"></div></div>
+    <div class="db"><div class="dbl">Dragapult</div><div class="dbt" data-a="15.5" data-b="6.0"></div></div>
+    <div class="db"><div class="dbl">Abomasnow</div><div class="dbt" data-a="5.6" data-b="0.0"></div></div>
+    <div class="axis" id="ax"></div>
+  </div>
+  <p style="font-size:.8rem;margin:.8rem 0 0">
+    <strong>原因は3提出のプール。</strong> 直近提出のみなら Archaludon 57.1% で外部の 59.7% とほぼ一致し、
+    χ² は <strong>12.65</strong> まで改善する。<strong>帯と時間の非定常性の下で、プールしてはいけなかった。</strong>
+  </p>
+</figure>
+
+<div class="box">
+  <div class="h">良い知らせ2つ</div>
+  <ul style="margin-bottom:0">
+    <li><strong>我々の「遭遇1位 Alakazam 30.9%(n=55)」は外部で追認された</strong>(26.21%、n=290)</li>
+    <li><strong>カバレッジ 46.2% → Alakazam を第5成分に足すだけで 72.4%</strong>。今日設置したゲージがそのまま効く</li>
+  </ul>
+</div>
+
+<div class="box warn">
+  <div class="h">外部メタを使うときの罠</div>
+  <p>
+    大規模な外部メタ(pilkwang 7万戦 / busyaprime 4千戦 / smallpond 5千戦)は
+    <strong>全て「Daily Top Episodes」由来 = 上位帯偏り</strong>だった。
+    証拠: busyaprime 7/31 の dump で Grimmsnarl <strong>63.77%</strong>、
+    しかし我々の 700-799 帯では <strong>6.90%</strong>。
+    <strong>使えるのは myso1987 の帯別1本だけ。</strong>
+  </p>
+</div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section id="s3">
+<h2><span class="num">03</span>私(cc)の誤りと、その訂正</h2>
+<p>この日の対話中に私が述べ、<strong>根拠として使われかけた</strong>誤りが3件ある。すべて記録側で訂正済み。</p>
+
+<table>
+<thead><tr><th>#</th><th>誤った記述</th><th>正しくは</th><th>訂正先</th></tr></thead>
+<tbody>
+<tr><td><strong>C1</strong></td>
+    <td>「Alakazam の<strong>練習相手がいない</strong>」</td>
+    <td><strong>持っていた</strong>(<code>gauges/alakazam_agent.py</code>、7/13自作)。正しくは「持っているが自作なので採点式に使えない扱いにしている」。またこの文脈で「公開版を取ればデッキも直る」と読める説明をしたが、<strong>デッキは我々の抽出の方が正確</strong></td>
+    <td>data.md 補遺</td></tr>
+<tr><td><strong>C2</strong></td>
+    <td>「CEWの4成分は全部外部由来なので<strong>今の判定基準は無傷</strong>」</td>
+    <td><strong>ゲージ(計器)は外部由来で無傷だが、重み(遭遇分布)は棄却された</strong>(χ²=37.68)。「判定基準は無傷」は<strong>言い過ぎ</strong>だった</td>
+    <td>data.md 補遺</td></tr>
+<tr><td><strong>C3</strong></td>
+    <td>「純ヒューリスティックの<strong>観測上の天井はランク150前後</strong>」</td>
+    <td><strong>2名の個別実績であって上限ではない</strong>。同じスレッドで<strong>トップ10の Cox &amp; Chao 組がルールベースだと目されている</strong>。読み違い</td>
+    <td>external-ingestion §8.3</td></tr>
+</tbody>
+</table>
+
+<div class="box crit">
+  <div class="h">言を翻した点(D62に明記)</div>
+  <p>
+    セッション中盤、私は「<strong>CEW拡張は 8/17 以降にすべき</strong>(事前登録が無効化されるため)」と述べた。
+    その後 <strong>χ²=37.68 で重みが棄却された</strong>ため<strong>撤回した</strong>。
+    「変えない」ことは、<strong>棄却された計器を使い続けること</strong>であって保全ではない。
+  </p>
+  <p><strong>ただし事前登録の保護は有効</strong>なので、移行規則を D62 に固定した:</p>
+  <ul style="margin-bottom:0">
+    <li><strong>既に事前登録済みのプローブ(P1〜P5)の判定は旧重みのまま。遡及適用しない</strong></li>
+    <li><strong>新重みは並行して計算し、両方を記録する</strong>。8/16以降の新規登録から新重みを正典に</li>
+    <li><strong>旧重みと新重みの数値を、同じ表・同じ文の中で混ぜない</strong></li>
+  </ul>
+</div>
+</section>
+
+<!-- ============ 4 ============ -->
+<section id="s4">
+<h2><span class="num">04</span>検査して無事だったもの</h2>
+<p>他人が踏んだ罠が我々に当たっていないかを、実測で確認した。</p>
+
+<table>
+<thead><tr><th></th><th>検査</th><th>結果</th></tr></thead>
+<tbody>
+<tr><td><span class="mark ok">✓</span></td><td><code>__file__</code> 依存(Kaggleの <code>exec()</code> 下では存在せず validation で ERROR)</td>
+    <td><strong><code>main.py</code> は非依存</strong>。使用は公式 <code>cg/sim.py</code> のみで import されるため安全</td></tr>
+<tr><td><span class="mark ok">✓</span></td><td><strong>探索が無音の no-op になっていないか</strong>(citerne は 1,736/1,736 が無音失敗)</td>
+    <td><strong>発火している</strong>。651決定中 <strong>651/651</strong> で <code>search_begin_input</code> が存在、<code>_search_decide</code> が438回到達、<strong>147回が実際に手を返した</strong></td></tr>
+<tr><td><span class="mark ok">✓</span></td><td><strong>計測系のRNG汚染</strong>(lucifer19: 同一プロセスでは探索がエンジンのRNGを乱し、プラセボ腕が 0.48→0.450)</td>
+    <td>sham-search 対照 N=1,200/腕: <strong>差 +0.42pt、CI[−3.27, +4.10]</strong> = <strong>汚染は検出されず</strong></td></tr>
+</tbody>
+</table>
+
+<div class="box warn">
+  <div class="h">ただし、書くときに必ず併記すること</div>
+  <p>
+    sham 対照で排除できたのは <strong>|汚染| &gt; 3.68pt</strong> のみ。
+    <strong>lucifer19 が報告した −3pt 級は、この N では排除できていない</strong>(1.6σ)。
+    最悪ケースを仮定しても #26 は <strong>+9.94pt 以上</strong>は残るので結論の向きは変わらないが、
+    この留保は必須。
+  </p>
+</div>
+
+<div class="box ok">
+  <div class="h">副産物 — 独立した2つの数字が一致した</div>
+  <p>
+    v1単独(探索OFF)の対公式Lucario が <strong>30.16%</strong>。
+    これに #26 の <strong>+13.62pt</strong> を足すと <strong>43.78%</strong> で、
+    D27 で記録済みの<strong>対公式Lucario 44.0%</strong> とほぼ一致した。別々に測った数字が合った。
+  </p>
+</div>
+</section>
+
+<!-- ============ 5 ============ -->
+<section id="s5">
+<h2><span class="num">05</span>相手の実像</h2>
+
+<h3>上位は探索を使っていない。しかも理由は「バグ」</h3>
+<table>
+<thead><tr><th>エージェント</th><th>LB</th><th>行数</th><th>探索コード</th><th>実際に走るか</th></tr></thead>
+<tbody>
+<tr><td>soutasakurai</td><td class="num"><strong>Elo 1208</strong></td><td class="num">1,256</td><td><strong>無い</strong></td><td>—</td></tr>
+<tr><td>makthanithin</td><td class="num"><strong>1084.5</strong></td><td class="num">596</td><td><strong>無い</strong></td><td>—</td></tr>
+<tr><td>romanrozen</td><td class="num">950</td><td class="num">541</td><td>MCTS 約90行</td><td><span class="mark ng">走らない</span></td></tr>
+<tr><td>penguin069</td><td class="num">915</td><td class="num">459</td><td>約45行</td><td><span class="mark ng">走らない</span></td></tr>
+</tbody>
+</table>
+<p>
+  機構まで特定された。実APIは <code>search_begin(...)</code> が<strong>必須の位置引数7個</strong>。
+  romanrozen は <code>search_begin(obs, your_deck=yd)</code> と<strong>5個足りない</strong>呼び方をして毎回 TypeError、
+  それを裸の <code>except Exception: return None</code> が飲んでいる。
+  <strong>「探索を切っている」のではなく「探索が壊れていて誰も気づいていない」。</strong>
+  我々は1手あたり本番 p99 <strong>295ms(予算の83%)</strong>を投じている。
+</p>
+
+<h3>我々が実装していない穴</h3>
+<table>
+<thead><tr><th>技法</th><th>我々の状態</th></tr></thead>
+<tbody>
+<tr><td><strong>対面判定を方策に接続</strong>(soutasakurai は 1,256行中102行の分岐)</td>
+    <td><strong>接続していない</strong>。<code>_infer_enemy_deck</code> の戻り値は <code>main.py:679</code> でラベルを捨てられ、決定化の材料にしかなっていない。<strong>方策分岐 0箇所</strong></td></tr>
+<tr><td><strong>ターン内資源フラグ</strong></td>
+    <td><code>supporterPlayed</code> / <code>stadiumPlayed</code> / <code>energyAttached</code> / <code>retreated</code> / <code>benchMax</code> / <code>firstPlayer</code> / <code>logs</code> — <strong>全部 grep 0件</strong></td></tr>
+<tr><td><strong>サイド確定推理</strong></td>
+    <td><strong>無い。ランダムに撒いている</strong>(<code>_determinize</code> はシャッフルして頭から切るだけ)。<code>select.effect</code> は grep 0件</td></tr>
+<tr><td>勝ち筋の時計比較 / モード状態機械 / サイド枚数の算術 / ボスの標的選定 / ツール・スタジアム</td>
+    <td>いずれも無し</td></tr>
+</tbody>
+</table>
+
+<div class="q">
+  <strong>A wrong prize inference is worse than no prize inference.</strong><br>
+  <strong>Do not let Forward Search imagine a deck that the real game does not have.</strong>
+  <span class="src">masamikobayashi(同じ Starmie で 1300+)。サイド推理を <code>select.effect</code> で確定する手法を公開</span>
+</div>
+
+<h3>掲示板から</h3>
+<ul>
+  <li><strong>トップ10の Cox &amp; Chao 組はルールベースだと目されている</strong>。両名とも<strong>現実のポケカの熟練プレイヤー</strong>で RL/ML の経歴なし — <strong>我々と同じプロファイルが既に上位にいる</strong></li>
+  <li><strong>Yushin Ito は14日間再提出せずランク30番台を維持、デッキは Alakazam</strong>。競合 ygkojima は「Yushin を唯一の教師として behavior cloning した」と書いている</li>
+  <li>「<strong>ルールベースの強豪は締切直前に何もないところから現れる</strong>」— 可視のLBは過小に見せている</li>
+  <li>運営: <strong>Bo1→Bo3 の変更なし</strong> / <strong>締切後はエピソード配信頻度を上げる</strong>(= 8/16以降も本番データが貯まる)</li>
+  <li>ホスト公式のルール差分は<strong>3件のみ</strong>で、<strong>マリガンは含まれない</strong> → writeup v5 の訂正が裏付けられた</li>
+  <li><strong>Strategy 部門は 206チーム</strong></li>
+</ul>
+
+<div class="box crit">
+  <div class="h">不快な事実</div>
+  <p>
+    citerne が<strong>他人の公開スケルトンを無改造で提出したら 776.4</strong> に落ち着いた。
+    <strong>我々の自己ベストは 783.0。</strong>
+    我々自身が「同一エージェントでも ±150〜400 ぶれる」と主張している以上、<strong>この2つは区別できない</strong>。
+    <strong>レポートで Sim 成績を強さの証拠として使う書き方は要再設計。</strong>
+  </p>
+</div>
+</section>
+
+<!-- ============ 6 ============ -->
+<section id="s6">
+<h2><span class="num">06</span>決めたこと(D62、ゆうじ承認済み)</h2>
+<p><strong>重心を「レポート磨き」から「エージェントの穴塞ぎ」へ移す。</strong> 着手順:</p>
+<table>
+<thead><tr><th>#</th><th>やること</th><th>なぜ</th></tr></thead>
+<tbody>
+<tr><td><strong>1</strong></td><td><strong>対面判定のラベルを方策に接続</strong></td><td>実装済みの情報を使っていないだけ。最も安い</td></tr>
+<tr><td><strong>2</strong></td><td><strong>ターン内資源フラグを読む</strong></td><td>「攻撃はターンを終わらせる」から行動順序が導出できる</td></tr>
+<tr><td><strong>3</strong></td><td><strong>CEWを直近提出のみ + Alakazam 第5成分に</strong></td><td>カバレッジ 46.2%→72.4%、χ² の非整合が解消</td></tr>
+<tr><td><strong>4</strong></td><td><strong>探索の扱いを決める</strong></td><td>現状は偽の山札の上。上位は誰も使っていない機構に予算の83%</td></tr>
+</tbody>
+</table>
+<p>
+  <strong>やめること</strong>: CEW拡張の事前登録を先頭に置く案(私が本日提案したもの)、レポートの磨き込みの優先。
+</p>
+<p>
+  <strong>これはレポートにとっても正しい選択</strong>である。
+  「較正済み計器で穴を見つけ、直し、前向き検証で当てた」という<strong>実際に機能した物語</strong>は、
+  既出の法則を語り直すより強い。
+</p>
+<div class="box">
+  <div class="h">ゆうじの懸念は当たっていた</div>
+  <p>
+    「記事から逆算する作戦が、逆に方向転換の妨げになっていないか」——
+    <strong>症状が実際に出ていた</strong>。今日の44ptの発見に対し、私が最初にやったのは
+    「<strong>台帳#1の4点目として昇格できる</strong>」= <strong>既存の枠への格納</strong>であり、
+    「この発見は背骨を変えるか」とは一度も問わなかった。
+  </p>
+</div>
+</section>
+
+<!-- ============ 7 ============ -->
+<section id="s7">
+<h2><span class="num">07</span>残った宿題(まだ手を付けていない)</h2>
+<table>
+<thead><tr><th>項目</th><th>なぜ必要か</th><th>コスト</th></tr></thead>
+<tbody>
+<tr><td><strong>4ゲージの Bradley-Terry 残差を測る</strong></td>
+    <td>citerne「BT残差 6.2pp、<strong>~10pt未満のローカル改善は検証不能</strong>」への反論。我々の採用閾値 +2.0pt はこの帯にある。CEWは推移性を仮定していないので反論できる<strong>はず</strong>だが、<strong>一度も確かめていない</strong></td>
+    <td>既存データのみ</td></tr>
+<tr><td><strong>先攻/後攻で結果を割る</strong></td>
+    <td>naoto714 の実測で<strong>先後差 18pt</strong>。我々のCEWは先後配分のブレだけで数pt動きうる</td><td>ハーネス改修</td></tr>
+<tr><td><strong>評価器のターン別AUC</strong></td>
+    <td>citerne「turn2 で AUC 0.521 = コイン投げ、しかも<strong>決定の32%は turn≤4</strong>」。我々は自分の評価器がいつ有効か未測</td><td>既存ログのみ</td></tr>
+<tr><td><strong>人間top-cut16 と ラダー分布の突き合わせ</strong></td>
+    <td>新背骨の核。<strong>AIラダー最大勢力の Alakazam が人間 top-cut 16 に1本も無い</strong>。突き合わせた人はゼロで、材料は両方 <code>_inbox/</code> にある</td><td>既存データのみ</td></tr>
+<tr><td><strong>writeup の5件の欠陥修正</strong></td>
+    <td>審査基準→証拠の対応表 / Verdict-first / ±150–400 と 36pt の衝突 / null を MDE で / 既知の攻撃線3つを Limitations に</td><td>測定ゼロ</td></tr>
+<tr><td>掲示板の未読4本</td><td>3,057チームのメタ追跡 / 代替ランキング / 提出戦略 / RL訓練計画</td><td>読解のみ</td></tr>
+</tbody>
+</table>
+</section>
+
+<footer>
+  docs/memo/audit-2026-08-02.html<br>
+  一次資料: prior-art-audit-2026-08-02.md / external-ingestion-audit-2026-08-02.md /
+  data.md 2026-08-02節・補遺 / decisions.md D61・D62 / claims-ledger.md 同日追記<br>
+  再現: replay_analysis/alakazam_deck_match.py / verification/sham_search_probe.py /
+  verification/reference/_inbox/(291件、gitignore済み)<br>
+  測定層: すべて <strong>S(計器監査)</strong> — 事前登録・T7なし。<strong>writeupへの引用は台帳の改訂を経ること</strong>
+</footer>
+
+</div>
+<script>
+(function(){
+  var MAX=65, TICKS=[0,20,40,60];
+  document.querySelectorAll('#db .dbt').forEach(function(t){
+    var a=parseFloat(t.dataset.a), b=parseFloat(t.dataset.b);
+    var pa=a/MAX*100, pb=b/MAX*100, lo=Math.min(pa,pb), hi=Math.max(pa,pb);
+    var line=document.createElement('div'); line.className='dbline';
+    line.style.left=lo+'%'; line.style.width=(hi-lo)+'%'; t.appendChild(line);
+    [['a',pa,a],['b',pb,b]].forEach(function(d){
+      var dot=document.createElement('div'); dot.className='dot '+d[0]; dot.style.left=d[1]+'%';
+      dot.title=(d[0]==='a'?'我々の重み ':'外部の実分布 ')+d[2]+'%'; t.appendChild(dot);
+      var n=document.createElement('span'); n.className='dnum';
+      n.style.left=d[1]+'%'; n.style.marginTop=(d[0]==='a'?'-14px':'14px'); n.textContent=d[2]+'%';
+      t.appendChild(n);
+    });
+  });
+  var ax=document.getElementById('ax');
+  TICKS.forEach(function(v){
+    var s=document.createElement('span'); s.className='tick';
+    s.style.left=(v/MAX*100)+'%'; s.textContent=v+'%'; ax.appendChild(s);
+  });
+})();
+</script>
+</body>
+</html>
