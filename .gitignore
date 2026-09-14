@@ -25,3 +25,24 @@ src/input/datasets/decks/*/trace*.jsonl
 
 # ラダー悉皆調査の種(leaderboard から再生成できる。rival_decks.jsonl 本体は追跡する)
 replay_analysis/lake/targets.json
+
+# --- origin/main(りょーちん側)の無視規則を統合(2026-09-15 マージ時)。エンジンバイナリ(*.so/*.dylib/*.dll)は上の規則どおり追跡しない ---
+.env
+src/input/datasets/decks/underground-arena/
+.Python
+[Bb]in
+[Ii]nclude
+[Ll]ib
+[Ll]ib64
+[Ll]ocal
+[Ss]cripts
+pyvenv.cfg
+.venv
+.python311
+.python311x64
+.venv-kaggle311x64
+.venv-kaggle311/
+.venv-kaggle311x64
+.venv-kaggle311
+pip-selfcheck.json
+参考ログ/
