@@ -15,6 +15,8 @@ big decisions) and the operational rules that past sessions learned the hard way
 
 ## Layout
 
+- `submission/` — the two **final submissions, frozen bytes** (Aggro 55558557 /
+  SRHP 55554191) with `SHA256SUMS`. Separated from the experiments on 2026-09-15.
 - `src/input/datasets/decks/<deck-name>/` — one directory per deck experiment,
   each containing `main.py` + `deck.csv` + `cg/`. This is the **deck directory**;
   run and test from inside it. Engine binaries (`*.dylib`/`*.so`/`*.dll`) are
